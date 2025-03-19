@@ -17,7 +17,7 @@ export default function HomeScreen() {
   const [data, setData] = useState<any[]>([]);
   useEffect(() => {
     axiosInstance
-      .get('/user/getAll')
+      .get(`${process.env.EXPO_PUBLIC_API_GET_ALL_USERS}`)
       .then((res) => {
         setData(res.data.users);
       })

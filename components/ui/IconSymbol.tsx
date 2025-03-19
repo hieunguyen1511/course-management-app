@@ -13,6 +13,9 @@ const MAPPING = {
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
+  'library-books': 'library-books',
+  'account-circle': 'account-circle',
+  'search': 'search',
 } as Partial<
   Record<
     import('expo-symbols').SymbolViewProps['name'],
@@ -33,7 +36,7 @@ export function IconSymbol({
   color,
   style,
 }: {
-  name: IconSymbolName;
+  name: IconSymbolName | string;
   size?: number;
   color: string | OpaqueColorValue;
   style?: StyleProp<ViewStyle>;
