@@ -12,7 +12,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { MyScreenProps } from '@/types/MyScreenProps';
+
 
 interface FormData {
   name: string;
@@ -28,8 +29,9 @@ interface FormErrors {
   confirmPassword?: string;
 }
 
-const RegisterScreen = () => {
-  const navigation = useNavigation();
+
+
+const RegisterScreen: React.FC<MyScreenProps['RegisterScreenProps']> = ({ navigation, route }) => {
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
@@ -123,7 +125,7 @@ const RegisterScreen = () => {
         {/* Header */}
         <View style={styles.header}>
           <Image
-            source={require('../assets/logo.png')}
+            // source={require('../assets/logo.png')}
             style={styles.logo}
             resizeMode="contain"
           />

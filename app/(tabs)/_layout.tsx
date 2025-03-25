@@ -8,11 +8,14 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 
-export default function TabLayout() {
+
+
+export default function UserTabLayout() {
   const colorScheme = useColorScheme();
 
   return (
     <Tabs
+      initialRouteName='home'
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,

@@ -7,6 +7,8 @@ import { Ionicons } from '@expo/vector-icons';
 import Test1 from '../../screens/test1';
 import { RootStackParamList } from '../../types/RootStackParamList';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -37,7 +39,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation, route }) => {
   const [relatedCourses, setRelatedCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const { tmessage } = useLocalSearchParams();
+  console.log('searchParams:', tmessage);
+
+
   useEffect(() => {
+    
     if (route.params?.message) {
       setMessage(route.params.message);
     }
