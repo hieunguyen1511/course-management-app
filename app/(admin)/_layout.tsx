@@ -11,9 +11,8 @@ import {
 import { useColorScheme } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-import SCREENS from "@/screens/admin";
+import SCREENS from "@/screens/admin/screens";
 import { Gesture, GestureHandlerRootView } from "react-native-gesture-handler";
-import { Colors } from "react-native/Libraries/NewAppScreen";
 
 import DashboardScreen from "@/screens/admin/dashboard";
 import NotificationsScreen from "@/screens/admin/notifications";
@@ -56,9 +55,9 @@ export default function AdminLayout() {
         >
           <Drawer.Screen name={SCREENS.DASHBOARD} component={DashboardScreen} />
           <Drawer.Screen name={SCREENS.NOTIFICATIONS} component={NotificationsScreen} />
-          <Drawer.Screen name={SCREENS.SETTING} component={SettingScreen} />
-          <Drawer.Screen name={SCREENS.COURSE} component={CourseScreen} />
           <Drawer.Screen name={SCREENS.CATEGORY} component={CategoryScreen} />
+          <Drawer.Screen name={SCREENS.COURSE} component={CourseScreen} />
+          <Drawer.Screen name={SCREENS.SETTING} component={SettingScreen} />
         </Drawer.Navigator>
       </NavigationIndependentTree>
     </GestureHandlerRootView>
