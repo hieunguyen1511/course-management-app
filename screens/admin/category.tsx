@@ -67,6 +67,32 @@ const CategoryScreen = () => {
   const handleDeleteCategory = () => {
     if (selectedCategory) {
       // In production, make API call to delete
+
+      const deleteCategory = async () => {
+        try {
+          axiosInstance
+          .delete(`${process.env.EXPO_PUBLIC_API_DELETE_CATEGORY}`.replace(":id", String(selectedCategory.id)), {
+          })
+          .then((res) => {
+            try {
+              if (res.status === 200) {
+                console.log('Delete item category successfull!');
+              }
+              else {
+                console.log(`Failed to delete item. Status: ${res.status}`);
+              }
+            }
+            catch (error) {
+              console.error('Failed to delete item:', error);
+            }
+          })
+        }
+        catch (error) {
+          console.error('Failed to delete item:', error);
+        }
+      };
+      deleteCategory();
+
       setCategories(categories.filter(cat => cat.id !== selectedCategory.id));
       setDeleteModalVisible(false);
       setSelectedCategory(null);
