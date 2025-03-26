@@ -14,6 +14,16 @@ export const Strings = {
         rememberMe: 'Lưu tài khoản',
         placeHolderUsername: 'Nhập tên đăng nhập',
         placeHolderPassword: 'Nhập mật khẩu',
+    },
 
+
+    categories: {
+        title: 'DANH SÁCH CHỦ ĐỀ',
+        loading: 'Đang tải chủ đề',
+        confirmDelete: 'Xác nhận xóa chủ đề',
+        questionConfirmDelete: 'Bạn có chắc muốn xóa chủ đề có tên ',
+        warningConfirmDelete: 'Hành động này sẽ xóa luôn tất cả khóa học có chủ đề này.',
+        cancelButton: "Hủy",
+        deleteButton: "Xóa",
     },
 }

@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { Ionicons } from '@expo/vector-icons'
+import { Strings } from "@/constants/Strings";
 
 // Define type for category
 interface Category {
@@ -9,7 +10,6 @@ interface Category {
   description: string;
   courseCount: number;
 }
-
 const CategoryScreen = () => {
   // State for categories and UI
   const [categories, setCategories] = useState<Category[]>([]);
@@ -19,17 +19,34 @@ const CategoryScreen = () => {
 
   // Fetch categories
   useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('http://192.168.1.6:3636/api/category/all'); // Thay bằng URL API của bạn
+        const data = await response.json();
+        if (response.status !== 200) {
+          throw new Error(`Failed to fetch. Status: ${response.status}`);
+        }
+        console.log(data);
+        setCategories(data.categories); // Giả sử API trả về danh sách categories
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCategories();
+    
     // Mock data - replace with actual API call
-    setTimeout(() => {
-      setCategories([
-        { id: 1, name: 'Programming', description: 'Software development courses', courseCount: 12 },
-        { id: 2, name: 'Design', description: 'UI/UX and graphic design', courseCount: 8 },
-        { id: 3, name: 'Marketing', description: 'Digital marketing strategies', courseCount: 5 },
-        { id: 4, name: 'Business', description: 'Entrepreneurship and management', courseCount: 7 },
-        { id: 5, name: 'Data Science', description: 'Data analysis and machine learning', courseCount: 9 },
-      ]);
-      setLoading(false);
-    }, 1000);
+    // setTimeout(() => {
+    //   setCategories([
+    //     { id: 1, name: 'Programming', description: 'Software development courses', courseCount: 12 },
+    //     { id: 2, name: 'Design', description: 'UI/UX and graphic design', courseCount: 8 },
+    //     { id: 3, name: 'Marketing', description: 'Digital marketing strategies', courseCount: 5 },
+    //     { id: 4, name: 'Business', description: 'Entrepreneurship and management', courseCount: 7 },
+    //     { id: 5, name: 'Data Science', description: 'Data analysis and machine learning', courseCount: 9 },
+    //   ]);
+    //   setLoading(false);
+    // }, 1000);
   }, []);
 
   // Handle delete category
@@ -93,13 +110,13 @@ const CategoryScreen = () => {
     <View style={styles.container}>
       {/* Header with title and add button */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Categories</Text>
+        <Text style={styles.headerTitle}>{Strings.categories.title}</Text>
         <AddCategoryButton />
       </View>
       
       {/* Categories list */}
       {loading ? (
-        <Text style={styles.loadingText}>Loading categories...</Text>
+        <Text style={styles.loadingText}>{Strings.categories.loading}...</Text>
       ) : (
         <FlatList
           data={categories}
@@ -119,10 +136,10 @@ const CategoryScreen = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Confirm Delete</Text>
+            <Text style={styles.modalTitle}>{Strings.categories.confirmDelete}</Text>
             <Text style={styles.modalMessage}>
-              Are you sure you want to delete the category "{selectedCategory?.name}"?
-              This will also remove all courses in this category.
+              {Strings.categories.questionConfirmDelete} "{selectedCategory?.name}"?
+              {Strings.categories.warningConfirmDelete}
             </Text>
             
             <View style={styles.modalButtons}>
@@ -130,14 +147,14 @@ const CategoryScreen = () => {
                 style={[styles.modalButton, styles.cancelButton]} 
                 onPress={() => setDeleteModalVisible(false)}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>{Strings.categories.cancelButton}</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
                 style={[styles.modalButton, styles.deleteConfirmButton]} 
                 onPress={handleDeleteCategory}
               >
-                <Text style={styles.deleteButtonText}>Delete</Text>
+                <Text style={styles.deleteButtonText}>{Strings.categories.deleteButton}</Text>
               </TouchableOpacity>
             </View>
           </View>
