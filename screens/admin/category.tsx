@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput } 
 import React, { useState, useEffect } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { Strings } from "@/constants/Strings";
+import axiosInstance from '@/api/axiosInstance';
 
 // Define type for category
 interface Category {
@@ -21,16 +22,29 @@ const CategoryScreen = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('http://192.168.1.6:3636/api/category/all'); // Thay bằng URL API của bạn
-        const data = await response.json();
-        if (response.status !== 200) {
-          throw new Error(`Failed to fetch. Status: ${response.status}`);
-        }
-        console.log(data);
-        setCategories(data.categories); // Giả sử API trả về danh sách categories
-      } catch (error) {
+        axiosInstance
+        .get(`${process.env.EXPO_PUBLIC_API_GET_ALL_CATEGORIES}`, {
+
+        })
+        .then((res) => {
+          try {
+            if (res.status === 200) {
+              console.log('fetch data categories successfull!');
+              setCategories(res.data.categories); // Giả sử API trả về danh sách categories
+            }
+            else {
+              console.log(`Failed to fetch. Status: ${res.status}`);
+            }
+          }
+          catch (error) {
+            console.error('Error fetching categories:', error);
+          }
+        })
+      }
+      catch (error) {
         console.error('Error fetching categories:', error);
-      } finally {
+      }
+      finally {
         setLoading(false);
       }
     };
