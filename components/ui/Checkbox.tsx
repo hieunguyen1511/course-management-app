@@ -38,7 +38,7 @@ const Checkbox = ({
       </View>
 
       {label && (
-        <Text className={`ml-2 text-gray-700 ${labelClassName}`}>{label}</Text>
+        <Text className={`ml-2 text-md text-gray-700 ${labelClassName}`}>{label}</Text>
       )}
     </TouchableOpacity>
   );

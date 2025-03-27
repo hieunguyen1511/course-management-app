@@ -1,22 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   TextInput,
   TouchableOpacity,
   ScrollView,
   Image,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { MyScreenProps } from '@/types/MyScreenProps';
-
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { MyScreenProps } from "@/types/MyScreenProps";
+import { Strings } from "@/constants/Strings";
+import "../global.css";
+import HorizontalRule from "@/components/ui/HorizontalRule";
 
 interface FormData {
   name: string;
+  username: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -24,19 +25,22 @@ interface FormData {
 
 interface FormErrors {
   name?: string;
+  username?: string;
   email?: string;
   password?: string;
   confirmPassword?: string;
 }
 
-
-
-const RegisterScreen: React.FC<MyScreenProps['RegisterScreenProps']> = ({ navigation, route }) => {
+const RegisterScreen: React.FC<MyScreenProps["RegisterScreenProps"]> = ({
+  navigation,
+  route,
+}) => {
   const [formData, setFormData] = useState<FormData>({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
+    name: "",
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -59,32 +63,38 @@ const RegisterScreen: React.FC<MyScreenProps['RegisterScreenProps']> = ({ naviga
 
     // Validate name
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = Strings.register.requireFullname;
+      isValid = false;
+    }
+
+    // Validate username
+    if (!formData.username.trim()) {
+      newErrors.username = Strings.register.requireUsername;
       isValid = false;
     }
 
     // Validate email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = Strings.register.requireEmail;
       isValid = false;
     } else if (!emailRegex.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email';
+      newErrors.email = Strings.register.invalidEmail;
       isValid = false;
     }
 
     // Validate password
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = Strings.register.requirePassword;
       isValid = false;
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = Strings.register.minimumPassword;
       isValid = false;
     }
 
     // Validate confirm password
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = Strings.register.passwordNotMatch;
       isValid = false;
     }
 
@@ -96,296 +106,230 @@ const RegisterScreen: React.FC<MyScreenProps['RegisterScreenProps']> = ({ naviga
   const handleSubmit = () => {
     if (validateForm()) {
       setIsLoading(true);
-      
+
       // Simulate API call
       setTimeout(() => {
         setIsLoading(false);
         // Navigate to login or home page after successful registration
-        // navigation.navigate('Login');
-        console.log('Registration successful', formData);
+        console.log("Registration successful", formData);
       }, 1500);
     }
   };
-
-  // Navigate to login screen
-  const goToLogin = () => {
-    // navigation.navigate('Login');
-    console.log('Navigate to login');
-  };
-
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+    <View className="flex justify-center bg-blue-500">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Image
-            // source={require('../assets/logo.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <Text style={styles.title}>Create an Account</Text>
-          <Text style={styles.subtitle}>
-            Join our learning platform to access all courses
-          </Text>
-        </View>
-
-        {/* Form */}
-        <View style={styles.form}>
-          {/* Name Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Full Name</Text>
-            <View style={[styles.inputWrapper, errors.name ? styles.inputError : null]}>
-              <Ionicons name="person-outline" size={20} color="#999" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your full name"
-                value={formData.name}
-                onChangeText={(value) => handleChange('name', value)}
-                autoCapitalize="words"
-              />
-            </View>
-            {errors.name ? (
-              <Text style={styles.errorText}>{errors.name}</Text>
-            ) : null}
-          </View>
-
-          {/* Email Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email Address</Text>
-            <View style={[styles.inputWrapper, errors.email ? styles.inputError : null]}>
-              <Ionicons name="mail-outline" size={20} color="#999" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email"
-                value={formData.email}
-                onChangeText={(value) => handleChange('email', value)}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </View>
-            {errors.email ? (
-              <Text style={styles.errorText}>{errors.email}</Text>
-            ) : null}
-          </View>
-
-          {/* Password Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
-            <View style={[styles.inputWrapper, errors.password ? styles.inputError : null]}>
-              <Ionicons name="lock-closed-outline" size={20} color="#999" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Create a password"
-                value={formData.password}
-                onChangeText={(value) => handleChange('password', value)}
-                secureTextEntry={!passwordVisible}
-              />
-              <TouchableOpacity
-                style={styles.visibilityIcon}
-                onPress={() => setPasswordVisible(!passwordVisible)}
-              >
-                <Ionicons
-                  name={passwordVisible ? 'eye-off-outline' : 'eye-outline'}
-                  size={20}
-                  color="#999"
-                />
-              </TouchableOpacity>
-            </View>
-            {errors.password ? (
-              <Text style={styles.errorText}>{errors.password}</Text>
-            ) : null}
-          </View>
-
-          {/* Confirm Password Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Confirm Password</Text>
-            <View style={[styles.inputWrapper, errors.confirmPassword ? styles.inputError : null]}>
-              <Ionicons name="lock-closed-outline" size={20} color="#999" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Confirm your password"
-                value={formData.confirmPassword}
-                onChangeText={(value) => handleChange('confirmPassword', value)}
-                secureTextEntry={!confirmPasswordVisible}
-              />
-              <TouchableOpacity
-                style={styles.visibilityIcon}
-                onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
-              >
-                <Ionicons
-                  name={confirmPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
-                  size={20}
-                  color="#999"
-                />
-              </TouchableOpacity>
-            </View>
-            {errors.confirmPassword ? (
-              <Text style={styles.errorText}>{errors.confirmPassword}</Text>
-            ) : null}
-          </View>
-
-          {/* Terms and Conditions */}
-          <View style={styles.termsContainer}>
-            <Text style={styles.termsText}>
-              By signing up, you agree to our{' '}
-              <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
-              <Text style={styles.termsLink}>Privacy Policy</Text>
+        {/* <ScrollView showsVerticalScrollIndicator={false} className="flex-1 bg-white h-max"> */}
+          <View className="bg-white h-screen p-5 mt-8 rounded-tl-[48] rounded-tr-[48]">
+            <Text className="text-3xl font-bold text-blue-600 mb-4 text-center">
+              {Strings.register.title}
             </Text>
-          </View>
 
-          {/* Submit Button */}
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleSubmit}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={styles.buttonText}>Create Account</Text>
-            )}
-          </TouchableOpacity>
+            <Text className="text-gray-500 text-center mb-6">
+              {Strings.register.descripton}
+            </Text>
+            <Image
+              source={require('../assets/images/course-bg-login.png')}
+              style={{ width: 150, height: 150, alignSelf: "center" }}
+              className="rounded-xl mb-6"
+            />
+            {/* Full Name Input */}
+            <View className="mb-4">
+              <View className="flex-row items-center border border-gray-300 rounded-lg">
+                <Ionicons
+                  name="person"
+                  size={24}
+                  color="#3b82f6"
+                  className="border-r border-gray-300"
+                  style={{ paddingHorizontal: 5 }}
+                />
+                <TextInput
+                  className="flex-1 placeholder:text-gray-300 ml-1 rounded-lg p-3 text-base"
+                  placeholder={Strings.register.placeHolderFullname}
+                  value={formData.name}
+                  onChangeText={(value) => handleChange("name", value)}
+                  autoCapitalize="words"
+                />
+              </View>
+              {errors.name && (
+                <Text className="text-red-500 text-sm mt-1 ml-1">
+                  {errors.name}
+                </Text>
+              )}
+            </View>
 
-          {/* Login Link */}
-          <View style={styles.loginContainer}>
-            <Text style={styles.loginText}>Already have an account? </Text>
-            <TouchableOpacity onPress={goToLogin}>
-              <Text style={styles.loginLink}>Sign In</Text>
+            {/* Username Input */}
+            <View className="mb-4">
+              <View className="flex-row items-center border border-gray-300 rounded-lg">
+                <Ionicons
+                  name="at"
+                  size={24}
+                  color="#3b82f6"
+                  className="border-r border-gray-300"
+                  style={{ paddingHorizontal: 5 }}
+                />
+                <TextInput
+                  className="flex-1 placeholder:text-gray-300 ml-1 rounded-lg p-3 text-base"
+                  placeholder={Strings.register.placeHolderUsername}
+                  value={formData.username}
+                  onChangeText={(value) => handleChange("username", value)}
+                  autoCapitalize="none"
+                />
+              </View>
+              {errors.username && (
+                <Text className="text-red-500 text-sm mt-1 ml-1">
+                  {errors.username}
+                </Text>
+              )}
+            </View>
+
+            {/* Email Input */}
+            <View className="mb-4">
+              <View className="flex-row items-center border border-gray-300 rounded-lg">
+                <Ionicons
+                  name="mail"
+                  size={24}
+                  color="#3b82f6"
+                  className="border-r border-gray-300"
+                  style={{ paddingHorizontal: 5 }}
+                />
+                <TextInput
+                  className="flex-1 placeholder:text-gray-300 ml-1 rounded-lg p-3 text-base"
+                  placeholder={Strings.register.placeHolderEmail}
+                  value={formData.email}
+                  onChangeText={(value) => handleChange("email", value)}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+              {errors.email && (
+                <Text className="text-red-500 text-sm mt-1 ml-1">
+                  {errors.email}
+                </Text>
+              )}
+            </View>
+
+            {/* Password Input */}
+            <View className="mb-4">
+              <View className="flex-row items-center border border-gray-300 rounded-lg">
+                <Ionicons
+                  name="lock-closed"
+                  size={24}
+                  color="#3b82f6"
+                  className="border-r border-gray-300"
+                  style={{ paddingHorizontal: 5 }}
+                />
+                <TextInput
+                  className="flex-1 placeholder:text-gray-300 ml-1 rounded-lg p-3 text-base"
+                  placeholder={Strings.register.placeHolderPassword}
+                  value={formData.password}
+                  onChangeText={(value) => handleChange("password", value)}
+                  secureTextEntry={!passwordVisible}
+                />
+                <TouchableOpacity
+                  onPress={() => setPasswordVisible(!passwordVisible)}
+                  style={{ paddingHorizontal: 10 }}
+                >
+                  <Ionicons
+                    name={passwordVisible ? "eye-off" : "eye"}
+                    size={22}
+                    color="#3b82f6"
+                  />
+                </TouchableOpacity>
+              </View>
+              {errors.password && (
+                <Text className="text-red-500 text-sm mt-1 ml-1">
+                  {errors.password}
+                </Text>
+              )}
+            </View>
+
+            {/* Confirm Password Input */}
+            <View className="mb-6">
+              <View className="flex-row items-center border border-gray-300 rounded-lg">
+                <Ionicons
+                  name="lock-closed"
+                  size={24}
+                  color="#3b82f6"
+                  className="border-r border-gray-300"
+                  style={{ paddingHorizontal: 5 }}
+                />
+                <TextInput
+                  className="flex-1 placeholder:text-gray-300 ml-1 rounded-lg p-3 text-base"
+                  placeholder={Strings.register.placeHolderConfirmPassword}
+                  value={formData.confirmPassword}
+                  onChangeText={(value) =>
+                    handleChange("confirmPassword", value)
+                  }
+                  secureTextEntry={!confirmPasswordVisible}
+                />
+                <TouchableOpacity
+                  onPress={() =>
+                    setConfirmPasswordVisible(!confirmPasswordVisible)
+                  }
+                  style={{ paddingHorizontal: 10 }}
+                >
+                  <Ionicons
+                    name={confirmPasswordVisible ? "eye-off" : "eye"}
+                    size={22}
+                    color="#3b82f6"
+                  />
+                </TouchableOpacity>
+              </View>
+              {errors.confirmPassword && (
+                <Text className="text-red-500 text-sm mt-1 ml-1">
+                  {errors.confirmPassword}
+                </Text>
+              )}
+            </View>
+
+            {/* Submit Button */}
+            <TouchableOpacity
+              className={`${
+                isLoading ? "bg-blue-400" : "bg-blue-500"
+              } p-4 rounded-lg shadow-sm items-center mt-2`}
+              onPress={handleSubmit}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <View className="flex-row items-center justify-center">
+                  <View className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  <Text className="text-white font-bold text-base">
+                    {Strings.register.registerProcess || "Creating account..."}
+                  </Text>
+                </View>
+              ) : (
+                <Text className="text-white font-bold text-base">
+                  {Strings.register.register || "Create Account"}
+                </Text>
+              )}
             </TouchableOpacity>
+
+            <View>
+              <HorizontalRule />
+            </View>
+
+            {/* Login Link */}
+            <View className="mt-6 mb-10 flex-row items-center justify-center">
+              <Text className="text-center text-gray-600">
+                {Strings.register.alreadyHaveAccount ||
+                  "Already have an account?"}{" "}
+               
+              </Text>
+              <TouchableOpacity
+                  onPress={() => navigation.navigate("Login", {})}
+                >
+                  <Text className="text-blue-500 font-medium ">
+                    {Strings.register.signIn || "Sign In"}
+                  </Text>
+                </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        {/* </ScrollView> */}
+      </KeyboardAvoidingView>
+    </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 20,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingBottom: 40,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  logo: {
-    width: 80,
-    height: 80,
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  form: {
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 8,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    backgroundColor: '#fafafa',
-    height: 50,
-  },
-  inputError: {
-    borderColor: '#e04a4a',
-  },
-  inputIcon: {
-    paddingHorizontal: 12,
-  },
-  input: {
-    flex: 1,
-    height: 50,
-    fontSize: 16,
-    color: '#333',
-  },
-  visibilityIcon: {
-    padding: 12,
-  },
-  errorText: {
-    color: '#e04a4a',
-    fontSize: 12,
-    marginTop: 5,
-    marginLeft: 2,
-  },
-  termsContainer: {
-    marginBottom: 20,
-  },
-  termsText: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  termsLink: {
-    color: '#4a6ee0',
-    fontWeight: '500',
-  },
-  button: {
-    backgroundColor: '#4a6ee0',
-    borderRadius: 8,
-    height: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  loginContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loginText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  loginLink: {
-    fontSize: 14,
-    color: '#4a6ee0',
-    fontWeight: '600',
-  },
-});
-
 export default RegisterScreen;
