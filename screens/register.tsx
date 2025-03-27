@@ -121,7 +121,7 @@ const RegisterScreen: React.FC<MyScreenProps["RegisterScreenProps"]> = ({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        <ScrollView showsVerticalScrollIndicator={false} className="flex-1 bg-white h-max">
+        {/* <ScrollView showsVerticalScrollIndicator={false} className="flex-1 bg-white h-max"> */}
           <View className="bg-white h-screen p-5 mt-8 rounded-tl-[48] rounded-tr-[48]">
             <Text className="text-3xl font-bold text-blue-600 mb-4 text-center">
               {Strings.register.title}
@@ -131,9 +131,9 @@ const RegisterScreen: React.FC<MyScreenProps["RegisterScreenProps"]> = ({
               {Strings.register.descripton}
             </Text>
             <Image
-              source={require("../assets/images/course-bg-login.svg")}
+              source={require('../assets/images/course-bg-login.png')}
               style={{ width: 150, height: 150, alignSelf: "center" }}
-              className="rounded-xl"
+              className="rounded-xl mb-6"
             />
             {/* Full Name Input */}
             <View className="mb-4">
@@ -312,21 +312,22 @@ const RegisterScreen: React.FC<MyScreenProps["RegisterScreenProps"]> = ({
             </View>
 
             {/* Login Link */}
-            <View className="mt-6 mb-10">
+            <View className="mt-6 mb-10 flex-row items-center justify-center">
               <Text className="text-center text-gray-600">
                 {Strings.register.alreadyHaveAccount ||
                   "Already have an account?"}{" "}
-                <TouchableOpacity
+               
+              </Text>
+              <TouchableOpacity
                   onPress={() => navigation.navigate("Login", {})}
                 >
-                  <Text className="text-blue-500 font-medium">
+                  <Text className="text-blue-500 font-medium ">
                     {Strings.register.signIn || "Sign In"}
                   </Text>
                 </TouchableOpacity>
-              </Text>
             </View>
           </View>
-        </ScrollView>
+        {/* </ScrollView> */}
       </KeyboardAvoidingView>
     </View>
   );
