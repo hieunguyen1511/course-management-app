@@ -5,4 +5,7 @@ export type MyScreenProps = {
     LoginScreenProps: NativeStackScreenProps<RootStackParamList, 'Login'>;
     RegisterScreenProps: NativeStackScreenProps<RootStackParamList, 'Register'>;
     HomeScreenProps: NativeStackScreenProps<RootStackParamList, 'Home'>;
+    CategoryScreenProps: NativeStackScreenProps<RootStackParamList, 'Category'>;
+    AddCategoryScreenProps: NativeStackScreenProps<RootStackParamList, 'AddCategory'>;
+    UpdateCategoryScreenProps: NativeStackScreenProps<RootStackParamList, 'UpdateCategory'>;
 }

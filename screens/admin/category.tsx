@@ -1,8 +1,11 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput } from 'react-native'
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { Strings } from "@/constants/Strings";
 import axiosInstance from '@/api/axiosInstance';
+import { MyScreenProps } from '@/types/MyScreenProps';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import MessageAlert from "@/components/MessageAlert";
 
 // Define type for category
 interface Category {
@@ -11,91 +14,116 @@ interface Category {
   description: string;
   courseCount: number;
 }
-const CategoryScreen = () => {
+
+const CategoryScreen = ({ navigation, route }: MyScreenProps['CategoryScreenProps']) => {
   // State for categories and UI
   const [categories, setCategories] = useState<Category[]>([]);
+  const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
+  const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(true);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
-  // Fetch categories
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        axiosInstance
-        .get(`${process.env.EXPO_PUBLIC_API_GET_ALL_CATEGORIES}`, {
+  const fetchCategories = async () => {
+    try {
+      const response = await axiosInstance.get(`${process.env.EXPO_PUBLIC_API_GET_ALL_CATEGORIES}`);
+      if (response.status === 200) {
+        console.log('fetch data categories successfull!');
+        setCategories(response.data.categories);
+        setFilteredCategories(response.data.categories);
+      } else {
+        console.log(`Failed to fetch. Status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        })
-        .then((res) => {
-          try {
-            if (res.status === 200) {
-              console.log('fetch data categories successfull!');
-              setCategories(res.data.categories); // Giả sử API trả về danh sách categories
-            }
-            else {
-              console.log(`Failed to fetch. Status: ${res.status}`);
-            }
-          }
-          catch (error) {
-            console.error('Error fetching categories:', error);
-          }
-        })
-      }
-      catch (error) {
-        console.error('Error fetching categories:', error);
-      }
-      finally {
-        setLoading(false);
-      }
-    };
-    fetchCategories();
+  // Handle search
+  const handleSearch = (text: string) => {
+    setSearchText(text);
+    if (text.trim() === '') {
+      setFilteredCategories(categories);
+      return;
+    }
     
-    // Mock data - replace with actual API call
-    // setTimeout(() => {
-    //   setCategories([
-    //     { id: 1, name: 'Programming', description: 'Software development courses', courseCount: 12 },
-    //     { id: 2, name: 'Design', description: 'UI/UX and graphic design', courseCount: 8 },
-    //     { id: 3, name: 'Marketing', description: 'Digital marketing strategies', courseCount: 5 },
-    //     { id: 4, name: 'Business', description: 'Entrepreneurship and management', courseCount: 7 },
-    //     { id: 5, name: 'Data Science', description: 'Data analysis and machine learning', courseCount: 9 },
-    //   ]);
-    //   setLoading(false);
-    // }, 1000);
+    const filtered = categories.filter(category => 
+      category.id.toString().includes(text) ||
+      category.name.toLowerCase().includes(text.toLowerCase()) ||
+      category.description.toLowerCase().includes(text.toLowerCase())
+    );
+    setFilteredCategories(filtered);
+  };
+
+  // Fetch categories when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchCategories();
+    }, [])
+  );
+
+  // Initial fetch
+  useEffect(() => {
+    fetchCategories();
   }, []);
 
+  // Handle message from route params
+  useEffect(() => {
+    const routeMessage = route.params?.message;
+    if (typeof routeMessage === 'string' && routeMessage.length > 0) {
+      setMessage({ text: routeMessage, type: 'success' });
+    }
+  }, [route.params?.message]);
+
+  // Clear message after 3 seconds
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => {
+        setMessage(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
+
   // Handle delete category
-  const handleDeleteCategory = () => {
+  const handleDeleteCategory = async () => {
     if (selectedCategory) {
-      // In production, make API call to delete
-
-      const deleteCategory = async () => {
-        try {
-          axiosInstance
-          .delete(`${process.env.EXPO_PUBLIC_API_DELETE_CATEGORY}`.replace(":id", String(selectedCategory.id)), {
-          })
-          .then((res) => {
-            try {
-              if (res.status === 200) {
-                console.log('Delete item category successfull!');
-              }
-              else {
-                console.log(`Failed to delete item. Status: ${res.status}`);
-              }
-            }
-            catch (error) {
-              console.error('Failed to delete item:', error);
-            }
-          })
+      try {
+        const response = await axiosInstance.delete(
+          `${process.env.EXPO_PUBLIC_API_DELETE_CATEGORY}`.replace(":id", String(selectedCategory.id))
+        );
+        
+        if (response.status === 200) {
+          console.log('Delete item category successful!');
+          const updatedCategories = categories.filter(cat => cat.id !== selectedCategory.id);
+          setCategories(updatedCategories);
+          
+          // Giữ nguyên điều kiện tìm kiếm
+          if (searchText.trim() === '') {
+            setFilteredCategories(updatedCategories);
+          } else {
+            const filtered = updatedCategories.filter(category => 
+              category.id.toString().includes(searchText) ||
+              category.name.toLowerCase().includes(searchText.toLowerCase()) ||
+              category.description.toLowerCase().includes(searchText.toLowerCase())
+            );
+            setFilteredCategories(filtered);
+          }
+          
+          setDeleteModalVisible(false);
+          setSelectedCategory(null);
+          setMessage({ text: Strings.categories.deleteSuccess, type: 'success' });
+        } else {
+          console.log(`Failed to delete item. Status: ${response.status}`);
+          setMessage({ text: Strings.categories.deleteError, type: 'error' });
         }
-        catch (error) {
-          console.error('Failed to delete item:', error);
-        }
-      };
-      deleteCategory();
-
-      setCategories(categories.filter(cat => cat.id !== selectedCategory.id));
-      setDeleteModalVisible(false);
-      setSelectedCategory(null);
+      } catch (error) {
+        console.error('Failed to delete item:', error);
+        setMessage({ text: Strings.categories.deleteError, type: 'error' });
+      }
     }
   };
 
@@ -107,16 +135,14 @@ const CategoryScreen = () => {
 
   // Handle edit category (navigate to edit screen)
   const handleEditCategory = (category: Category) => {
-    // In a real app, you would navigate to an edit screen
-    console.log('Edit category:', category);
-    // navigation.navigate('EditCategory', { categoryId: category.id });
+    navigation.navigate('UpdateCategory', { categoryId: category.id });
   };
 
   // Render category item
   const renderCategoryItem = ({ item }: { item: Category }) => (
     <View style={styles.categoryItem}>
       <View style={styles.categoryInfo}>
-        <Text style={styles.categoryName}>{item.name}</Text>
+        <Text style={styles.categoryName}>ID: {item.id} - {item.name}</Text>
         <Text style={styles.categoryDescription}>{item.description}</Text>
         <Text style={styles.courseCount}>{item.courseCount} courses</Text>
       </View>
@@ -139,9 +165,16 @@ const CategoryScreen = () => {
     </View>
   );
 
+  const handleAddCategory = () => {
+    navigation.navigate('AddCategory', {});
+  };
+
   // Add category button for header
   const AddCategoryButton = () => (
-    <TouchableOpacity style={styles.addButton}>
+    <TouchableOpacity 
+      style={styles.addButton} 
+      onPress={handleAddCategory}
+    >
       <Ionicons name="add" size={24} color="white" />
     </TouchableOpacity>
   );
@@ -154,12 +187,36 @@ const CategoryScreen = () => {
         <AddCategoryButton />
       </View>
       
+      {message && (
+        <MessageAlert
+          message={message.text}
+          type={message.type}
+          onHide={() => setMessage(null)}
+        />
+      )}
+      
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder={Strings.categories.searchPlaceholder}
+          value={searchText}
+          onChangeText={handleSearch}
+        />
+        {searchText.length > 0 && (
+          <TouchableOpacity onPress={() => handleSearch('')}>
+            <Ionicons name="close-circle" size={20} color="#666" />
+          </TouchableOpacity>
+        )}
+      </View>
+      
       {/* Categories list */}
       {loading ? (
         <Text style={styles.loadingText}>{Strings.categories.loading}...</Text>
       ) : (
         <FlatList
-          data={categories}
+          data={filteredCategories}
           renderItem={renderCategoryItem}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.listContainer}
@@ -349,7 +406,37 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     color: 'white',
     fontWeight: '500',
-  }
+  },
+  messageContainer: {
+    backgroundColor: '#4a6ee0',
+    padding: 12,
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderRadius: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
+  },
+  messageText: {
+    color: '#fff',
+    fontSize: 14,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    padding: 8,
+  },
 });
 
 export default CategoryScreen

@@ -8,6 +8,8 @@ import { useNavigation } from 'expo-router'
 
 import Login from '@/screens/login'
 import Category from '@/screens/admin/category';
+import AddCategory from '@/screens/admin/category/addCategory';
+import UpdateCategory from '@/screens/admin/category/updateCategory';
 import Register from '@/screens/register'
 import UserTabLayout from './(tabs)/_layout'
 import { RootStackParamList } from '@/types/RootStackParamList'
@@ -30,9 +32,11 @@ function IndexLayout() {
       <Stack.Navigator initialRouteName="Category" screenOptions={{headerShown: false}}>
         <Stack.Screen name="Index" component={IndexScreen} options={{headerShown:false}} />
         <Stack.Screen name="Login" component={Login} options={{headerShown:false}}  />
-        <Stack.Screen name="Category" component={Category} options={{ headerShown: false }} />
         <Stack.Screen name="Register" component={Register} options={{headerShown:false}}  />
         <Stack.Screen name="UserTabLayout" component={UserTabLayout} options={{headerShown:false}}  />
+        <Stack.Screen name="Category" component={Category} options={{ headerShown: false }} />
+        <Stack.Screen name="AddCategory" component={AddCategory} options={{headerShown:false}}  />
+        <Stack.Screen name="UpdateCategory" component={UpdateCategory} options={{headerShown:false}}  />
       </Stack.Navigator>
     </NavigationIndependentTree>
   );
