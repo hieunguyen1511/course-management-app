@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface MessageAlertProps {
@@ -9,70 +9,90 @@ interface MessageAlertProps {
 }
 
 const MessageAlert: React.FC<MessageAlertProps> = ({ message, type, onHide }) => {
-  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.sequence([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.delay(2700),
+    // Fade in
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+
+    // Auto hide after 3 seconds
+    const timer = setTimeout(() => {
+      // Fade out
       Animated.timing(fadeAnim, {
         toValue: 0,
         duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      onHide();
-    });
+        useNativeDriver: false,
+      }).start(() => {
+        onHide();
+      });
+    }, 3000);
+
+    return () => clearTimeout(timer);
   }, []);
 
   return (
     <Animated.View 
       style={[
         styles.container,
-        { opacity: fadeAnim },
-        type === 'success' ? styles.successContainer : styles.errorContainer
+        type === 'success' ? styles.successContainer : styles.errorContainer,
+        { opacity: fadeAnim }
       ]}
     >
-      <Ionicons 
-        name={type === 'success' ? 'checkmark-circle' : 'alert-circle'} 
-        size={24} 
-        color={type === 'success' ? '#fff' : '#fff'} 
-      />
-      <Text style={styles.messageText}>{message}</Text>
+      <View style={styles.content}>
+        <Ionicons 
+          name={type === 'success' ? 'checkmark-circle' : 'alert-circle'} 
+          size={24} 
+          color="white" 
+        />
+        <Text style={[styles.message, { pointerEvents: 'auto' }]}>{message}</Text>
+      </View>
+      <TouchableOpacity onPress={onHide} style={styles.closeButton}>
+        <Ionicons name="close" size={20} color="white" />
+      </TouchableOpacity>
     </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    right: 20,
+    padding: 15,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    marginHorizontal: 16,
-    marginTop: 8,
-    borderRadius: 8,
-    elevation: 2,
+    justifyContent: 'space-between',
+    elevation: 5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   successContainer: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#4CAF50',
   },
   errorContainer: {
-    backgroundColor: '#dc3545',
+    backgroundColor: '#F44336',
   },
-  messageText: {
-    color: '#fff',
-    fontSize: 14,
-    marginLeft: 8,
+  content: {
     flex: 1,
-    fontWeight: '500',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  message: {
+    color: 'white',
+    marginLeft: 10,
+    fontSize: 16,
+    flex: 1,
+  },
+  closeButton: {
+    padding: 5,
   },
 });
 

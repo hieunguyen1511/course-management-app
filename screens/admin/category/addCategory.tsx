@@ -78,19 +78,17 @@ const AddCategoryScreen = ({
         <TextInput 
           value={name} 
           onChangeText={setName} 
-          style={styles.input}
+          style={[styles.input, { pointerEvents: 'auto' }]}
           placeholder={Strings.categories.nameLabel}
-          pointerEvents="auto"
         />
         <Text style={styles.label}>{Strings.categories.descriptionLabel}</Text>
         <TextInput
           value={description}
           onChangeText={setDescription}
-          style={[styles.input, styles.textArea]}
+          style={[styles.input, styles.textArea, { pointerEvents: 'auto' }]}
           multiline
           numberOfLines={4}
           placeholder={Strings.categories.descriptionLabel}
-          pointerEvents="auto"
         />
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
