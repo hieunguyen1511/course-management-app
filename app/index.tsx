@@ -1,5 +1,5 @@
 import { View, Text, Button } from 'react-native'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Redirect } from 'expo-router'
 
 import { NavigationContainer, NavigationIndependentTree } from '@react-navigation/native'
@@ -16,10 +16,19 @@ import { MyScreenProps } from '@/types/MyScreenProps'
 const Stack = createNativeStackNavigator<RootStackParamList>()
 
 const IndexScreen: React.FC<MyScreenProps['IndexScreenProps']> = ({ navigation, route }) => {
-  if(true){
-    navigation.navigate('Login', {message: 'Hello from Index'})
-  }
+  useEffect(() => {
+    console.log('Index Screen')
+    try{
+      navigation.navigate("Login", {message: 'Hello from Index'})
+    }
+    catch(e){
+      console.log(e)
+    }
+    
+    
+  })
   return null
+ 
 }
 
 
