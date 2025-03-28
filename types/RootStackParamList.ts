@@ -5,5 +5,9 @@ export type RootStackParamList = {
     Home: { message?: string };
     Test1: { userId: number; userName: string; message?: string };
     UserTabLayout: { message?: string };
+    UserViewAllCourse: { message?: string };
+    DetailCourse: { courseId: number; message?: string };
+
+
 
 }

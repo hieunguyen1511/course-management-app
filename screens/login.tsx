@@ -9,7 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import React, { FC, useState } from "react";
+import React, { FC, useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { MyScreenProps } from "@/types/MyScreenProps";
 import axiosInstance from "@/api/axiosInstance";
@@ -19,7 +19,15 @@ import "../global.css";
 import Checkbox from "@/components/ui/Checkbox";
 import HorizontalRule from "@/components/ui/HorizontalRule";
 import * as SecureStore from "expo-secure-store";
-import { setAccessToken, getAccessToken } from "@/api/axiosInstance";
+import { setAccessToken } from "@/api/axiosInstance";
+
+async function saveUserInformation(user: any) {
+  try {
+    await SecureStore.setItemAsync("user", JSON.stringify(user));
+  } catch (e) {
+    console.log("Error saving user", e);
+  }
+}
 
 async function saveRefreshToken(refresh_token: string) {
   try {
@@ -33,17 +41,21 @@ const Login: FC<MyScreenProps["LoginScreenProps"]> = ({
   navigation,
   route,
 }) => {
+  const homeRouter = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isRemmebermeChecked, setIsRemmebermeChecked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
-  const homeRouter = useRouter();
-
-  console.log("Login screen", route.params);
+  //console.log("Login screen 1", route.params);
+  useEffect(() => {
+    if (route.params?.message) {
+      console.log("Login message:", route.params.message);
+    }
+  }, []);
 
   const handleLogin = async () => {
+    
     try {
       if (username === "" || password === "") {
         console.log("Username or password is empty");
@@ -65,17 +77,31 @@ const Login: FC<MyScreenProps["LoginScreenProps"]> = ({
           console.log("Login successful");
           console.log("Access token", res.data.access_token);
           await setAccessToken(res.data.access_token);
-          await saveRefreshToken(res.data.refresh_token);
+
+          if (isRemmebermeChecked) {
+            await saveRefreshToken(res.data.refresh_token);
+            await saveUserInformation(res.data.user);
+          }
           // run on web browser not working
           //console.log("refresh token", SecureStore.getItemAsync("refresh_token"));
-          const resAny = await axiosInstance.get(
-            `${process.env.EXPO_PUBLIC_API_GET_ALL_USERS}`
-          );
-          console.log("All users", resAny.data);
-          homeRouter.push({
-            pathname: "/(tabs)/home",
-            params: { tmessage: "Hello from Login" },
-          });
+          // const resAny = await axiosInstance.get(
+          //   `${process.env.EXPO_PUBLIC_API_GET_ALL_USERS}`
+          // );
+          //console.log("All users", resAny.data);
+
+          const userRole = res.data.user.role;
+          if (userRole === 1) {
+            homeRouter.replace({
+              pathname: "/(tabs)/home",
+              params: { tmessage: "Hello from Login" },
+            });
+          }
+          if (userRole === 0) {
+            homeRouter.replace({
+              pathname: "/admin",
+              params: { tmessage: "Hello from Login" },
+            });
+          }
         }
       } catch (e) {
         console.log("Error in login attempt", e);
