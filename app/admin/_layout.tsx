@@ -18,8 +18,8 @@ import DashboardScreen from "@/screens/admin/dashboard";
 import NotificationsScreen from "@/screens/admin/notifications";
 import SettingScreen from "@/screens/admin/setting";
 import CourseScreen from "@/screens/admin/course";
-import CategoryScreen from "@/screens/admin/category";
-import { Slot } from "expo-router";
+import CategoryScreen, { CategoryTabLayout } from "@/screens/admin/category";
+import { RootStackParamList } from "@/types/RootStackParamList";
 
 const Drawer = createDrawerNavigator();
 

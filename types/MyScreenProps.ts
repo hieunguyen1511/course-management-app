@@ -8,4 +8,5 @@ export type MyScreenProps = {
     CategoryScreenProps: NativeStackScreenProps<RootStackParamList, 'Category'>;
     AddCategoryScreenProps: NativeStackScreenProps<RootStackParamList, 'AddCategory'>;
     UpdateCategoryScreenProps: NativeStackScreenProps<RootStackParamList, 'UpdateCategory'>;
+    CourseScreenProps: NativeStackScreenProps<RootStackParamList, 'Course'>;
 }

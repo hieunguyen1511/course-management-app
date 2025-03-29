@@ -12,9 +12,7 @@ import {
 } from "@react-navigation/native-stack";
 import { useNavigation } from "expo-router";
 
-import Category from '@/screens/admin/category';
-import AddCategory from '@/screens/admin/category/addCategory';
-import UpdateCategory from '@/screens/admin/category/updateCategory';
+import Category from '@/screens/admin/category'
 import Login from "@/screens/login";
 import Register from "@/screens/register";
 import UserTabLayout from "./(tabs)/_layout";
@@ -80,20 +78,10 @@ function IndexLayout() {
           options={{ headerShown: false }}
         />
         <Stack.Screen 
-          name="Category" 
-          component={Category} 
-          options={{ headerShown: false }} 
-        />
-        <Stack.Screen 
-          name="AddCategory" 
-          component={AddCategory} 
-          options={{headerShown:false}}  
-        />
-        <Stack.Screen 
-          name="UpdateCategory" 
-          component={UpdateCategory} 
-          options={{headerShown:false}}  
-        />
+            name="Category" 
+            component={Category} 
+            options={{ headerShown: false }} 
+          />
       </Stack.Navigator>
     </NavigationIndependentTree>
   );

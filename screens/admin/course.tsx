@@ -1,48 +1,139 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Image } from 'react-native'
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Image, TextInput } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 
+import {
+  NavigationContainer,
+  NavigationIndependentTree,
+  useFocusEffect,
+} from "@react-navigation/native";
+import {
+  createNativeStackNavigator,
+  NativeStackScreenProps,
+} from "@react-navigation/native-stack";
+import { RootStackParamList } from "@/types/RootStackParamList";
+import axiosInstance from '@/api/axiosInstance';
+import { Strings } from '@/constants/Strings';
+import MessageAlert from '@/components/MessageAlert';
+const Stack = createNativeStackNavigator<RootStackParamList>();
+type CourseScreenProps = NativeStackScreenProps<RootStackParamList, "Course">;
+
 // Define types for course
-interface Course {
+interface Category {
   id: number;
-  title: string;
-  instructor: string;
-  category: string;
-  price: number;
-  enrollments: number;
-  rating: number;
-  image: string;
+  name: string;
 }
 
-const CourseScreen = () => {
+interface Course {
+  id: number;
+  category_id: number;
+  name: string;
+  description: string;
+  status: number;
+  total_rating: number;
+  image: string;  
+  price: number;
+  discount: number;
+  category: Category;
+  enrollment_count: number;
+}
+
+const Course: React.FC<CourseScreenProps> = ({ navigation, route }) => {
   // State for courses and UI
   const [courses, setCourses] = useState<Course[]>([]);
+  const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
+  const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(true);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   // Fetch courses
-  useEffect(() => {
-    // Mock data - replace with actual API call
-    setTimeout(() => {
-      setCourses([
-        { id: 1, title: 'React Native Fundamentals', instructor: 'John Doe', category: 'Programming', price: 49.99, enrollments: 125, rating: 4.7, image: 'https://via.placeholder.com/100' },
-        { id: 2, title: 'UI/UX Design Principles', instructor: 'Sarah Smith', category: 'Design', price: 39.99, enrollments: 98, rating: 4.5, image: 'https://via.placeholder.com/100' },
-        { id: 3, title: 'Digital Marketing Strategies', instructor: 'Michael Brown', category: 'Marketing', price: 29.99, enrollments: 67, rating: 4.2, image: 'https://via.placeholder.com/100' },
-        { id: 4, title: 'Business Management 101', instructor: 'Lisa Johnson', category: 'Business', price: 59.99, enrollments: 45, rating: 4.8, image: 'https://via.placeholder.com/100' },
-        { id: 5, title: 'Data Science & ML Basics', instructor: 'Robert Wilson', category: 'Data Science', price: 69.99, enrollments: 112, rating: 4.6, image: 'https://via.placeholder.com/100' },
-      ]);
+  const fetchCourses = async () => {
+    try {
+      const response = await axiosInstance.get(`${process.env.EXPO_PUBLIC_API_GET_ALL_COURSES}`);
+      if (response.status === 200) {
+        console.log('fetch data cources successfull!');
+        setCourses(response.data.courses);
+        setFilteredCourses(response.data.courses);
+      } else {
+        console.log(`Failed to fetch. Status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
+  };
+
+  const filter = (text: string, cources: Course[]) => {
+    const filtered = courses.filter(course => 
+      course.id.toString().includes(text) ||
+      course.name.toLowerCase().includes(text.toLowerCase()) ||
+      course.description.toLowerCase().includes(text.toLowerCase()) ||
+      course.category.name.toLowerCase().includes(text.toLowerCase())
+    );
+    setFilteredCourses(filtered);
+  }
+
+  // Handle search
+  const handleSearch = (text: string) => {
+    setSearchText(text);
+    if (text.trim() === '') {
+      setFilteredCourses(courses);
+      return;
+    }
+    filter(text, courses);
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchCourses();
+    }, [])
+  );
+  // Initial fetch
+  useEffect(() => {
+    fetchCourses();
   }, []);
 
+  useEffect(() => {
+    const routeMessage = route.params?.message;
+    if (typeof routeMessage === 'string' && routeMessage.length > 0) {
+      setMessage({ text: routeMessage, type: 'success' });
+    }
+  }, [route.params?.message]);
+
   // Handle delete course
-  const handleDeleteCourse = () => {
+  const handleDeleteCourse = async ()  => {
     if (selectedCourse) {
-      // In production, make API call to delete
-      setCourses(courses.filter(course => course.id !== selectedCourse.id));
-      setDeleteModalVisible(false);
-      setSelectedCourse(null);
+      try {
+        const response = await axiosInstance.delete(
+          `${process.env.EXPO_PUBLIC_API_DELETE_CATEGORY}`.replace(":id", String(selectedCourse.id))
+        );
+        
+        if (response.status === 200) {
+          console.log('Delete item category successful!');
+          const updatedCourses = courses.filter(cat => cat.id !== selectedCourse.id);
+          setCourses(updatedCourses);
+          
+          // Giữ nguyên điều kiện tìm kiếm
+          if (searchText.trim() === '') {
+            setFilteredCourses(updatedCourses);
+          } else {
+            filter(searchText, updatedCourses);
+          }
+          
+          setDeleteModalVisible(false);
+          setSelectedCourse(null);
+          setMessage({ text: Strings.courses.deleteSuccess, type: 'success' });
+        } else {
+          console.log(`Failed to delete item. Status: ${response.status}`);
+          setMessage({ text: Strings.courses.deleteError, type: 'error' });
+        }
+      } catch (error) {
+        console.error('Failed to delete item:', error);
+        setMessage({ text: Strings.courses.deleteError, type: 'error' });
+      }
     }
   };
 
@@ -51,6 +142,10 @@ const CourseScreen = () => {
     setSelectedCourse(course);
     setDeleteModalVisible(true);
   };
+
+  const handleViewCourse = (course: Course) => {
+    console.log('View course:', course);
+  }
 
   // Handle edit course (navigate to edit screen)
   const handleEditCourse = (course: Course) => {
@@ -68,7 +163,9 @@ const CourseScreen = () => {
             {rating >= star ? '★' : '☆'}
           </Text>
         ))}
-        <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+        <Text style={styles.ratingText}>
+          {rating !== undefined && rating !== null ? rating.toFixed(1) : "N/A"}
+        </Text>
       </View>
     );
   };
@@ -79,18 +176,38 @@ const CourseScreen = () => {
       <Image source={{ uri: item.image }} style={styles.courseImage} />
       
       <View style={styles.courseInfo}>
-        <Text style={styles.courseTitle}>{item.title}</Text>
-        <Text style={styles.instructorText}>By {item.instructor}</Text>
-        <Text style={styles.categoryText}>Category: {item.category}</Text>
+        <Text style={styles.courseTitle}>{item.name}</Text>
+        <Text style={styles.categoryText}>Category: {item.category.name}</Text>
         
         <View style={styles.courseStats}>
-          <Text style={styles.priceText}>${item.price.toFixed(2)}</Text>
-          <Text style={styles.enrollmentText}>{item.enrollments} students</Text>
-          {renderRatingStars(item.rating)}
+          <View style={styles.priceContainer}>
+            {item.discount > 0 && (
+              <Text style={styles.originalPrice}>
+                ${item.price.toFixed(2)}
+              </Text>
+            )}
+            <Text style={styles.discountedPrice}>
+              ${item.price && item.discount !== undefined
+                ? (item.price * (1 - item.discount / 100)).toFixed(2)
+                : item.price
+                  ? item.price.toFixed(2)
+                  : "N/A"}
+            </Text>
+          </View>
+          <Text style={styles.enrollmentText}>{item.enrollment_count} students</Text>
+          {renderRatingStars(item.total_rating)}
         </View>
       </View>
       
       <View style={styles.actions}>
+        {/* Nút Xem */}
+        <TouchableOpacity 
+          style={[styles.iconButton, styles.viewButton]} 
+          onPress={() => handleViewCourse(item)}
+        >
+          <Ionicons name="eye-outline" size={20} color="#2c9e69" />
+        </TouchableOpacity>
+        
         <TouchableOpacity 
           style={[styles.iconButton, styles.editButton]} 
           onPress={() => handleEditCourse(item)}
@@ -119,16 +236,40 @@ const CourseScreen = () => {
     <View style={styles.container}>
       {/* Header with title and add button */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Courses</Text>
+        <Text style={styles.headerTitle}>{Strings.courses.title}</Text>
         <AddCourseButton />
+      </View>
+
+      {message && (
+        <MessageAlert
+          message={message.text}
+          type={message.type}
+          onHide={() => setMessage(null)}
+        />
+      )}
+
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder={Strings.courses.searchPlaceholder}
+          value={searchText}
+          onChangeText={handleSearch}
+        />
+        {searchText.length > 0 && (
+          <TouchableOpacity onPress={() => handleSearch('')}>
+            <Ionicons name="close-circle" size={20} color="#666" />
+          </TouchableOpacity>
+        )}
       </View>
       
       {/* Courses list */}
       {loading ? (
-        <Text style={styles.loadingText}>Loading courses...</Text>
+        <Text style={styles.loadingText}>{Strings.courses.loading}...</Text>
       ) : (
         <FlatList
-          data={courses}
+          data={filteredCourses}
           renderItem={renderCourseItem}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.listContainer}
@@ -145,10 +286,10 @@ const CourseScreen = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Confirm Delete</Text>
+            <Text style={styles.modalTitle}>{Strings.courses.confirmDelete}</Text>
             <Text style={styles.modalMessage}>
-              Are you sure you want to delete the course "{selectedCourse?.title}"?
-              This action cannot be undone.
+            {Strings.courses.questionConfirmDelete} "{selectedCourse?.name}"?
+            {Strings.courses.warningConfirmDelete}
             </Text>
             
             <View style={styles.modalButtons}>
@@ -258,10 +399,25 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 8,
   },
-  priceText: {
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  originalPrice: {
+    fontSize: 14,
+    color: '#888',
+    textDecorationLine: 'line-through', // Gạch ngang giá gốc
+    marginRight: 6,
+  },
+  discountedPrice: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2c9e69',
+    color: '#2c9e69', // Màu xanh nổi bật
+  },
+  discountPercentage: {
+    fontSize: 12,
+    color: '#d9534f', // Màu đỏ để nhấn mạnh giảm giá
+    marginLeft: 6,
   },
   enrollmentText: {
     fontSize: 12,
@@ -297,6 +453,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 6,
+  },
+  viewButton: {
+    backgroundColor: '#e8f6f0',
   },
   editButton: {
     backgroundColor: '#e8f0fe',
@@ -356,7 +515,40 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     color: 'white',
     fontWeight: '500',
-  }
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    padding: 8,
+  },
 });
 
-export default CourseScreen
+// const CourseTabLayout = () => {
+//   return (
+//     <NavigationIndependentTree>
+//     <Stack.Navigator initialRouteName="Course" screenOptions={{ headerShown: false }}>
+//       <Stack.Screen 
+//           name="Course" 
+//           component={Course} 
+//         />
+//       <Stack.Screen 
+//         name="AddCategory" 
+//         component={AddCategory} 
+//       />
+//       <Stack.Screen 
+//         name="UpdateCategory" 
+//         component={UpdateCategory} 
+//       />
+//     </Stack.Navigator>
+//   </NavigationIndependentTree>
+//   );
+// }
+
+export default Course

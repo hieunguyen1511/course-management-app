@@ -6,6 +6,20 @@ import axiosInstance from '@/api/axiosInstance';
 import { MyScreenProps } from '@/types/MyScreenProps';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import MessageAlert from "@/components/MessageAlert";
+import AddCategory from '@/screens/admin/category/addCategory';
+import UpdateCategory from '@/screens/admin/category/updateCategory';
+
+import {
+  NavigationContainer,
+  NavigationIndependentTree,
+} from "@react-navigation/native";
+import {
+  createNativeStackNavigator,
+  NativeStackScreenProps,
+} from "@react-navigation/native-stack";
+import { RootStackParamList } from "@/types/RootStackParamList";
+const Stack = createNativeStackNavigator<RootStackParamList>();
+type CategoryScreenProps = NativeStackScreenProps<RootStackParamList, "Category">;
 
 // Define type for category
 interface Category {
@@ -15,7 +29,7 @@ interface Category {
   courseCount: number;
 }
 
-const CategoryScreen = ({ navigation, route }: MyScreenProps['CategoryScreenProps']) => {
+const Category: React.FC<CategoryScreenProps> = ({ navigation, route }) => {
   // State for categories and UI
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
@@ -166,7 +180,9 @@ const CategoryScreen = ({ navigation, route }: MyScreenProps['CategoryScreenProp
   );
 
   const handleAddCategory = () => {
-    navigation.navigate('AddCategory', {});
+    console.log(navigation.getState());
+    navigation.navigate('AddCategory');
+
   };
 
   // Add category button for header
@@ -180,6 +196,7 @@ const CategoryScreen = ({ navigation, route }: MyScreenProps['CategoryScreenProp
   );
 
   return (
+    
     <View style={styles.container}>
       {/* Header with title and add button */}
       <View style={styles.header}>
@@ -439,4 +456,27 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CategoryScreen
+
+
+const CategoryTabLayout = () => {
+  return (
+    <NavigationIndependentTree>
+    <Stack.Navigator initialRouteName="Category" screenOptions={{ headerShown: false }}>
+      <Stack.Screen 
+          name="Category" 
+          component={Category} 
+        />
+      <Stack.Screen 
+        name="AddCategory" 
+        component={AddCategory} 
+      />
+      <Stack.Screen 
+        name="UpdateCategory" 
+        component={UpdateCategory} 
+      />
+    </Stack.Navigator>
+  </NavigationIndependentTree>
+  );
+}
+
+export default CategoryTabLayout

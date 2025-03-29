@@ -42,7 +42,7 @@ const Login: FC<MyScreenProps["LoginScreenProps"]> = ({
   const homeRouter = useRouter();
 
   console.log("Login screen", route.params);
-
+  //homeRouter.navigate("/admin");
   const handleLogin = async () => {
     try {
       if (username === "" || password === "") {
@@ -88,6 +88,7 @@ const Login: FC<MyScreenProps["LoginScreenProps"]> = ({
     }
   };
   return (
+    
     <View className="flex justify-center bg-blue-500">
       {/* <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
