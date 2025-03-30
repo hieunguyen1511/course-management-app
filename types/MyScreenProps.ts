@@ -7,4 +7,6 @@ export type MyScreenProps = {
     HomeScreenProps: NativeStackScreenProps<RootStackParamList, 'Home'>;
     UserViewAllCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'UserViewAllCourse'>;
     DetailCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'DetailCourse'>;
+    Test2: NativeStackScreenProps<RootStackParamList, 'Test2'>;
+    Test3: NativeStackScreenProps<RootStackParamList, 'Test3'>;
 }

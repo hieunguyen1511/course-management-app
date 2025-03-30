@@ -16,6 +16,7 @@ import Login from "@/screens/login";
 import Register from "@/screens/register";
 import UserTabLayout from "./(tabs)/_layout";
 import Test1 from "@/screens/test1";
+import Test2 from "@/screens/test2";
 import { RootStackParamList } from "@/types/RootStackParamList";
 import { MyScreenProps } from "@/types/MyScreenProps";
 import "../global.css";
@@ -109,6 +110,18 @@ const IndexScreen: React.FC<MyScreenProps["IndexScreenProps"]> = ({
   return (
     <View className="flex justify-center items-center h-full">
       <Text>Index Screen</Text>
+      <Button
+        title="Go to Test1"
+        onPress={() => {
+          navigation.navigate("Test1", { message: "Hello from Index" });
+        }}
+      />
+      <Button
+        title="Go to Test2"
+        onPress={() => {
+          navigation.navigate("Test2", { message: "Hello from Index" });
+        }}
+      />  
     </View>
   );
 };
@@ -143,6 +156,11 @@ function IndexLayout() {
         <Stack.Screen
           name="Test1"
           component={Test1}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Test2"
+          component={Test2}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>
