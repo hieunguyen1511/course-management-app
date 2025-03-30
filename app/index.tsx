@@ -27,6 +27,8 @@ import * as SecureStore from "expo-secure-store";
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 import { setAccessToken } from "@/api/axiosInstance";
+import AdminLayout from "./admin/_layout";
+import HomeRoutes from "./(tabs)/home";
 
 async function getUserInformation() {
   try {
@@ -122,6 +124,33 @@ const IndexScreen: React.FC<MyScreenProps["IndexScreenProps"]> = ({
           navigation.navigate("Test2", { message: "Hello from Index" });
         }}
       />  
+      <Button
+        title="Go to Login"
+        onPress={() => {
+          navigation.navigate("Login", { message: "Hello from Index" });
+        }}
+      />
+      <Button
+        title="Go to Register"
+        onPress={() => {
+          navigation.navigate("Register", { message: "Hello from Index" });
+        }}
+      />  
+      <Button
+        title="Go to UserTabLayout"
+        onPress={() => {
+          homeRouter.push({
+            pathname: "/(tabs)/home",
+            params: { tmessage: "Hello from Login" },
+          });
+        }}  
+      />
+      <Button
+        title="Go to AdminLayout"
+        onPress={() => {
+          navigation.navigate("AdminLayout", { message: "Hello from Index" });
+        }}
+      />
     </View>
   );
 };
@@ -151,6 +180,11 @@ function IndexLayout() {
         <Stack.Screen
           name="UserTabLayout"
           component={UserTabLayout}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="AdminLayout"
+          component={AdminLayout}
           options={{ headerShown: false }}
         />
         <Stack.Screen

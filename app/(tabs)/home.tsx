@@ -199,7 +199,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation, route }) => {
     }
 
     fectchUserInfo();
-    fetchUserEnrollments();
+    //fetchUserEnrollments();
 
     // Fetch user courses in progress - Mock data
     // setInProgressCourses([
