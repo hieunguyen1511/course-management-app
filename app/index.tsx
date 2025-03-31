@@ -12,7 +12,7 @@ import {
 } from "@react-navigation/native-stack";
 import { useNavigation } from "expo-router";
 
-import Category from '@/screens/admin/category'
+import Category from '@/screens/admin/category/category'
 import Login from "@/screens/login";
 import Register from "@/screens/register";
 import UserTabLayout from "./(tabs)/_layout";
@@ -21,6 +21,8 @@ import { RootStackParamList } from "@/types/RootStackParamList";
 import { MyScreenProps } from "@/types/MyScreenProps";
 import "../global.css";
 import { useState } from "react";
+import Course from "@/screens/admin/course/course";
+import AdminLayout from "./admin/_layout";
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 
@@ -32,8 +34,8 @@ const IndexScreen: React.FC<MyScreenProps["IndexScreenProps"]> = ({
   
   useEffect(() => {
     console.log("Index Screen");
-    navigation.navigate("Login", { message: "" });
-  });
+    navigation.navigate("AdminLayout", { message: "" });
+  }, []);
   // return (
   //   <View>
   //     <Text className="text-blue-600">Index Screen</Text>
@@ -55,6 +57,11 @@ function IndexLayout() {
         <Stack.Screen
           name="Index"
           component={IndexScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="AdminLayout"
+          component={AdminLayout}
           options={{ headerShown: false }}
         />
         <Stack.Screen
@@ -80,6 +87,11 @@ function IndexLayout() {
         <Stack.Screen 
             name="Category" 
             component={Category} 
+            options={{ headerShown: false }} 
+          />
+        <Stack.Screen 
+            name="Course" 
+            component={Course} 
             options={{ headerShown: false }} 
           />
       </Stack.Navigator>

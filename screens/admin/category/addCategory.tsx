@@ -38,7 +38,7 @@ const AddCategoryScreen = ({
       );
       
       if (response.status === 201) {
-        navigation.navigate('Category', { message: `${Strings.categories.addSuccess} mã ${response.data.category.id}` });
+        navigation.navigate('Category', { message: `${Strings.categories.addSuccess} ${response.data.category.id}` });
       }
     } catch (error) {
       console.error('Error creating category:', error);
@@ -57,10 +57,11 @@ const AddCategoryScreen = ({
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity 
+          disabled={loading}
           style={styles.backButton} 
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="arrow-back" size={24} color="#4a6ee0" />
+          <Ionicons name="arrow-back" size={24} color={loading ? '#4a6ee0' : ''} />
         </TouchableOpacity>
         <Text style={styles.title}>{Strings.categories.addNew}</Text>
       </View>

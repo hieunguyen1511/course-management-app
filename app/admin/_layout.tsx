@@ -17,8 +17,8 @@ import { Gesture, GestureHandlerRootView } from "react-native-gesture-handler";
 import DashboardScreen from "@/screens/admin/dashboard";
 import NotificationsScreen from "@/screens/admin/notifications";
 import SettingScreen from "@/screens/admin/setting";
-import CourseScreen from "@/screens/admin/course";
-import CategoryScreen, { CategoryTabLayout } from "@/screens/admin/category";
+import CourseScreen from "@/screens/admin/course/course";
+import CategoryScreen from "@/screens/admin/category/category";
 import { RootStackParamList } from "@/types/RootStackParamList";
 
 const Drawer = createDrawerNavigator();

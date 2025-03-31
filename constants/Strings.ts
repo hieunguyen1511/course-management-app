@@ -67,7 +67,7 @@ export const Strings = {
         resetButton: "Reset",
         processing: "Đang xử lý...",
         nameRequired: "Vui lòng nhập tên chủ đề",
-        addSuccess: "Thêm chủ đề thành công",
+        addSuccess: "Thêm chủ đề thành công mã",
         addError: "Không thể thêm chủ đề. Vui lòng thử lại sau.",
         updateSuccess: "Cập nhật chủ đề thành công",
         updateError: "Dữ liệu không hợp lệ",

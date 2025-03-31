@@ -1,5 +1,8 @@
+import { Lesson, Section } from './course';
+
 export type RootStackParamList = {
     Index: { message?: string };
+    AdminLayout: { message?: string };
     Login: { message?: string };
     Register: { message?: string };
     Home: { message?: string };
@@ -9,4 +12,11 @@ export type RootStackParamList = {
     AddCategory: { message?: string };
     UpdateCategory: { categoryId: number, message?: string };
     Course: { message?: string };
+    AddCourse: { message?: string };
+    ViewCourse: { courseId: number, message?: string };
+    EditCourse: { courseId: number, message?: string };
+    AddSection: { message?: string };
+    EditSection: { section: Section, message?: string };
+    AddLesson: { message?: string };
+    EditLesson: { lesson: Lesson, message?: string };
 }
