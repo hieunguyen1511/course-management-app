@@ -1,6 +1,8 @@
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Platform } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { Ionicons } from '@expo/vector-icons'
+import { NavigationIndependentTree } from '@react-navigation/native';
+import { create } from 'react-test-renderer';
 
 // Define user interface
 interface User {
@@ -96,7 +98,7 @@ const AccountScreen = () => {
           <Ionicons name="chevron-forward" size={20} color="#ccc" />
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.menuItem}>
+        {/* <TouchableOpacity style={styles.menuItem}>
           <View style={styles.menuIconContainer}>
             <Ionicons name="notifications-outline" size={22} color="#4a6ee0" />
           </View>
@@ -105,7 +107,7 @@ const AccountScreen = () => {
             <Text style={styles.menuSubtext}>Configure notification preferences</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#ccc" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         
         <TouchableOpacity style={styles.menuItem}>
           <View style={styles.menuIconContainer}>
@@ -293,5 +295,22 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
 });
+
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+
+
+const Stack = createNativeStackNavigator();
+
+function TestRoute() {
+  return (
+    <NavigationIndependentTree>
+      <Stack.Navigator initialRouteName="Account" screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Account" component={AccountScreen} />
+        {/* Add other screens here if needed */}
+      </Stack.Navigator>
+    </NavigationIndependentTree>
+  );
+}
 
 export default AccountScreen

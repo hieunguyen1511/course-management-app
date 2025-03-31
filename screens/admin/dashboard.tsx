@@ -57,27 +57,7 @@ const DashboardScreen = () => {
           <View style={styles.sectionContainer}>
             <Text style={styles.sectionTitle}>Recent Activity</Text>
             
-            {recentActivity.map(activity => (
-              <View key={activity.id} style={styles.activityItem}>
-                <View style={styles.activityIconContainer}>
-                  <Text style={styles.activityIcon}>
-                    {activity.type === 'enrollment' ? '📝' : 
-                     activity.type === 'completion' ? '🎓' : '⭐'}
-                  </Text>
-                </View>
-                
-                <View style={styles.activityContent}>
-                  <Text style={styles.activityText}>
-                    <Text style={styles.userName}>{activity.user}</Text>
-                    {activity.type === 'enrollment' ? ' enrolled in ' : 
-                     activity.type === 'completion' ? ' completed ' : ' reviewed '}
-                    <Text style={styles.courseName}>{activity.course}</Text>
-                    {activity.type === 'review' ? ` (${activity.rating}⭐)` : ''}
-                  </Text>
-                  <Text style={styles.timeText}>{activity.time}</Text>
-                </View>
-              </View>
-            ))}
+            
             
             <TouchableOpacity style={styles.viewAllButton}>
               <Text style={styles.viewAllText}>View All Activity</Text>

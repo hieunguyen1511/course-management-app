@@ -46,6 +46,17 @@ export const Strings = {
         placeHolderPassword: 'Nhập mật khẩu',
         placeHolderConfirmPassword: 'Nhập lại mật khẩu',
     },
+    user_home:{
+        welcome_back: 'Chào mừng trở lại',
+        continue_learning: 'Tiếp tục khóa học',
+        popular_courses: 'Khóa học phổ biến',
+        view_all: 'Xem tất cả',
+        suggest_courses: 'Gợi ý cho bạn',
+        no_enrolled_courses: 'Bạn chưa tham gia khóa học nào',
+        complete: 'Hoàn thành',
+        last_accessed:"Lần truy cập gần nhất",
+        loading_your_courses: 'Đang tải khóa học...',
+    },
 
     categories: {
         title: 'DANH SÁCH CHỦ ĐỀ',

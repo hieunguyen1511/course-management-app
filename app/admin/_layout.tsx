@@ -26,6 +26,7 @@ const Drawer = createDrawerNavigator();
 export default function AdminLayout() {
   const colorScheme = useColorScheme();
 
+
   return (
     
       <GestureHandlerRootView style={{ flex: 1 }}>
