@@ -23,6 +23,7 @@ export type RootStackParamList = {
     Test1: { userId?: number; userName?: string; message?: string };
     Test2: { message?: string };
     Test3: { message?: string };
+    Test4: { message?: string };
     UserViewAllCourseScreen: { message?: string };
     DetailCourseScreen: { courseId: number; message?: string };
     SearchCourseScreen: { message?: string };

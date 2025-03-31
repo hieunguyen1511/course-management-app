@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, Platform } from 'react-native'
 import React, { useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
-import DateTimePicker from '@react-native-community/datetimepicker'
+// import DateTimePicker from '@react-native-community/datetimepicker'
 import * as ImagePicker from 'expo-image-picker'
 import { MyScreenProps } from '@/types/MyScreenProps'
 
@@ -91,14 +91,14 @@ const EditProfile: React.FC<MyScreenProps["EditProfileScreenProps"]> = ({ naviga
               </Text>
             </TouchableOpacity>
             {showDatePicker && (
-              <DateTimePicker
-                value={dateOfBirth}
-                mode="date"
-                display="default"
-                onChange={handleDateChange}
-                maximumDate={new Date()}
-              />
-
+              // <DateTimePicker
+              //   value={dateOfBirth}
+              //   mode="date"
+              //   display="default"
+              //   onChange={handleDateChange}
+              //   maximumDate={new Date()}
+              // />
+              <Text>TODO: DateTimePicker</Text>
           
             )}
           </View>

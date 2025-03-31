@@ -141,6 +141,12 @@ const IndexScreen: React.FC<MyScreenProps["IndexScreenProps"]> = ({
           navigation.navigate("AdminLayout", { message: "Hello from Index" });
         }}
       />
+      <Button
+        title="Go to Test4"
+        onPress={() => {
+          navigation.navigate("Test4", { message: "Hello from Index" });
+        }}
+      />
     </View>
   );
 };
@@ -163,6 +169,7 @@ import UserDetailCourseScreen from "@/screens/user/UserDetailCourseScreen";
 import UserViewLessonScreen from "@/screens/user/UserViewLessonScreen";
 import DetailCourseScreen from "@/screens/user/DetailCourseScreen";
 import SearchCourseScreen from "@/screens/user/SearchCourseScreen";
+import test4 from "@/screens/test4";
 
 function IndexLayout() {
   return (
@@ -223,9 +230,17 @@ function IndexLayout() {
           name="SearchCourseScreen"
           component={SearchCourseScreen}
         />
+        {/* Test Screen */}
+        <Stack.Screen name="Test4" component={test4}/>
+          
       </Stack.Navigator>
     </NavigationIndependentTree>
   );
 }
+const index = () => {
+  return (
+    <IndexLayout />
+  );
+}
 
-export default IndexLayout;
+export default index;

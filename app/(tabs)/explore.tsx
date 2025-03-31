@@ -36,7 +36,7 @@ interface Course {
 
 const Explore: React.FC<MyScreenProps["ExploreScreenProps"]> = ({
   navigation,
-  route,
+  route,  
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [categories, setCategories] = useState<Category[]>([]);
