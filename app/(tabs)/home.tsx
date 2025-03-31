@@ -8,16 +8,12 @@ import {
   Platform,
 } from "react-native";
 import React, { useState, useEffect } from "react";
-import {
-  NavigationContainer,
-  NavigationIndependentTree,
-} from "@react-navigation/native";
+
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 
-import Test1 from "../../screens/test1";
 
-import { useRouter, useLocalSearchParams, Redirect } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "@/api/axiosInstance";
 import { Strings } from "@/constants/Strings";
@@ -25,8 +21,6 @@ import { useNavigation } from "expo-router";
 import { RootStackParamList } from "../../types/RootStackParamList";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import UserViewAllCourse from "@/screens/user/viewallcourse";
-import DetailCourse from "@/screens/user/detailCourse";
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 // Types for our courses data
@@ -119,7 +113,7 @@ async function getUserInformation() {
 
 type HomeScreenProps = NativeStackScreenProps<RootStackParamList, "Home">;
 
-const HomeScreen: React.FC<HomeScreenProps> = ({ navigation, route }) => {
+const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
   const { tmessage } = useLocalSearchParams();
   console.log("searchParams:", tmessage);
   const [message, setMessage] = useState("");
@@ -340,7 +334,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation, route }) => {
     <TouchableOpacity style={styles.courseCard} 
       onPress={() => {
         console.log("Navigate to course detail:", course.id);
-        navigation.navigate("DetailCourse", {
+        navigation.navigate("DetailCourseScreen", {
           courseId: course.id,
           message: "",
         });
@@ -467,7 +461,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation, route }) => {
           </Text>
           <TouchableOpacity
             onPress={() =>
-              navigation.navigate("UserViewAllCourse", { message: "" })
+              navigation.navigate("UserViewAllCourseScreen", { message: "" })
             }
           >
             <Text style={styles.viewAllText}>{Strings.user_home.view_all}</Text>
@@ -510,20 +504,20 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation, route }) => {
   );
 };
 
-const Routes = () => {
-  return (
-    <NavigationIndependentTree>
-      <Stack.Navigator initialRouteName="Home">
-        <Stack.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{ headerShown: false }}
-        />
-        {/* <Stack.Screen name="Test1" component={Test1} /> */}
-      </Stack.Navigator>
-    </NavigationIndependentTree>
-  );
-};
+// const Routes = () => {
+//   return (
+//     <NavigationIndependentTree>
+//       <Stack.Navigator initialRouteName="Home">
+//         <Stack.Screen
+//           name="Home"
+//           component={HomeScreen}
+//           options={{ headerShown: false }}
+//         />
+//         {/* <Stack.Screen name="Test1" component={Test1} /> */}
+//       </Stack.Navigator>
+//     </NavigationIndependentTree>
+//   );
+// };
 
 const styles = StyleSheet.create({
   container: {
@@ -710,29 +704,39 @@ const styles = StyleSheet.create({
   },
 });
 
-function HomeRoutes() {
-  return (
-    <NavigationIndependentTree>
-      <Stack.Navigator initialRouteName="Home">
-        <Stack.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{ headerShown: false }}
-        />
-        {/* <Stack.Screen name="Test1" component={Test1} /> */}
-        <Stack.Screen
-          name="UserViewAllCourse"
-          component={UserViewAllCourse}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="DetailCourse"
-          component={DetailCourse}
-          options={{ headerShown: false }}
-        />
-      </Stack.Navigator>
-    </NavigationIndependentTree>
-  );
-}
+// function HomeRoutes() {
+//   return (
+//     <NavigationIndependentTree>
+//       <Stack.Navigator initialRouteName="Home">
+//         <Stack.Screen
+//           name="Home"
+//           component={HomeScreen}
+//           options={{ headerShown: false }}
+//         />
+//         <Stack.Screen
+//           name="UserViewAllCourse"
+//           component={UserViewAllCourse}
+//           options={{ 
+//             headerShown: false
+//           }}
+//         />
+//         <Stack.Screen
+//           name="DetailCourse"
+//           component={DetailCourseLayout}
+//           options={{ 
+//             headerShown: false
+//           }}
+//         />
+//         <Stack.Screen
+//           name="UserViewAllEnrollment"
+//           component={UserViewAllEnrollment}
+//           options={{ 
+//             headerShown: false
+//           }}
+//         />
+//       </Stack.Navigator>
+//     </NavigationIndependentTree>
+//   );
+// }
 
-export default HomeRoutes;
+export default Home;

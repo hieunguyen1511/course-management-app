@@ -1,12 +1,15 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, FlatList } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { Ionicons } from '@expo/vector-icons'
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/types/RootStackParamList';
+import { MyScreenProps } from '@/types/MyScreenProps';
 
+const Stack = createNativeStackNavigator<RootStackParamList>();
 // Define course interface
 interface Course {
   id: number;
   title: string;
-  instructor: string;
   category: string;
   image: string;
   rating: number;
@@ -15,7 +18,6 @@ interface Course {
 // Interface for in-progress courses
 interface CourseInProgress extends Course {
   progress: number;
-  nextLesson: string;
   lastAccessed: string;
   totalLessons: number;
   completedLessons: number;
@@ -24,11 +26,10 @@ interface CourseInProgress extends Course {
 // Interface for completed courses
 interface CourseCompleted extends Course {
   completedDate: string;
-  certificateUrl?: string;
-  finalScore?: number;
+  hasReviewed: boolean;
 }
 
-const CourseScreen = () => {
+const Course: React.FC<MyScreenProps["UserCourseScreenProps"]> = ({ navigation, route }) => {
   // State variables
   const [activeTab, setActiveTab] = useState<'progress' | 'completed'>('progress');
   const [inProgressCourses, setInProgressCourses] = useState<CourseInProgress[]>([]);
@@ -43,40 +44,34 @@ const CourseScreen = () => {
       setInProgressCourses([
         {
           id: 1,
-          title: 'React Native Fundamentals',
-          instructor: 'John Doe',
-          category: 'Programming',
+          title: 'Lập trình React Native cơ bản',
+          category: 'Lập trình',
           image: 'https://via.placeholder.com/100',
           rating: 4.7,
           progress: 65,
-          nextLesson: 'Navigation in React Native',
-          lastAccessed: '2 days ago',
+          lastAccessed: '2 ngày trước',
           totalLessons: 12,
           completedLessons: 8
         },
         {
           id: 2,
-          title: 'UI/UX Design Principles',
-          instructor: 'Sarah Smith',
-          category: 'Design',
+          title: 'Nguyên tắc thiết kế UI/UX',
+          category: 'Thiết kế',
           image: 'https://via.placeholder.com/100',
           rating: 4.5,
           progress: 32,
-          nextLesson: 'Color Theory Basics',
-          lastAccessed: 'Yesterday',
+          lastAccessed: 'Hôm qua',
           totalLessons: 10,
           completedLessons: 3
         },
         {
           id: 3,
-          title: 'Digital Marketing Strategies',
-          instructor: 'Michael Brown',
+          title: 'Chiến lược Marketing số',
           category: 'Marketing',
           image: 'https://via.placeholder.com/100',
           rating: 4.2,
           progress: 78,
-          nextLesson: 'Social Media Campaigns',
-          lastAccessed: '3 hours ago',
+          lastAccessed: '3 giờ trước',
           totalLessons: 8,
           completedLessons: 6
         }
@@ -86,25 +81,21 @@ const CourseScreen = () => {
       setCompletedCourses([
         {
           id: 4,
-          title: 'JavaScript Basics',
-          instructor: 'Robert Wilson',
-          category: 'Programming',
+          title: 'JavaScript cơ bản',
+          category: 'Lập trình',
           image: 'https://via.placeholder.com/100',
           rating: 4.6,
           completedDate: '2023-05-15',
-          certificateUrl: 'https://example.com/cert/123',
-          finalScore: 95
+          hasReviewed: true
         },
         {
           id: 5,
-          title: 'Introduction to HTML & CSS',
-          instructor: 'Jennifer Davis',
-          category: 'Web Development',
+          title: 'HTML & CSS cơ bản',
+          category: 'Lập trình Web',
           image: 'https://via.placeholder.com/100',
           rating: 4.8,
           completedDate: '2023-03-20',
-          certificateUrl: 'https://example.com/cert/456',
-          finalScore: 92
+          hasReviewed: false
         }
       ]);
 
@@ -135,10 +126,10 @@ const CourseScreen = () => {
             activeTab === 'progress' && styles.activeTabText
           ]}
         >
-          In Progress
+          Đang học
         </Text>
       </TouchableOpacity>
-      
+
       <TouchableOpacity
         style={[
           styles.tab,
@@ -152,7 +143,7 @@ const CourseScreen = () => {
             activeTab === 'completed' && styles.activeTabText
           ]}
         >
-          Completed
+          Đã hoàn thành
         </Text>
       </TouchableOpacity>
     </View>
@@ -162,27 +153,27 @@ const CourseScreen = () => {
   const renderInProgressCourse = ({ item }: { item: CourseInProgress }) => (
     <TouchableOpacity style={styles.courseCard}>
       <Image source={{ uri: item.image }} style={styles.courseImage} />
-      
+
       <View style={styles.courseInfo}>
         <Text style={styles.courseTitle} numberOfLines={1}>{item.title}</Text>
-        <Text style={styles.instructorName}>{item.instructor}</Text>
-        
+        <Text style={styles.categoryText}>{item.category}</Text>
+
         <View style={styles.progressContainer}>
           <ProgressBar progress={item.progress} />
           <View style={styles.progressTextContainer}>
-            <Text style={styles.progressText}>{item.progress}% Complete</Text>
-            <Text style={styles.lessonCount}>{item.completedLessons}/{item.totalLessons} lessons</Text>
+            <Text style={styles.progressText}>{item.progress}% Hoàn thành</Text>
+            <Text style={styles.lessonCount}>{item.completedLessons}/{item.totalLessons} bài học</Text>
           </View>
         </View>
-        
-        <View style={styles.lessonContainer}>
-          <Ionicons name="play-circle-outline" size={16} color="#4a6ee0" />
-          <Text style={styles.nextLessonText} numberOfLines={1}>Next: {item.nextLesson}</Text>
-        </View>
+
+        <Text style={styles.lastAccessedText}>Truy cập lần cuối: {item.lastAccessed}</Text>
       </View>
-      
-      <TouchableOpacity style={styles.continueButton}>
-        <Text style={styles.continueButtonText}>Continue</Text>
+
+      <TouchableOpacity
+        style={styles.continueButton}
+        onPress={() => navigation.navigate('UserDetailCourseScreen', { courseId: item.id })}
+      >
+        <Text style={styles.continueButtonText}>Tiếp tục</Text>
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -190,45 +181,43 @@ const CourseScreen = () => {
   // Format date
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    return date.toLocaleDateString('vi-VN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   };
 
   // Render completed course
   const renderCompletedCourse = ({ item }: { item: CourseCompleted }) => (
-    <TouchableOpacity style={styles.courseCard}>
+    <TouchableOpacity style={styles.courseCard} onPress={() =>
+      navigation.navigate('UserRatingScreen', { message: "" })}>
       <Image source={{ uri: item.image }} style={styles.courseImage} />
-      
+
       <View style={styles.courseInfo}>
         <Text style={styles.courseTitle} numberOfLines={1}>{item.title}</Text>
-        <Text style={styles.instructorName}>{item.instructor}</Text>
-        
+        <Text style={styles.categoryText}>{item.category}</Text>
+
         <View style={styles.completedInfoContainer}>
           <View style={styles.completedDateContainer}>
             <Ionicons name="calendar-outline" size={14} color="#666" />
             <Text style={styles.completedDate}>
-              Completed: {formatDate(item.completedDate)}
+              Hoàn thành: {formatDate(item.completedDate)}
             </Text>
           </View>
-          
-          {item.finalScore && (
-            <View style={styles.scoreContainer}>
-              <Ionicons name="ribbon-outline" size={14} color="#666" />
-              <Text style={styles.scoreText}>Score: {item.finalScore}%</Text>
-            </View>
-          )}
         </View>
       </View>
-      
-      {item.certificateUrl && (
-        <TouchableOpacity style={styles.certificateButton}>
-          <Ionicons name="document-text-outline" size={16} color="#4a6ee0" />
-          <Text style={styles.certificateText}>Certificate</Text>
-        </TouchableOpacity>
-      )}
+
+      <TouchableOpacity style={styles.reviewButton} >
+        <Ionicons
+          name={item.hasReviewed ? "star" : "star-outline"}
+          size={16}
+          color="#4a6ee0"
+        />
+        <Text style={styles.reviewText}>
+          {item.hasReviewed ? "Xem đánh giá" : "Đánh giá"}
+        </Text>
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 
@@ -236,7 +225,7 @@ const CourseScreen = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading your courses...</Text>
+        <Text style={styles.loadingText}>Đang tải khóa học của bạn...</Text>
       </View>
     );
   }
@@ -245,16 +234,46 @@ const CourseScreen = () => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Courses</Text>
-        <TouchableOpacity style={styles.filterButton}>
-          <Ionicons name="filter-outline" size={20} color="#4a6ee0" />
-          <Text style={styles.filterText}>Filter</Text>
+        <Text style={styles.headerTitle}>Khóa học của tôi</Text>
+      </View>
+
+      {/* Tabs */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[
+            styles.tab,
+            activeTab === 'progress' && styles.activeTab
+          ]}
+          onPress={() => setActiveTab('progress')}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === 'progress' && styles.activeTabText
+            ]}
+          >
+            Đang học
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.tab,
+            activeTab === 'completed' && styles.activeTab
+          ]}
+          onPress={() => setActiveTab('completed')}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === 'completed' && styles.activeTabText
+            ]}
+          >
+            Đã hoàn thành
+          </Text>
         </TouchableOpacity>
       </View>
-      
-      {/* Tabs */}
-      {renderTabs()}
-      
+
       {/* Course Lists */}
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -271,9 +290,9 @@ const CourseScreen = () => {
             ) : (
               <View style={styles.emptyContainer}>
                 <Ionicons name="book-outline" size={50} color="#ccc" />
-                <Text style={styles.emptyText}>You haven't started any courses yet</Text>
+                <Text style={styles.emptyText}>Bạn chưa bắt đầu khóa học nào</Text>
                 <TouchableOpacity style={styles.exploreCourseButton}>
-                  <Text style={styles.exploreCourseText}>Explore Courses</Text>
+                  <Text style={styles.exploreCourseText}>Khám phá khóa học</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -289,8 +308,8 @@ const CourseScreen = () => {
             ) : (
               <View style={styles.emptyContainer}>
                 <Ionicons name="trophy-outline" size={50} color="#ccc" />
-                <Text style={styles.emptyText}>You haven't completed any courses yet</Text>
-                <Text style={styles.emptySubText}>Your completed courses will appear here</Text>
+                <Text style={styles.emptyText}>Bạn chưa hoàn thành khóa học nào</Text>
+                <Text style={styles.emptySubText}>Các khóa học đã hoàn thành sẽ hiển thị ở đây</Text>
               </View>
             )}
           </>
@@ -320,15 +339,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
-  },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  filterText: {
-    marginLeft: 4,
-    color: '#4a6ee0',
-    fontWeight: '500',
   },
   tabContainer: {
     flexDirection: 'row',
@@ -455,16 +465,7 @@ const styles = StyleSheet.create({
     color: '#666',
     marginLeft: 5,
   },
-  scoreContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  scoreText: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 5,
-  },
-  certificateButton: {
+  reviewButton: {
     flexDirection: 'column',
     backgroundColor: '#f0f5ff',
     paddingHorizontal: 12,
@@ -473,7 +474,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 10,
     borderBottomRightRadius: 10,
   },
-  certificateText: {
+  reviewText: {
     color: '#4a6ee0',
     fontWeight: '500',
     fontSize: 10,
@@ -516,6 +517,29 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
+  categoryText: {
+    fontSize: 14,
+    color: '#4a6ee0',
+    marginBottom: 8,
+  },
+  lastAccessedText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 5,
+  },
 });
 
-export default CourseScreen
+// function Course() {
+//   return (
+//     <NavigationIndependentTree>
+//       <Stack.Navigator initialRouteName='UserCourse' screenOptions={{ headerShown: false }}>
+//         <Stack.Screen name="UserCourse" component={CourseScreen} />
+//         <Stack.Screen name="UserDetailCourse" component={UserDetailCourse} />
+//         <Stack.Screen name="UserRating" component={UserRating} />
+//       </Stack.Navigator>
+//     </NavigationIndependentTree>
+//   )
+// }
+
+
+export default Course

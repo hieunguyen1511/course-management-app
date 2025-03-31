@@ -15,16 +15,14 @@ const axiosInstance = axios.create({
 });
 axiosInstance.interceptors.request.use(
   async (config) => {
-    // Do something before request is sent
     console.log("Request interceptor", config);
     
     const token = await getAccessToken();
-    console.log(token)
+    //console.log(token)
     config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
   (error) => {
-    // Do something with request error
     console.log("Request interceptor error", error);
     return Promise.reject(error);
   }
