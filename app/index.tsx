@@ -69,16 +69,22 @@ async function processLogin(navigation: any, homeRouter: any) {
       if (res.data.access_token) {
         setAccessToken(res.data.access_token);
         if (jsonUser.role === 1) {
-          homeRouter.push({
-            pathname: "/(tabs)/home",
-            params: { tmessage: "Hello from Login" },
+          navigation.replace("UserTabLayout", {
+            message: "Hello from Login",
           });
+          // homeRouter.push({
+          //   pathname: "/(tabs)/home",
+          //   params: { tmessage: "Hello from Login" },
+          // });
         }
         if (jsonUser.role === 0) {
-          homeRouter.push({
-            pathname: "/admin",
-            params: { tmessage: "Hello from Login" },
+          navigation.replace("AdminLayout", {
+            message: "Hello from Login",
           });
+          // homeRouter.push({
+          //   pathname: "/admin",
+          //   params: { tmessage: "Hello from Login" },
+          // });
         }
       } else {
         navigation.replace("Login", { message: "Please login" });
@@ -98,7 +104,7 @@ const IndexScreen: React.FC<MyScreenProps["IndexScreenProps"]> = ({
   const [isProcessing, setIsProcessing] = useState(true);
   useEffect(() => {
     if (isProcessing) {
-      //processLogin(navigation, homeRouter);
+      processLogin(navigation, homeRouter);
       setIsProcessing(false);
     }
   }, [isProcessing]);

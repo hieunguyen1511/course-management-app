@@ -6,45 +6,46 @@ import { useState } from "react";
 import * as FileSystem from "expo-file-system";
 const uploadToCloudinary = async (imageUri: any) => {
   try {
-    const newImageUri =  "file:" + imageUri.split("file:/").join("");
-    console.log("imageUri", imageUri);
-    console.log("newImageUri", newImageUri);
-    const response = await fetch(newImageUri);
+    //const response = await fetch(imageUri);
     //console.log("response", response);
-    const blob = await response.blob();
+
     //console.log("blob", blob);
     const upload_preset = `${process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET}`; // Replace with your Cloudinary upload preset
     const cloud_name = `${process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME}`; // Replace with your Cloudinary cloud name
-    const data = new FormData();
-    data.append("file", blob, "image.jpeg"); // Use the last part of the URI as the filename
-    data.append("upload_preset", upload_preset); // Replace with your Cloudinary upload preset
-    data.append("cloud_name", cloud_name); // Replace with your Cloudinary cloud name
-    //console.log("data", data);
-    const res = await fetch(`${process.env.EXPO_PUBLIC_CLOUDINARY_API_URL}`, {
-      method: "POST",
-      body: data,
-      mode: "cors",
-    //   headers: {
-    //         "Content-Type": "application/json",
-    //       },
-    });
-    // const base64Img = await FileSystem.readAsStringAsync(imageUri, {
-    //   encoding: FileSystem.EncodingType.Base64,
-    // });
+    // const data = new FormData();
 
-    // const data = {
-    //   file: `data:image/jpeg;base64,${base64Img}`, // Định dạng ảnh Base64
-    //   upload_preset: "courseapp",
-    //   cloud_name: cloud_name,
-    // };
-
+    // const response = await fetch(`data:image/png;base64,${base64Img}`);
+    // const blob = await response.blob();
+    // data.append("file", blob , "image.jpeg"); // Use the last part of the URI as the filename
+    // data.append("upload_preset", upload_preset); // Replace with your Cloudinary upload preset
+    // data.append("cloud_name", cloud_name); // Replace with your Cloudinary cloud name
+    // //console.log("data", data);
     // const res = await fetch(`${process.env.EXPO_PUBLIC_CLOUDINARY_API_URL}`, {
     //   method: "POST",
-    //   body: JSON.stringify(data),
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //   },
+    //   body: data,
+    //   mode: "cors",
+    //   //   headers: {
+    //   //         "Content-Type": "application/json",
+    //   //       },
     // });
+
+    const base64Img = await FileSystem.readAsStringAsync(imageUri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const data = {
+      filename: "image.jpeg", // Tên tệp tin bạn muốn lưu trên Cloudinary
+      file: `data:image/jpeg;base64,${base64Img}`, // Định dạng ảnh Base64
+      upload_preset: "courseapp",
+      cloud_name: cloud_name,
+    };
+
+    const res = await fetch(`${process.env.EXPO_PUBLIC_CLOUDINARY_API_URL}`, {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
     const result = await res.json();
     console.log(result);
     return result.url;

@@ -91,16 +91,22 @@ const Login: FC<MyScreenProps["LoginScreenProps"]> = ({
 
           const userRole = res.data.user.role;
           if (userRole === 1) {
-            homeRouter.replace({
-              pathname: "/(tabs)/home",
-              params: { tmessage: "Hello from Login" },
+            navigation.replace("UserTabLayout", {
+              message: "Hello from Login",
             });
+            // homeRouter.replace({
+            //   pathname: "/(tabs)/home",
+            //   params: { tmessage: "Hello from Login" },
+            // });
           }
           if (userRole === 0) {
-            homeRouter.replace({
-              pathname: "/admin",
-              params: { tmessage: "Hello from Login" },
+            navigation.replace("AdminLayout", {
+              message: "Hello from Login",
             });
+            // homeRouter.replace({
+            //   pathname: "/admin",
+            //   params: { tmessage: "Hello from Login" },
+            // });
           }
         }
       } catch (e) {
