@@ -30,18 +30,17 @@ const UserViewLesson: React.FC<MyScreenProps["UserViewLessonScreenProps"]> = ({ 
   const [showResults, setShowResults] = useState(false);
 
   useEffect(() => {
-    // Simulate API call to fetch lesson details
+    // API call to fetch lesson details
     setTimeout(() => {
-      // Sample lesson data - can be either video or quiz type
       const mockLesson: Lesson = {
         id: lessonId,
         title: '1.1 Giới thiệu về React Native',
-        type: 'video', // Change to 'video' for video lessons
+        type: 'video', // 'video' or 'quiz'
         content: 'React Native là một framework phát triển ứng dụng di động được tạo bởi Facebook...',
         duration: '15:00',
-        // Video URL - only needed for video type lessons
+        // Video URL
         videoUrl: 'https://www.youtube.com/watch?v=gvkqT_Uoahw',
-        // Quiz questions - only needed for quiz type lessons
+        // Quiz questions
         questions: [
           {
             id: 1,

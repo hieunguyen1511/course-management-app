@@ -102,12 +102,12 @@ const IndexScreen: React.FC<MyScreenProps["IndexScreenProps"]> = ({
 }) => {
   const homeRouter = useRouter();
   const [isProcessing, setIsProcessing] = useState(true);
-  useEffect(() => {
-    if (isProcessing) {
-      processLogin(navigation, homeRouter);
-      setIsProcessing(false);
-    }
-  }, [isProcessing]);
+  // useEffect(() => {
+  //   if (isProcessing) {
+  //     processLogin(navigation, homeRouter);
+  //     setIsProcessing(false);
+  //   }
+  // }, [isProcessing]);
   return (
     <View className="flex justify-center items-center h-full">
       <Text>Index Screen</Text>

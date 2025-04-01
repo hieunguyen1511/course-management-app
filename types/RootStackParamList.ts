@@ -2,7 +2,7 @@ export type RootStackParamList = {
     Main: {screen: keyof RootStackParamList};
    
     Index: { message?: string };
-    Login: { message?: string };
+    Login: { message?: string, message_from_register?: string | "" };
     Register: { message?: string };
     //User Bottom Tab
     Home: { message?: string };

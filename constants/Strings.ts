@@ -45,6 +45,7 @@ export const Strings = {
         placeHolderEmail: 'Nhập email',
         placeHolderPassword: 'Nhập mật khẩu',
         placeHolderConfirmPassword: 'Nhập lại mật khẩu',
+        success_message: 'Đăng ký thành công.',
     },
     user_home:{
         welcome_back: 'Chào mừng trở lại',

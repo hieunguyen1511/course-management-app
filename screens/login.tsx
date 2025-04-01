@@ -5,9 +5,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  ScrollView,
-  KeyboardAvoidingView,
+  ActivityIndicator,
   Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import React, { FC, useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,6 +20,9 @@ import Checkbox from "@/components/ui/Checkbox";
 import HorizontalRule from "@/components/ui/HorizontalRule";
 import * as SecureStore from "expo-secure-store";
 import { setAccessToken } from "@/api/axiosInstance";
+
+import NotificationToast from "@/components/NotificationToast";
+import { ToastType } from "@/components/NotificationToast";
 
 async function saveUserInformation(user: any) {
   try {
@@ -47,15 +50,35 @@ const Login: FC<MyScreenProps["LoginScreenProps"]> = ({
   const [isRemmebermeChecked, setIsRemmebermeChecked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  //console.log("Login screen 1", route.params);
+
+  // Toast state
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<ToastType>(ToastType.SUCCESS);
+
+  const showToast = async (message: string | "", type: ToastType) => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+  };
+
   useEffect(() => {
     if (route.params?.message) {
       console.log("Login message:", route.params.message);
     }
-  }, []);
+
+    if (route.params?.message_from_register) {
+      console.log(
+        "Login message from register:",
+        route.params.message_from_register
+      );
+      setTimeout(() => {
+        showToast(route.params.message_from_register || "", ToastType.SUCCESS);
+      }, 300);
+    }
+  }, [route.params]);
 
   const handleLogin = async () => {
-    
     try {
       if (username === "" || password === "") {
         console.log("Username or password is empty");
@@ -82,35 +105,24 @@ const Login: FC<MyScreenProps["LoginScreenProps"]> = ({
             await saveRefreshToken(res.data.refresh_token);
             await saveUserInformation(res.data.user);
           }
-          // run on web browser not working
-          //console.log("refresh token", SecureStore.getItemAsync("refresh_token"));
-          // const resAny = await axiosInstance.get(
-          //   `${process.env.EXPO_PUBLIC_API_GET_ALL_USERS}`
-          // );
-          //console.log("All users", resAny.data);
 
           const userRole = res.data.user.role;
           if (userRole === 1) {
             navigation.replace("UserTabLayout", {
               message: "Hello from Login",
             });
-            // homeRouter.replace({
-            //   pathname: "/(tabs)/home",
-            //   params: { tmessage: "Hello from Login" },
-            // });
           }
           if (userRole === 0) {
             navigation.replace("AdminLayout", {
               message: "Hello from Login",
             });
-            // homeRouter.replace({
-            //   pathname: "/admin",
-            //   params: { tmessage: "Hello from Login" },
-            // });
           }
         }
-      } catch (e) {
-        console.log("Error in login attempt", e);
+      } catch (e: any) {
+        console.log("Error in login attempt", e.response.data.message);
+        setTimeout(() => {
+          showToast(e.response.data.message || "", ToastType.ERROR);
+        }, 300);
       } finally {
         setIsLoading(false);
       }
@@ -119,171 +131,272 @@ const Login: FC<MyScreenProps["LoginScreenProps"]> = ({
       setIsLoading(false);
     }
   };
-  return (
-    <View className="flex justify-center bg-blue-500">
-      {/* <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
-      > */}
-      {/* <ScrollView
-        showsVerticalScrollIndicator={false}
-        className="flex-1 bg-blue-600 h-dvh"
-      > */}
-      <View className="bg-white h-screen p-5 mt-8 rounded-tl-[48] rounded-tr-[48]">
-        <Text className="text-3xl font-bold text-blue-600 mb-8 text-center">
-          {Strings.login.title}
-        </Text>
-        <Image
-          source={require("../assets/images/course-bg-login.png")}
-          style={{ width: 150, height: 150, alignSelf: "center" }}
-          className="rounded-xl mb-6"
-        />
-        <View className="mb-5">
-          {/* <Text className="text-base text-gray-700 mb-1">
-            {Strings.login.username}
-          </Text> */}
-          <View className="flex-row items-center border border-gray-300 rounded-lg">
-            <Ionicons
-              className="border-r border-gray-300"
-              name="person"
-              size={24}
-              color="gray"
-              style={styles.inputIcon}
-            />
-            <TextInput
-              className="w-full placeholder:text-gray-300 ml-1 rounded-lg p-3 text-base"
-              placeholder={Strings.login.placeHolderUsername}
-              value={username}
-              onChangeText={setUsername}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
-        </View>
 
-        <View className="mb-5">
-          {/* <Text className="text-base text-gray-700 mb-1">
-            {Strings.login.password}
-          </Text> */}
-          <View className="flex-row items-center border border-gray-300 rounded-lg">
-            <Ionicons
-              className="border-r border-gray-300"
-              name="lock-closed"
-              size={24}
-              color="gray"
-              style={styles.inputIcon}
-            />
-            <TextInput
-              className="flex-1 placeholder:text-gray-300 ml-1 rounded-lg p-3 text-base"
-              placeholder={Strings.login.placeHolderPassword}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-            />
-            <TouchableOpacity
-              onPress={() => setShowPassword(!showPassword)}
-              style={styles.passwordIcon}
-            >
+  return (
+    <View style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <View style={styles.formContainer}>
+          <Text style={styles.title}>{Strings.login.title}</Text>
+
+          <Image
+            source={require("../assets/images/course-bg-login.png")}
+            style={styles.logoImage}
+          />
+
+          <View style={styles.inputContainer}>
+            <View style={styles.inputWrapper}>
               <Ionicons
-                name={showPassword ? "eye-off" : "eye"}
-                size={22}
-                color="#3b82f6"
+                name="person"
+                size={24}
+                color="gray"
+                style={[styles.inputIcon, styles.inputIconBorder]}
               />
-            </TouchableOpacity>
+              <TextInput
+                style={styles.input}
+                placeholder={Strings.login.placeHolderUsername}
+                value={username}
+                onChangeText={setUsername}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholderTextColor="#9ca3af"
+              />
+            </View>
           </View>
-        </View>
-        <View className="mb-5">
-          <TouchableOpacity>
+
+          <View style={styles.inputContainer}>
+            <View style={styles.inputWrapper}>
+              <Ionicons
+                name="lock-closed"
+                size={24}
+                color="gray"
+                style={[styles.inputIcon, styles.inputIconBorder]}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder={Strings.login.placeHolderPassword}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                placeholderTextColor="#9ca3af"
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.passwordIcon}
+              >
+                <Ionicons
+                  name={showPassword ? "eye-off" : "eye"}
+                  size={22}
+                  color="#3b82f6"
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.checkboxContainer}>
             <Checkbox
               checked={isRemmebermeChecked}
               onCheck={setIsRemmebermeChecked}
               label={Strings.login.rememberMe}
             />
-            {/* <Text className="text-gray-700 text-sm">
-            {Strings.login.rememberMe}
-          </Text> */}
-          </TouchableOpacity>
-        </View>
+          </View>
 
-        <TouchableOpacity
-          className={`${
-            isLoading ? "bg-blue-400" : "bg-blue-500"
-          } p-4 rounded-lg shadow-sm items-center mt-2`}
-          onPress={handleLogin}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <View className="flex-row items-center justify-center">
-              <View className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-              <Text className="text-white font-bold text-base">
-                {Strings.login.loggingin}
-              </Text>
-            </View>
-          ) : (
-            <Text className="text-white font-bold text-base">
-              {Strings.login.login}
-            </Text>
-          )}
-        </TouchableOpacity>
-
-        <View>
-          <HorizontalRule />
-        </View>
-
-        <TouchableOpacity
-          className="flex-row items-center justify-center bg-white border border-gray-300 p-3 rounded-lg"
-          onPress={() => {
-            console.log("Google sign in pressed");
-            // Add your Google sign-in logic here
-          }}
-        >
-          <Image
-            source={require("../assets/images/google.png")}
-            style={{ width: 24, height: 24 }}
-            className="mr-2"
-          />
-          <Text className="text-gray-700 font-bold">
-            {Strings.login.signInByGoogle}
-          </Text>
-        </TouchableOpacity>
-
-        <View className="mt-4 flex-row items-center justify-center">
-          <Text className="text-center mt-6">
-            {Strings.login.dontHaveAccount}{" "}
-          </Text>
           <TouchableOpacity
-            className="text-blue-500 text-sm mt-6"
+            style={[
+              styles.loginButton,
+              isLoading ? styles.loginButtonLoading : null,
+            ]}
+            onPress={handleLogin}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator
+                  size="small"
+                  color="#fff"
+                  style={styles.loadingIndicator}
+                />
+                <Text style={styles.buttonText}>{Strings.login.loggingin}</Text>
+              </View>
+            ) : (
+              <Text style={styles.buttonText}>{Strings.login.login}</Text>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.divider}>
+            <HorizontalRule />
+          </View>
+
+          <TouchableOpacity
+            style={styles.googleButton}
             onPress={() => {
-              navigation.navigate("Register", {
-                message: "Hello from Login",
-              });
+              console.log("Google sign in pressed");
+              // Add your Google sign-in logic here
             }}
           >
-            <Text className="text-blue-500 text-md">
-              {" "}
-              {Strings.login.register}
+            <Image
+              source={require("../assets/images/google.png")}
+              style={styles.googleIcon}
+            />
+            <Text style={styles.googleButtonText}>
+              {Strings.login.signInByGoogle}
             </Text>
           </TouchableOpacity>
-          {/* <TouchableOpacity className="mt-4 items-center">
-            <Text className="text-blue-500 text-sm">
-              {Strings.login.forgotPassword}
+
+          <View style={styles.registerContainer}>
+            <Text style={styles.registerText}>
+              {Strings.login.dontHaveAccount}{" "}
             </Text>
-          </TouchableOpacity> */}
+            <TouchableOpacity
+              onPress={() => {
+                navigation.navigate("Register", {
+                  message: "Hello from Login",
+                });
+              }}
+            >
+              <Text style={styles.registerLink}>{Strings.login.register}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-      {/* </ScrollView> */}
-      {/* </KeyboardAvoidingView> */}
+      </KeyboardAvoidingView>
+      <NotificationToast
+        visible={toastVisible}
+        message={toastMessage}
+        type={toastType}
+        onDismiss={() => setToastVisible(false)}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    backgroundColor: "#3b82f6",
+  },
+  formContainer: {
+    backgroundColor: "white",
+    height: "100%",
+    padding: 20,
+    marginTop: 32,
+    borderTopLeftRadius: 48,
+    borderTopRightRadius: 48,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#3b82f6",
+    marginBottom: 32,
+    textAlign: "center",
+  },
+  logoImage: {
+    width: 150,
+    height: 150,
+    alignSelf: "center",
+    borderRadius: 12,
+    marginBottom: 24,
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 8,
+  },
+  input: {
+    flex: 1,
+    padding: 12,
+    fontSize: 16,
+    marginLeft: 4,
+  },
   inputIcon: {
     paddingHorizontal: 5,
     color: "#3b82f6",
   },
+  inputIconBorder: {
+    borderRightWidth: 1,
+    borderRightColor: "#d1d5db",
+  },
   passwordIcon: {
     paddingHorizontal: 10,
+  },
+  checkboxContainer: {
+    marginBottom: 20,
+  },
+  loginButton: {
+    backgroundColor: "#3b82f6",
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+    elevation: 2,
+  },
+  loginButtonLoading: {
+    backgroundColor: "#60a5fa",
+  },
+  buttonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingIndicator: {
+    marginRight: 8,
+  },
+  divider: {
+    marginVertical: 20,
+  },
+  googleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "white",
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    padding: 12,
+    borderRadius: 8,
+  },
+  googleIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 8,
+  },
+  googleButtonText: {
+    color: "#4b5563",
+    fontWeight: "bold",
+  },
+  registerContainer: {
+    marginTop: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 24,
+  },
+  registerText: {
+    color: "#4b5563",
+    textAlign: "center",
+  },
+  registerLink: {
+    color: "#3b82f6",
+    fontWeight: "500",
+    fontSize: 16,
   },
 });
 

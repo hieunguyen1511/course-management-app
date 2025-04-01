@@ -8,27 +8,38 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { MyScreenProps } from "@/types/MyScreenProps";
 import { Strings } from "@/constants/Strings";
 import "../global.css";
 import HorizontalRule from "@/components/ui/HorizontalRule";
+import axiosInstance from "@/api/axiosInstance";
+import NotificationToast, { ToastType } from "@/components/NotificationToast";
+
+enum UserRole {
+  ADMIN = 0,
+  USER = 1,
+}
 
 interface FormData {
-  name: string;
+  fullname: string;
   username: string;
   email: string;
   password: string;
   confirmPassword: string;
+  phone: string | "";
 }
 
 interface FormErrors {
-  name?: string;
+  fullname?: string;
   username?: string;
   email?: string;
   password?: string;
   confirmPassword?: string;
+  phone?: string;
 }
 
 const RegisterScreen: React.FC<MyScreenProps["RegisterScreenProps"]> = ({
@@ -36,16 +47,29 @@ const RegisterScreen: React.FC<MyScreenProps["RegisterScreenProps"]> = ({
   route,
 }) => {
   const [formData, setFormData] = useState<FormData>({
-    name: "",
+    fullname: "",
     username: "",
     email: "",
     password: "",
     confirmPassword: "",
+    phone: "",
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Toast state
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<ToastType>(ToastType.SUCCESS);
+
+  // Show toast helper function
+  const showToast = (message: string, type: ToastType) => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+  };
 
   // Handle input changes
   const handleChange = (field: keyof FormData, value: string) => {
@@ -55,15 +79,15 @@ const RegisterScreen: React.FC<MyScreenProps["RegisterScreenProps"]> = ({
       setErrors({ ...errors, [field]: undefined });
     }
   };
-
+      
   // Validate form
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
     let isValid = true;
 
     // Validate name
-    if (!formData.name.trim()) {
-      newErrors.name = Strings.register.requireFullname;
+    if (!formData.fullname.trim()) {
+      newErrors.fullname = Strings.register.requireFullname;
       isValid = false;
     }
 
@@ -103,134 +127,151 @@ const RegisterScreen: React.FC<MyScreenProps["RegisterScreenProps"]> = ({
   };
 
   // Handle form submission
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validateForm()) {
       setIsLoading(true);
 
-      // Simulate API call
-      setTimeout(() => {
+      try {
+        const respone = await axiosInstance.post(
+          `${process.env.EXPO_PUBLIC_API_REGISTER}`,
+          {
+            fullname: formData.fullname,
+            username: formData.username,
+            email: formData.email,
+            birth: "2000-01-01",
+            password: formData.password,
+            role: UserRole.USER,
+            phone: formData.phone,
+            avatar: "",
+          }
+        );
+        if (respone.status === 201) {
+          setIsLoading(false);
+          //showToast(Strings.register.success_message, ToastType.SUCCESS);
+          navigation.replace("Login", { message_from_register: Strings.register.success_message });
+         
+        }
+      } catch (error: any) {
         setIsLoading(false);
-        // Navigate to login or home page after successful registration
-        console.log("Registration successful", formData);
-      }, 1500);
+        const errorMessage =
+          error.response?.data?.message || "Registration failed";
+        showToast(errorMessage, ToastType.ERROR);
+      }
     }
   };
+
   return (
-    <View className="flex justify-center bg-blue-500">
+    <View style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
+        style={styles.keyboardView}
       >
-        {/* <ScrollView showsVerticalScrollIndicator={false} className="flex-1 bg-white h-max"> */}
-          <View className="bg-white h-screen p-5 mt-8 rounded-tl-[48] rounded-tr-[48]">
-            <Text className="text-3xl font-bold text-blue-600 mb-4 text-center">
-              {Strings.register.title}
-            </Text>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.formContainer}>
+            <Text style={styles.title}>{Strings.register.title}</Text>
 
-            <Text className="text-gray-500 text-center mb-6">
+            <Text style={styles.description}>
               {Strings.register.descripton}
             </Text>
+
             <Image
-              source={require('../assets/images/course-bg-login.png')}
-              style={{ width: 150, height: 150, alignSelf: "center" }}
-              className="rounded-xl mb-6"
+              source={require("../assets/images/course-bg-login.png")}
+              style={styles.logoImage}
             />
+
             {/* Full Name Input */}
-            <View className="mb-4">
-              <View className="flex-row items-center border border-gray-300 rounded-lg">
+            <View style={styles.inputContainer}>
+              <View style={styles.inputWrapper}>
                 <Ionicons
                   name="person"
                   size={24}
                   color="#3b82f6"
-                  className="border-r border-gray-300"
-                  style={{ paddingHorizontal: 5 }}
+                  style={styles.inputIcon}
                 />
                 <TextInput
-                  className="flex-1 placeholder:text-gray-300 ml-1 rounded-lg p-3 text-base"
+                  style={styles.input}
                   placeholder={Strings.register.placeHolderFullname}
-                  value={formData.name}
-                  onChangeText={(value) => handleChange("name", value)}
+                  value={formData.fullname}
+                  onChangeText={(value) => handleChange("fullname", value)}
                   autoCapitalize="words"
+                  placeholderTextColor="#9ca3af"
                 />
               </View>
-              {errors.name && (
-                <Text className="text-red-500 text-sm mt-1 ml-1">
-                  {errors.name}
-                </Text>
+              {errors.fullname && (
+                <Text style={styles.errorText}>{errors.fullname}</Text>
               )}
             </View>
 
             {/* Username Input */}
-            <View className="mb-4">
-              <View className="flex-row items-center border border-gray-300 rounded-lg">
+            <View style={styles.inputContainer}>
+              <View style={styles.inputWrapper}>
                 <Ionicons
                   name="at"
                   size={24}
                   color="#3b82f6"
-                  className="border-r border-gray-300"
-                  style={{ paddingHorizontal: 5 }}
+                  style={styles.inputIcon}
                 />
                 <TextInput
-                  className="flex-1 placeholder:text-gray-300 ml-1 rounded-lg p-3 text-base"
+                  style={styles.input}
                   placeholder={Strings.register.placeHolderUsername}
                   value={formData.username}
                   onChangeText={(value) => handleChange("username", value)}
                   autoCapitalize="none"
+                  placeholderTextColor="#9ca3af"
                 />
               </View>
               {errors.username && (
-                <Text className="text-red-500 text-sm mt-1 ml-1">
-                  {errors.username}
-                </Text>
+                <Text style={styles.errorText}>{errors.username}</Text>
               )}
             </View>
 
             {/* Email Input */}
-            <View className="mb-4">
-              <View className="flex-row items-center border border-gray-300 rounded-lg">
+            <View style={styles.inputContainer}>
+              <View style={styles.inputWrapper}>
                 <Ionicons
                   name="mail"
                   size={24}
                   color="#3b82f6"
-                  className="border-r border-gray-300"
-                  style={{ paddingHorizontal: 5 }}
+                  style={styles.inputIcon}
                 />
                 <TextInput
-                  className="flex-1 placeholder:text-gray-300 ml-1 rounded-lg p-3 text-base"
+                  style={styles.input}
                   placeholder={Strings.register.placeHolderEmail}
                   value={formData.email}
                   onChangeText={(value) => handleChange("email", value)}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  placeholderTextColor="#9ca3af"
                 />
               </View>
               {errors.email && (
-                <Text className="text-red-500 text-sm mt-1 ml-1">
-                  {errors.email}
-                </Text>
+                <Text style={styles.errorText}>{errors.email}</Text>
               )}
             </View>
 
             {/* Password Input */}
-            <View className="mb-4">
-              <View className="flex-row items-center border border-gray-300 rounded-lg">
+            <View style={styles.inputContainer}>
+              <View style={styles.inputWrapper}>
                 <Ionicons
                   name="lock-closed"
                   size={24}
                   color="#3b82f6"
-                  className="border-r border-gray-300"
-                  style={{ paddingHorizontal: 5 }}
+                  style={styles.inputIcon}
                 />
                 <TextInput
-                  className="flex-1 placeholder:text-gray-300 ml-1 rounded-lg p-3 text-base"
+                  style={styles.input}
                   placeholder={Strings.register.placeHolderPassword}
                   value={formData.password}
                   onChangeText={(value) => handleChange("password", value)}
                   secureTextEntry={!passwordVisible}
+                  placeholderTextColor="#9ca3af"
                 />
                 <TouchableOpacity
                   onPress={() => setPasswordVisible(!passwordVisible)}
-                  style={{ paddingHorizontal: 10 }}
+                  style={styles.passwordIcon}
                 >
                   <Ionicons
                     name={passwordVisible ? "eye-off" : "eye"}
@@ -240,36 +281,34 @@ const RegisterScreen: React.FC<MyScreenProps["RegisterScreenProps"]> = ({
                 </TouchableOpacity>
               </View>
               {errors.password && (
-                <Text className="text-red-500 text-sm mt-1 ml-1">
-                  {errors.password}
-                </Text>
+                <Text style={styles.errorText}>{errors.password}</Text>
               )}
             </View>
 
             {/* Confirm Password Input */}
-            <View className="mb-6">
-              <View className="flex-row items-center border border-gray-300 rounded-lg">
+            <View style={styles.inputContainer}>
+              <View style={styles.inputWrapper}>
                 <Ionicons
                   name="lock-closed"
                   size={24}
                   color="#3b82f6"
-                  className="border-r border-gray-300"
-                  style={{ paddingHorizontal: 5 }}
+                  style={styles.inputIcon}
                 />
                 <TextInput
-                  className="flex-1 placeholder:text-gray-300 ml-1 rounded-lg p-3 text-base"
+                  style={styles.input}
                   placeholder={Strings.register.placeHolderConfirmPassword}
                   value={formData.confirmPassword}
                   onChangeText={(value) =>
                     handleChange("confirmPassword", value)
                   }
                   secureTextEntry={!confirmPasswordVisible}
+                  placeholderTextColor="#9ca3af"
                 />
                 <TouchableOpacity
                   onPress={() =>
                     setConfirmPasswordVisible(!confirmPasswordVisible)
                   }
-                  style={{ paddingHorizontal: 10 }}
+                  style={styles.passwordIcon}
                 >
                   <Ionicons
                     name={confirmPasswordVisible ? "eye-off" : "eye"}
@@ -279,57 +318,186 @@ const RegisterScreen: React.FC<MyScreenProps["RegisterScreenProps"]> = ({
                 </TouchableOpacity>
               </View>
               {errors.confirmPassword && (
-                <Text className="text-red-500 text-sm mt-1 ml-1">
-                  {errors.confirmPassword}
-                </Text>
+                <Text style={styles.errorText}>{errors.confirmPassword}</Text>
               )}
             </View>
 
             {/* Submit Button */}
             <TouchableOpacity
-              className={`${
-                isLoading ? "bg-blue-400" : "bg-blue-500"
-              } p-4 rounded-lg shadow-sm items-center mt-2`}
+              style={[
+                styles.submitButton,
+                isLoading && styles.submitButtonLoading,
+              ]}
               onPress={handleSubmit}
               disabled={isLoading}
             >
               {isLoading ? (
-                <View className="flex-row items-center justify-center">
-                  <View className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  <Text className="text-white font-bold text-base">
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator
+                    size="small"
+                    color="#fff"
+                    style={styles.loadingSpinner}
+                  />
+                  <Text style={styles.buttonText}>
                     {Strings.register.registerProcess || "Creating account..."}
                   </Text>
                 </View>
               ) : (
-                <Text className="text-white font-bold text-base">
+                <Text style={styles.buttonText}>
                   {Strings.register.register || "Create Account"}
                 </Text>
               )}
             </TouchableOpacity>
 
-            <View>
+            <View style={styles.divider}>
               <HorizontalRule />
             </View>
 
             {/* Login Link */}
-            <View className="mt-6 mb-10 flex-row items-center justify-center">
-              <Text className="text-center text-gray-600">
+            <View style={styles.loginLinkContainer}>
+              <Text style={styles.loginText}>
                 {Strings.register.alreadyHaveAccount ||
                   "Already have an account?"}{" "}
-               
               </Text>
               <TouchableOpacity
-                  onPress={() => navigation.navigate("Login", {})}
-                >
-                  <Text className="text-blue-500 font-medium ">
-                    {Strings.register.signIn || "Sign In"}
-                  </Text>
-                </TouchableOpacity>
+                onPress={() => navigation.goBack()}
+              >
+                <Text style={styles.loginLink}>
+                  {Strings.register.signIn || "Sign In"}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
-        {/* </ScrollView> */}
+        </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Toast Notification */}
+      <NotificationToast
+        visible={toastVisible}
+        message={toastMessage}
+        type={toastType}
+        onDismiss={() => setToastVisible(false)}
+      />
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    backgroundColor: "#3b82f6",
+  },
+  keyboardView: {
+    flex: 1,
+    backgroundColor: "white",
+  },
+  formContainer: {
+    backgroundColor: "white",
+    height: "100%",
+    padding: 20,
+    marginTop: 32,
+    borderTopLeftRadius: 48,
+    borderTopRightRadius: 48,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#3b82f6",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  description: {
+    color: "#6b7280",
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  logoImage: {
+    width: 150,
+    height: 150,
+    alignSelf: "center",
+    borderRadius: 12,
+    marginBottom: 24,
+  },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 8,
+  },
+  inputIcon: {
+    paddingHorizontal: 5,
+    borderRightWidth: 1,
+    borderRightColor: "#d1d5db",
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    fontSize: 16,
+  },
+  passwordIcon: {
+    paddingHorizontal: 10,
+  },
+  errorText: {
+    color: "#ef4444",
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  submitButton: {
+    backgroundColor: "#3b82f6",
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+    elevation: 2,
+  },
+  submitButtonLoading: {
+    backgroundColor: "#60a5fa",
+  },
+  buttonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingSpinner: {
+    marginRight: 10,
+  },
+  divider: {
+    marginTop: 20,
+  },
+  loginLinkContainer: {
+    marginTop: 24,
+    marginBottom: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loginText: {
+    textAlign: "center",
+    color: "#4b5563",
+  },
+  loginLink: {
+    color: "#3b82f6",
+    fontWeight: "500",
+  },
+});
+
 export default RegisterScreen;

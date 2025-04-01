@@ -1,104 +1,135 @@
 import { View, Text, Button, Image } from "react-native";
-import React from "react";
+import React, { useEffect } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { StyleSheet } from "react-native";
 import { useState } from "react";
-import * as FileSystem from "expo-file-system";
-const uploadToCloudinary = async (imageUri: any) => {
+
+const uploadToCloudinary = async (imageUri: string) => {
   try {
-    //const response = await fetch(imageUri);
-    //console.log("response", response);
+    const upload_preset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_USER_PRESET;
+    const cloud_name = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const upload_url = process.env.EXPO_PUBLIC_CLOUDINARY_API_URL;
+    
+    if (!upload_preset || !cloud_name || !upload_url) {
+      throw new Error('Cloudinary configuration is missing');
+    }
+    
+    // Create form data
+    const formData = new FormData();
+    
+    // Get the file extension from the URI
+    const uriParts = imageUri.split('.');
+    const fileType = uriParts[uriParts.length - 1];
+    
+    // Create the file object
+    formData.append('file', {
+      uri: imageUri,
+      type: `image/${fileType}`,
+      name: `photo.${fileType}`
+    } as any);
+    
+    formData.append('upload_preset', upload_preset);
+    formData.append('cloud_name', cloud_name);
 
-    //console.log("blob", blob);
-    const upload_preset = `${process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET}`; // Replace with your Cloudinary upload preset
-    const cloud_name = `${process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME}`; // Replace with your Cloudinary cloud name
-    // const data = new FormData();
+    const response = await fetch(
+      `${upload_url}`,
+      {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
 
-    // const response = await fetch(`data:image/png;base64,${base64Img}`);
-    // const blob = await response.blob();
-    // data.append("file", blob , "image.jpeg"); // Use the last part of the URI as the filename
-    // data.append("upload_preset", upload_preset); // Replace with your Cloudinary upload preset
-    // data.append("cloud_name", cloud_name); // Replace with your Cloudinary cloud name
-    // //console.log("data", data);
-    // const res = await fetch(`${process.env.EXPO_PUBLIC_CLOUDINARY_API_URL}`, {
-    //   method: "POST",
-    //   body: data,
-    //   mode: "cors",
-    //   //   headers: {
-    //   //         "Content-Type": "application/json",
-    //   //       },
-    // });
+    if (!response.ok) {
+      throw new Error('Upload failed');
+    }
 
-    const base64Img = await FileSystem.readAsStringAsync(imageUri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-    const data = {
-      filename: "image.jpeg", // Tên tệp tin bạn muốn lưu trên Cloudinary
-      file: `data:image/jpeg;base64,${base64Img}`, // Định dạng ảnh Base64
-      upload_preset: "courseapp",
-      cloud_name: cloud_name,
-    };
-
-    const res = await fetch(`${process.env.EXPO_PUBLIC_CLOUDINARY_API_URL}`, {
-      method: "POST",
-      body: JSON.stringify(data),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    const result = await res.json();
-    console.log(result);
-    return result.url;
+    const result = await response.json();
+    return result.secure_url;
   } catch (error) {
-    console.log("Error uploading image:", error);
+    console.error('Error uploading image:', error);
     return null;
   }
 };
 
 const test4 = () => {
-  const [imageUrl, setImageUrl] = useState("");
+  const [localImageUrl, setLocalImageUrl] = useState("");
+  const [uploadedImageUrl, setUploadedImageUrl] = useState("");
+
+  const uploadImage = async (uri: string) => {
+    const imageUrl = await uploadToCloudinary(uri);
+    if (!imageUrl) {
+      console.error("Failed to upload image to Cloudinary");
+      return;
+    }
+
+    return imageUrl;
+  };
+
+  useEffect(() => {
+    const uploadImage = async () => {
+      if(!localImageUrl) {
+        return;   
+      }
+
+      const imageUrl = await uploadToCloudinary(localImageUrl);
+      if (!imageUrl) {
+        console.error("Failed to upload image to Cloudinary");
+        return;
+      }
+
+      setUploadedImageUrl(imageUrl);
+    }
+
+    uploadImage();
+  }, [localImageUrl]);
+
+  const pickImage = async () => {
+    let permissionResult =
+    await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      alert("Permission to access camera roll is required!");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (result.canceled === true) {
+      console.log("Image picker was canceled");
+      return;
+    }
+
+    setLocalImageUrl(result.assets[0].uri);
+  };
+
+
   return (
     <View style={styles.container}>
       <Text>test4</Text>
       <Button
         title="Pick an image from camera roll"
-        onPress={async () => {
-          let permissionResult =
-            await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-          if (permissionResult.granted === false) {
-            alert("Permission to access camera roll is required!");
-            return;
-          }
-
-          const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ["images"],
-            allowsEditing: true,
-            aspect: [4, 3],
-            quality: 1,
-          });
-
-          if (result.canceled === true) {
-            console.log("Image picker was canceled");
-            return;
-          }
-
-          console.log(result.assets[0].uri);
-          setImageUrl(result.assets[0].uri);
-          const imageUri = result.assets[0].uri;
-          const imageUrl = await uploadToCloudinary(imageUri);
-          if (!imageUrl) {
-            console.error("Failed to upload image to Cloudinary");
-            return;
-          }
-
-          setImageUrl(imageUrl);
-        }}
+        onPress={pickImage}
       />
-      <Image
-        source={{ uri: imageUrl }}
+      {localImageUrl && (
+        <Image
+          source={{ uri: localImageUrl }}
         style={{ width: 200, height: 200, marginTop: 20 }}
       />
+      )}
+      {uploadedImageUrl && (
+        <Image
+          source={{ uri: uploadedImageUrl }}
+          style={{ width: 200, height: 200, marginTop: 20 }}
+        />
+      )}
     </View>
   );
 };
