@@ -7,6 +7,7 @@ import {
   ScrollView,
   Image,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -14,254 +15,354 @@ import { Ionicons } from "@expo/vector-icons";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/types/RootStackParamList";
 import { MyScreenProps } from "@/types/MyScreenProps";
+import axiosInstance from "@/api/axiosInstance";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 // Define types
+interface Course {
+  id: number;
+  category_id: number;
+  name: string;
+  description: string;
+  status: number;
+  price: number;
+  discount: number;
+  image: string;
+  total_rating: number;
+  category: {
+    id: number;
+    name: string;
+  };
+}
 interface Category {
   id: number;
   name: string;
 }
 
-interface Course {
-  id: number;
-  title: string;
-  instructor: string;
-  category: string;
-  price: number;
-  image: string;
-  rating: number;
+async function getAllPopularCourses() {
+  try {
+    let url = `${process.env.EXPO_PUBLIC_API_GET_ALL_COURSES}`;
+    const response = await axiosInstance.get(url);
+    if (response.status === 200) {
+      return response.data.courses.sort((a: Course, b: Course) => {
+        if (a.total_rating > b.total_rating) return -1;
+        if (a.total_rating < b.total_rating) return 1;
+        return 0;
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching courses:", error);
+    return [];
+  }
 }
+
+
+async function getAllCategories() {
+  try {
+    let url = `${process.env.EXPO_PUBLIC_API_GET_ALL_CATEGORIES}`;
+    const response = await axiosInstance.get(url);
+    if (response.status === 200) {
+      return response.data.categories.sort((a: Category, b: Category) => {
+        if (a.name > b.name) return 1;
+        if (a.name < b.name) return -1;
+        return 0;
+      });
+    } else {
+      throw new Error("Failed to fetch categories");
+    }
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    return [];
+  }
+}
+
+const SearchHeader: React.FC<{
+  onSearchPress: () => void;
+}> = ({ onSearchPress }) => (
+  <View style={styles.header}>
+    <TouchableOpacity style={styles.searchContainer} onPress={onSearchPress}>
+      <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+      <Text style={styles.searchPlaceholder}>Tìm kiếm khóa học...</Text>
+    </TouchableOpacity>
+  </View>
+);
+
+const CategoryList: React.FC<{
+  categories: Category[];
+  onCategoryPress: (category: Category) => void;
+}> = ({ categories, onCategoryPress }) => (
+  <View style={styles.section}>
+    <Text style={styles.sectionTitle}>Danh mục khóa học</Text>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.categoriesContainer}
+    >
+      {categories.map((category) => (
+        <CategoryItem 
+          key={category.id} 
+          category={category} 
+          onPress={() => onCategoryPress(category)}
+        />
+      ))}
+    </ScrollView>
+  </View>
+);
+
+const CategoryItem: React.FC<{
+  category: Category;
+  onPress: () => void;
+}> = ({ category, onPress }) => (
+  <TouchableOpacity
+    style={[styles.categoryItem, { backgroundColor: "white" }]}
+    onPress={onPress}
+  >
+    <Text style={[styles.categoryName, { color: "#333" }]}>
+      {category.name}
+    </Text>
+  </TouchableOpacity>
+);
+
+const formatPrice = (price: number): string => {
+  if (price === 0) return "Miễn phí";
+  return `${price.toLocaleString("vi-VN")}đ`;
+};
+
+const CourseRating: React.FC<{ rating: number }> = ({ rating }) => (
+  <View style={styles.ratingContainer}>
+    {[1, 2, 3, 4, 5].map((star) => (
+      <Text key={star} style={styles.starIcon}>
+        {rating >= star ? "★" : "☆"}
+      </Text>
+    ))}
+    <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+  </View>
+);
+
+const CourseCard: React.FC<{
+  course: Course;
+  onPress?: (course: Course) => void;
+}> = ({ course, onPress }) => (
+  <TouchableOpacity 
+    style={styles.courseCard}
+    onPress={() => onPress?.(course)}
+  >
+    <Image 
+      source={
+        course.image 
+          ? { uri: course.image }
+          : require("../../assets/images/course.jpg")
+      } 
+      style={styles.courseImage} 
+    />
+    <View style={styles.courseCardContent}>
+      <Text style={styles.courseCardTitle} numberOfLines={2}>
+        {course.name}
+      </Text>
+      <Text style={styles.categoryText}>
+        {course.category?.name}
+      </Text>
+      <View style={styles.courseCardFooter}>
+        <View>
+          {course.price === 0 ? (
+            <Text style={styles.priceText}>Miễn phí</Text>
+          ) : course.discount > 0 ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={styles.priceText}>
+                {formatPrice(course.price - course.discount)}
+              </Text>
+              <Text style={[styles.priceText, { 
+                textDecorationLine: 'line-through',
+                color: '#666',
+                fontSize: 12,
+                marginLeft: 4
+              }]}>
+                {formatPrice(course.price)}
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.priceText}>
+              {formatPrice(course.price)}
+            </Text>
+          )}
+        </View>
+        <CourseRating rating={course.total_rating||0} />
+      </View>
+    </View>
+  </TouchableOpacity>
+);
+
+const CourseList: React.FC<{
+  title: string;
+  courses: Course[];
+  showViewAll?: boolean;
+  onViewAllPress?: () => void;
+  onCoursePress?: (course: Course) => void;
+  horizontal?: boolean;
+}> = ({ title, courses, showViewAll, onViewAllPress, onCoursePress, horizontal }) => (
+  <View style={[styles.section, styles.lastSection]}>
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {showViewAll && (
+        <TouchableOpacity onPress={onViewAllPress}>
+          <Text style={styles.viewAllText}>Xem tất cả</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+    {horizontal ? (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.horizontalList}
+      >
+        {courses.map((course) => (
+          <CourseCard 
+            key={course.id} 
+            course={course} 
+            onPress={onCoursePress}
+          />
+        ))}
+      </ScrollView>
+    ) : (
+      <FlatList
+        data={courses}
+        renderItem={({ item }) => (
+          <CourseCard 
+            course={item} 
+            onPress={onCoursePress}
+          />
+        )}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={2}
+        columnWrapperStyle={styles.courseGrid}
+        scrollEnabled={false}
+      />
+    )}
+  </View>
+);
+
+const useExploreData = () => {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [popularCourses, setPopularCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch categories and popular courses in parallel
+      const [categoriesData, coursesData] = await Promise.all([
+        getAllCategories(),
+        getAllPopularCourses()
+      ]);
+
+      if (categoriesData) setCategories(categoriesData);
+      if (coursesData) setPopularCourses(coursesData);
+    } catch (err) {
+      setError('Có lỗi xảy ra khi tải dữ liệu');
+      console.error('Error fetching explore data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  return {
+    categories,
+    popularCourses,
+    loading,
+    error,
+    refetch: fetchData
+  };
+};
 
 const Explore: React.FC<MyScreenProps["ExploreScreenProps"]> = ({
   navigation,
-  route,  
+  route,
 }) => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [suggestedCourses, setSuggestedCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const { 
+    categories, 
+    popularCourses, 
+    loading, 
+    error, 
+    refetch 
+  } = useExploreData();
 
-  // Format price to VND
-  const formatPrice = (price: number): string => {
-    if (price === 0) return "Miễn phí";
-    return `${price.toLocaleString("vi-VN")}đ`;
+  const handleSearchPress = () => {
+    navigation.navigate("SearchCourseScreen", {
+      message: "Tìm kiếm khóa học",
+    });
   };
 
-  // Fetch data
-  useEffect(() => {
-    // Mock categories data
-    setCategories([
-      { id: 1, name: "Lập trình" },
-      { id: 2, name: "Thiết kế"},
-      { id: 3, name: "Kinh doanh"},
-      { id: 4, name: "Marketing"},
-      { id: 5, name: "Nhiếp ảnh"},
-      { id: 6, name: "Âm nhạc"},
-      { id: 7, name: "Khoa học dữ liệu"},
-    ]);
-
-    // Mock courses data
-    setSuggestedCourses([
-      {
-        id: 1,
-        title: "Lập trình React Native cơ bản",
-        instructor: "Nguyễn Văn A",
-        category: "Lập trình",
-        price: 1499000,
-        image: "https://via.placeholder.com/100",
-        rating: 4.7,
-      },
-      {
-        id: 2,
-        title: "Nguyên tắc thiết kế UI/UX",
-        instructor: "Trần Thị B",
-        category: "Thiết kế",
-        price: 999000,
-        image: "https://via.placeholder.com/100",
-        rating: 4.5,
-      },
-      {
-        id: 3,
-        title: "Chiến lược Marketing số",
-        instructor: "Lê Văn C",
-        category: "Marketing",
-        price: 799000,
-        image: "https://via.placeholder.com/100",
-        rating: 4.2,
-      },
-      {
-        id: 4,
-        title: "Quản trị kinh doanh cơ bản",
-        instructor: "Phạm Thị D",
-        category: "Kinh doanh",
-        price: 1599000,
-        image: "https://via.placeholder.com/100",
-        rating: 4.8,
-      },
-      {
-        id: 5,
-        title: "Khoa học dữ liệu & ML cơ bản",
-        instructor: "Hoàng Văn E",
-        category: "Khoa học dữ liệu",
-        price: 1999000,
-        image: "https://via.placeholder.com/100",
-        rating: 4.6,
-      },
-      {
-        id: 6,
-        title: "Nhiếp ảnh điện thoại chuyên nghiệp",
-        instructor: "Mai Thị F",
-        category: "Nhiếp ảnh",
-        price: 899000,
-        image: "https://via.placeholder.com/100",
-        rating: 4.4,
-      },
-    ]);
-
-    setLoading(false);
-  }, []);
-
-  // Handle category selection
-  const handleCategoryPress = (categoryId: number) => {
-    setSelectedCategory(categoryId === selectedCategory ? null : categoryId);
+  const handleCategoryPress = (category: Category) => {
+    navigation.navigate("UserViewAllCourseScreen", {
+      message: "Khóa học theo danh mục",
+      category_id: category.id,
+    });
   };
 
-  // Render rating stars
-  const renderRatingStars = (rating: number) => {
-    return (
-      <View style={styles.ratingContainer}>
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Text key={star} style={styles.starIcon}>
-            {rating >= star ? "★" : "☆"}
-          </Text>
-        ))}
-        <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
-      </View>
-    );
+  const handleViewAllPopularPress = () => {
+    navigation.navigate("UserViewAllCourseScreen", {
+      message: "Khóa học phổ biến",
+      is_popular: true,
+    });
   };
 
-  // Course card component
-  const CourseCard = ({ course }: { course: Course }) => (
-    <TouchableOpacity style={styles.courseCard}>
-      <Image source={{ uri: course.image }} style={styles.courseImage} />
-      <View style={styles.courseCardContent}>
-        <Text style={styles.courseCardTitle} numberOfLines={2}>
-          {course.title}
-        </Text>
-        <Text style={styles.categoryText}>{course.category}</Text>
-        <View style={styles.courseCardFooter}>
-          <Text style={styles.priceText}>{formatPrice(course.price)}</Text>
-          {renderRatingStars(course.rating)}
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-
-  // Category item component
-  const CategoryItem = ({ category }: { category: Category }) => (
-    <TouchableOpacity
-      style={[
-        styles.categoryItem,
-        {
-          backgroundColor:
-            "white",
-        },
-      ]}
-      onPress={() => handleCategoryPress(category.id)}
-    >
-      {/* <Ionicons
-        name={category.icon as any}
-        size={24}
-        color={category.id === selectedCategory ? "white" : category.color}
-      /> */}
-      <Text
-        style={[
-          styles.categoryName,
-          { color: "#333" },
-        ]}
-      >
-        {category.name}
-      </Text>
-    </TouchableOpacity>
-  );
+  const handleCoursePress = (course: Course) => {
+    navigation.navigate("DetailCourseScreen", {
+      courseId: course.id,
+      message: "",
+    });
+  };
 
   if (loading) {
     return (
       <View style={styles.centered}>
-        <Text>Đang tải...</Text>
+        <ActivityIndicator size="large" color="#4a6ee0" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={refetch}>
+          <Text style={styles.retryText}>Thử lại</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      {/* Search Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.searchContainer}
-          onPress={() =>
-            navigation.navigate("SearchCourseScreen", {
-              message: "Tìm kiếm khóa học",
-            })
-          }
-        >
-          <Ionicons
-            name="search"
-            size={20}
-            color="#666"
-            style={styles.searchIcon}
-          />
-          <Text style={styles.searchPlaceholder}>Tìm kiếm khóa học...</Text>
-        </TouchableOpacity>
-      </View>
+      <SearchHeader onSearchPress={handleSearchPress} />
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Categories Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Danh mục khóa học</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoriesContainer}
-          >
-            {categories.map((category) => (
-              <CategoryItem key={category.id} category={category} />
-            ))}
-          </ScrollView>
-        </View>
+        <CategoryList
+          categories={categories}
+          onCategoryPress={handleCategoryPress}
+        />
 
-        {/* Popular Courses Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Khóa học phổ biến</Text>
-          <FlatList
-            data={suggestedCourses}
-            renderItem={({ item }) => <CourseCard course={item} />}
-            keyExtractor={(item) => item.id.toString()}
-            numColumns={2}
-            columnWrapperStyle={styles.courseGrid}
-            scrollEnabled={false}
-          />
-        </View>
+        <CourseList
+          title="Khóa học phổ biến"
+          courses={popularCourses}
+          showViewAll
+          onViewAllPress={handleViewAllPopularPress}
+          onCoursePress={handleCoursePress}
+        />
 
-        {/* New Courses Section */}
-        <View style={[styles.section, styles.lastSection]}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Khóa học mới</Text>
-            <TouchableOpacity>
-              <Text style={styles.viewAllText}>Xem tất cả</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.horizontalList}
-          >
-            {suggestedCourses.slice(0, 4).map((course) => (
-              <CourseCard key={course.id} course={course} />
-            ))}
-          </ScrollView>
-        </View>
+        <CourseList
+          title="Khóa học mới"
+          courses={popularCourses.slice(0, 4)}
+          horizontal
+          onCoursePress={handleCoursePress}
+        />
       </ScrollView>
     </View>
   );
@@ -412,7 +513,22 @@ const styles = StyleSheet.create({
     color: "#666",
     marginLeft: 2,
   },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#4a6ee0',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
+  },
 });
-
 
 export default Explore;

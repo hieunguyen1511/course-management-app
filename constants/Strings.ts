@@ -61,6 +61,18 @@ export const Strings = {
     course_section:{
         free_courses: 'Miễn phí',
         currency_vnd: '.đ',
-    }
+    },
+    user_view_all_course:{
+        title: 'Khóa học',
+        no_course: 'Không có khóa học nào',
+        loading_courses: 'Đang tải khóa học...',
+        loading_more_courses: 'Đang tải thêm khóa học...',
+        load_more: 'Tải thêm',
+        suggested_courses: 'Khóa học gợi ý',
+        popular_courses: 'Khóa học phổ biến',
+        all_courses: 'Tất cả khóa học',
+        course_by_category: 'Khóa học theo chủ đề',
+        all: 'Tất cả',
+    },
 
 }

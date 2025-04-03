@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { MyScreenProps } from "@/types/MyScreenProps";
 import axiosInstance from "@/api/axiosInstance";
+import { Strings } from "@/constants/Strings";
 
 interface Course {
   id: number;
@@ -107,6 +108,7 @@ async function getAllCategories() {
     }
   } catch (error) {
     console.error("Error fetching categories:", error);
+    return [];
   }
 }
 
@@ -241,6 +243,9 @@ const UserViewAllCourseScreen: React.FC<
   const [isPopular, setIsPopular] = useState<boolean>(false);
   const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
 
+  // Thêm state để lưu tên danh mục hiện tại
+  const [currentCategoryName, setCurrentCategoryName] = useState<string>("");
+
   // Fetch courses dựa trên params
   const fetchCourses = async (refresh = false) => {
     if (loading && !refresh) return;
@@ -282,7 +287,7 @@ const UserViewAllCourseScreen: React.FC<
     try {
       const fetchedCategories = await getAllCategories();
       if (fetchedCategories) {
-        setCategories([{ id: 0, name: "Tất cả" }, ...fetchedCategories]);
+        setCategories([{ id: 0, name: Strings.user_view_all_course.all }, ...fetchedCategories]);
       }
     } catch (error) {
       console.error("Error fetching categories:", error);
@@ -295,31 +300,39 @@ const UserViewAllCourseScreen: React.FC<
       setIsPopular(is_popular || false);
       setCategoryId(category_id);
 
-      // Fetch data dựa trên params trực tiếp (không dùng state)
       let fetchedCourses: Course[] = [];
+      
       if (is_suggested) {
-        // Dùng is_suggested từ params thay vì state
-        console.log("category_id", category_id);
-        fetchedCourses = await getAllSuggestedCourses(category_id || "NaN"); // Dùng category_id từ params
+        fetchedCourses = await getAllSuggestedCourses(category_id || "NaN");
       } else if (is_popular) {
-        // Dùng is_popular từ params
         fetchedCourses = (await getAllPopularCourses()) || [];
       } else if (category_id) {
-        // Dùng category_id từ params
+        // Khi chỉ có category_id, fetch courses theo category và lấy tên category
         fetchedCourses = (await getAllCoursesByCategoryId(category_id)) || [];
+        
+        // Lấy tên category từ API hoặc từ danh sách categories
+        try {
+          const allCategories = await getAllCategories();
+          if (allCategories) {
+            // const category = allCategories.find(category_id);
+            // if (category) {
+            //   setCurrentCategoryName(category.name);
+            // }
+          }
+        } catch (error) {
+          console.error("Error fetching category name:", error);
+        }
       } else {
-        // Nếu không có params, load tất cả khóa học
         fetchedCourses = (await getAllPopularCourses()) || [];
       }
+      
       setCourses(fetchedCourses);
 
-      // Fetch categories nếu cần
+      // Chỉ fetch categories khi không phải suggested và không có category_id
       if (!is_suggested && !category_id) {
-        // Dùng giá trị từ params
         fetchCategories();
       }
     } else {
-      // Nếu không có params, load tất cả khóa học
       const allCourses = (await getAllPopularCourses()) || [];
       setCourses(allCourses);
       fetchCategories();
@@ -331,14 +344,14 @@ const UserViewAllCourseScreen: React.FC<
 
   // Cập nhật useEffect cho việc thay đổi category
   useEffect(() => {
-    const { is_suggested} = route.params || {};
+    const { is_suggested } = route.params || {};
     if (is_suggested) {
       return;
     }
+    // Chỉ fetch lại khi thay đổi category trong trường hợp popular hoặc mặc định
     else if (!isSuggested && !categoryId) {
       fetchCourses();
     }
-    // Chỉ fetch lại khi thay đổi category trong trường hợp popular hoặc mặc định
   }, [selectedCategory]);
 
   const onRefresh = () => {
@@ -358,16 +371,17 @@ const UserViewAllCourseScreen: React.FC<
   };
 
   const getScreenTitle = () => {
-    if (isSuggested) return "Khóa học gợi ý";
-    if (isPopular) return "Khóa học phổ biến";
-    return "Tất cả khóa học";
+    if (isSuggested) return `${Strings.user_view_all_course.suggested_courses}`;
+    if (isPopular) return `${Strings.user_view_all_course.popular_courses}`;
+    if (categoryId && currentCategoryName) return `${Strings.user_view_all_course.course_by_category}: ${currentCategoryName}`;
+    return `${Strings.user_view_all_course.all_courses}`;
   };
 
   const renderEmptyState = () => {
     if (loading) return null;
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>Không tìm thấy khóa học nào</Text>
+        <Text style={styles.emptyText}>{Strings.user_view_all_course.no_course}</Text>
       </View>
     );
   };
