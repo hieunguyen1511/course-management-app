@@ -107,7 +107,7 @@ const RegisterScreen: React.FC<MyScreenProps["RegisterScreenProps"]> = ({
       isValid = false;
     }
 
-    // Validate password
+    // Validate password   F
     if (!formData.password) {
       newErrors.password = Strings.register.requirePassword;
       isValid = false;

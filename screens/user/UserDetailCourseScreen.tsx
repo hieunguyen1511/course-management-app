@@ -6,46 +6,17 @@ import {
   TouchableOpacity,
   Image,
   TextInput,
-  ActivityIndicator,
-  FlatList,
-  RefreshControl,
-} from "react-native";
-import React, { useState, useEffect, useCallback } from "react";
-import { Ionicons } from "@expo/vector-icons";
-import { MyScreenProps } from "@/types/MyScreenProps";
-
-import { ToastType } from "@/components/NotificationToast";
-import NotificationToast from "@/components/NotificationToast";
-import axiosInstance from "@/api/axiosInstance";
-
-
-interface Course{
-  id: number;
-  category_id: number;
-  name: string;
-  description: string;
-  status: number;
-  total_rating: number | null;
-  image: string | null;
-  price: number;
-  discount: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Enrollment {
-  id: number;
-  course_id: number;
-  user_id: number;
-  total_lesson: number;
-  complete_lesson: number;
-  price: number;
-  rating: number | null;
-  review: string | null;
-  createdAt: string;
-  updatedAt: string;
-  course: Course;
-}
+} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { MyScreenProps } from '@/types/MyScreenProps';
+import { NavigationIndependentTree } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/types/RootStackParamList';
+import UserViewLesson from './UserViewLessonScreen';
+import { Enrollment, Section } from '@/types/apiModels';
+import axios from 'axios';
+import axiosInstance from '@/api/axiosInstance';
 
 interface User {
   id: number;
@@ -169,17 +140,19 @@ async function getEnrollmentByIdWithCourse(enrollment_id: number) {
   }
 }
 
-const UserDetailCourseScreen: React.FC<
-  MyScreenProps["UserDetailCourseScreenProps"]
-> = ({ navigation, route }) => {
-  const { courseId, enrollmentId } = route.params || { courseId: 1, enrollmentId: 1 };
+const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProps']> = ({
+  navigation,
+  route,
+}) => {
+  const { enrollmentId, courseId, enrollmentId } = route.params || { courseId: 1, enrollmentId: 1 };
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"content" | "discussion">("content");
-  const [newComment, setNewComment] = useState("");
+  const [activeTab, setActiveTab] = useState<'content' | 'discussion'>('content');
+  const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
   // Toast state
@@ -187,100 +160,210 @@ const UserDetailCourseScreen: React.FC<
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<ToastType>(ToastType.SUCCESS);
 
-  const showToast = useCallback((message: string, type: ToastType) => {
-    setToastMessage(message);
-    setToastType(type);
-    setToastVisible(true);
-  }, []);
-
-  const processLessons = useCallback((lessons: Lesson[], totalCompleted: number, currentIndex: number) => {
-    // Sort lessons by order
-    const sortedLessons = [...lessons].sort(
-      (a, b) => (a.order || 0) - (b.order || 0)
-    );
-
-    // Update lesson locked status based on total completed lessons
-    return sortedLessons.map((lesson, index) => ({
-      ...lesson,
-      // Unlock lessons based on total completed lessons across all sections
-      isLocked: (currentIndex + index) >= totalCompleted
-    }));
-  }, []);
-
-  const fetchCourseDetail = useCallback(async () => {
+  const fetchEnrollmentByID = async (eID: number) => {
     try {
-      setLoading(true);
-      const [sectionsData, commentsData, enrollmentData] = await Promise.all([
-        getSectionByCourseId_withLesson(courseId),
-        getCommentByCourseWithUser(courseId),
-        getEnrollmentByIdWithCourse(enrollmentId)
-      ]);
-      
-      if (sectionsData && commentsData && enrollmentData) {
-        setEnrollment(enrollmentData);
-        
-        // Process lessons for each section based on total completed lessons
-        let currentIndex = -1;
-        const processedSections = sectionsData.map((section: Section) => {
-          const processedSection = {
-            ...section,
-            lessons: processLessons(section.lessons, enrollmentData.complete_lesson, currentIndex)
-          };
-          currentIndex += section.lessons.length;
-          return processedSection;
-        });
-        
-        setSections(processedSections);
-        setComments(commentsData);
-      } else {
-        showToast("Không thể tải thông tin khóa học", ToastType.ERROR);
-      }
-    } catch (error) {
-      console.error("Error fetching course detail:", error);
-      showToast("Có lỗi xảy ra khi tải dữ liệu", ToastType.ERROR);
-    } finally {
+      const response = await axiosInstance.get(
+        process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_ID?.replace(
+          ':enrollment_id',
+          eID.toString()
+        ) || ''
+      );
+      setEnrollment(response?.data?.enrollment);
       setLoading(false);
+    } catch (error) {
+      console.error('Error fetching enrollment by ID:', error);
+      throw error;
     }
-  }, [courseId, enrollmentId, showToast, processLessons]);
+  };
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchCourseDetail();
-    setRefreshing(false);
-  }, [fetchCourseDetail]);
+  const fetchCommentsByCourseID = async (cID: number) => {
+    try {
+      const response = await axiosInstance.get(
+        process.env.EXPO_PUBLIC_API_GET_ALL_COMMENT_BY_COURSES_ID?.replace(
+          ':course_id',
+          cID.toString()
+        ) || ''
+      );
+      setComments(response?.data?.comments);
+    } catch (error) {
+      console.error('Error fetching comments by course ID:', error);
+      throw error;
+    }
+  };
+
+  // useEffect(() => {
+  //   // Simulate API call to fetch course details
+  //   setTimeout(() => {
+  //     const mockCourse: CourseDetail = {
+  //       id: courseId,
+  //       title: 'Lập trình React Native cơ bản',
+  //       category: 'Lập trình',
+  //       image: 'https://via.placeholder.com/100',
+  //       rating: 4.7,
+  //       progress: 65,
+  //       totalLessons: 12,
+  //       completedLessons: 8,
+  //       chapters: [
+  //         {
+  //           id: 1,
+  //           title: 'Chương 1: Giới thiệu về React Native',
+  //           totalLessons: 3,
+  //           completedLessons: 3,
+  //           lessons: [
+  //             {
+  //               id: 1,
+  //               title: '1.1 Giới thiệu về React Native',
+  //               duration: '15:00',
+  //               isCompleted: true,
+  //               isLocked: false,
+  //             },
+  //             {
+  //               id: 2,
+  //               title: '1.2 Cài đặt môi trường phát triển',
+  //               duration: '20:00',
+  //               isCompleted: true,
+  //               isLocked: false,
+  //             },
+  //             {
+  //               id: 3,
+  //               title: '1.3 Tạo ứng dụng đầu tiên',
+  //               duration: '25:00',
+  //               isCompleted: true,
+  //               isLocked: false,
+  //             },
+  //           ],
+  //         },
+  //         {
+  //           id: 2,
+  //           title: 'Chương 2: Các thành phần cơ bản',
+  //           totalLessons: 4,
+  //           completedLessons: 2,
+  //           lessons: [
+  //             {
+  //               id: 4,
+  //               title: '2.1 View và Text',
+  //               duration: '18:00',
+  //               isCompleted: true,
+  //               isLocked: false,
+  //             },
+  //             {
+  //               id: 5,
+  //               title: '2.2 Image và Button',
+  //               duration: '20:00',
+  //               isCompleted: true,
+  //               isLocked: false,
+  //             },
+  //             {
+  //               id: 6,
+  //               title: '2.3 TextInput và Form',
+  //               duration: '25:00',
+  //               isCompleted: false,
+  //               isLocked: false,
+  //             },
+  //             {
+  //               id: 7,
+  //               title: '2.4 ScrollView và FlatList',
+  //               duration: '30:00',
+  //               isCompleted: false,
+  //               isLocked: true,
+  //             },
+  //           ],
+  //         },
+  //         {
+  //           id: 3,
+  //           title: 'Chương 3: Navigation và State Management',
+  //           totalLessons: 5,
+  //           completedLessons: 0,
+  //           lessons: [
+  //             {
+  //               id: 8,
+  //               title: '3.1 React Navigation cơ bản',
+  //               duration: '25:00',
+  //               isCompleted: false,
+  //               isLocked: true,
+  //             },
+  //             {
+  //               id: 9,
+  //               title: '3.2 Stack Navigation',
+  //               duration: '30:00',
+  //               isCompleted: false,
+  //               isLocked: true,
+  //             },
+  //             {
+  //               id: 10,
+  //               title: '3.3 Tab Navigation',
+  //               duration: '25:00',
+  //               isCompleted: false,
+  //               isLocked: true,
+  //             },
+  //             {
+  //               id: 11,
+  //               title: '3.4 State Management với Context',
+  //               duration: '35:00',
+  //               isCompleted: false,
+  //               isLocked: true,
+  //             },
+  //             {
+  //               id: 12,
+  //               title: '3.5 Redux trong React Native',
+  //               duration: '40:00',
+  //               isCompleted: false,
+  //               isLocked: true,
+  //             },
+  //           ],
+  //         },
+  //       ],
+  //       comments: [
+  //         {
+  //           id: 1,
+  //           userId: 1,
+  //           userName: 'Nguyễn Văn A',
+  //           userAvatar: 'https://via.placeholder.com/40',
+  //           content: 'Khóa học rất hay và dễ hiểu!',
+  //           timestamp: '2 giờ trước',
+  //           replies: [
+  //             {
+  //               id: 2,
+  //               userId: 2,
+  //               userName: 'Trần Thị B',
+  //               userAvatar: 'https://via.placeholder.com/40',
+  //               content: 'Đồng ý với bạn!',
+  //               timestamp: '1 giờ trước',
+  //               replies: [],
+  //             },
+  //           ],
+  //         },
+  //         {
+  //           id: 3,
+  //           userId: 3,
+  //           userName: 'Lê Văn C',
+  //           userAvatar: 'https://via.placeholder.com/40',
+  //           content: 'Có ai đang học chương 2 không?',
+  //           timestamp: '3 giờ trước',
+  //           replies: [],
+  //         },
+  //       ],
+  //     };
+  //     setCourse(mockCourse);
+  //     setLoading(false);
+  //   }, 1000);
+  // }, [courseId]);
 
   useEffect(() => {
-    if (route.params?.message_from_detail_course_screen) {
-      setTimeout(() => {
-        showToast(
-          route.params.message_from_detail_course_screen || "",
-          ToastType.INFO
-        );
-      }, 300);
-    }
-    fetchCourseDetail();
-  }, [
-    fetchCourseDetail,
-    route.params?.message_from_detail_course_screen,
-    showToast,
-  ]);
+    fetchEnrollmentByID(enrollmentId);
+  }, [enrollmentId]);
 
-  const handleLessonPress = useCallback(
-    (lesson: Lesson) => {
-      if (lesson.isLocked) {
-        showToast(
-          "Bạn cần hoàn thành các bài học trước đó trước",
-          ToastType.INFO
-        );
-        return;
-      }
-      navigation.navigate("UserViewLessonScreen", {
-        lessonId: lesson.id,
-        courseId: courseId,
-      });
-    },
-    [courseId, navigation, showToast]
-  );
+  const handleLessonPress = (lesson: Lesson) => {
+    if (lesson.isLocked) {
+      // Show message that lesson is locked
+      return;
+    }
+    // Navigate to lesson content
+    navigation.navigate('UserViewLessonScreen', {
+      lessonId: lesson.id,
+      courseId: enrollment?.course_id || 0,
+    });
+  };
 
   const handleCommentSubmit = useCallback(async () => {
     if (!newComment.trim()) {
@@ -325,7 +408,7 @@ const UserDetailCourseScreen: React.FC<
           }
         });
 
-        setNewComment("");
+        setNewComment('');
         setReplyingTo(null);
         showToast("Bình luận đã được gửi", ToastType.SUCCESS);
       } else {
@@ -484,19 +567,35 @@ const UserDetailCourseScreen: React.FC<
     );
   }
 
+  let isPreviousCompleted = true;
+  const isLessonCompleted = (lessonID: number) => {
+    return enrollment.enrollment_lessons.some(l => l.lesson_id === lessonID && l.completed_at);
+  };
+
+  const getLessonStatus = (lessonID: number): string => {
+    if (isLessonCompleted(lessonID)) {
+      isPreviousCompleted = true;
+      return 'completed';
+    } else {
+      if (isPreviousCompleted) {
+        isPreviousCompleted = false;
+        return 'unlocked';
+      } else {
+        isPreviousCompleted = false;
+        return 'locked';
+      }
+    }
+  };
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>{enrollment.course.name}</Text>
-          <Text style={styles.headerSubtitle}>{enrollment.course.description}</Text>
+          <Text style={styles.headerSubtitle}>{enrollment.course.category.name}</Text>
         </View>
       </View>
 
@@ -504,13 +603,30 @@ const UserDetailCourseScreen: React.FC<
       <View style={styles.progressContainer}>
         <View style={styles.progressBarContainer}>
           <View
-            style={[styles.progressBar, { width: `${(enrollment.complete_lesson / enrollment.total_lesson) * 100}%` }]}
+            style={[
+              styles.progressBar,
+              { width: `${(enrollment.complete_lesson / (enrollment.total_lesson ?? 1)) * 100}%` },
+            ]}
           />
         </View>
         <View style={styles.progressTextContainer}>
-          <Text style={styles.progressText}>{Math.round((enrollment.complete_lesson / enrollment.total_lesson) * 100)}% Hoàn thành</Text>
+          <Text style={styles.progressText}>
+            {`${
+              (enrollment?.enrollment_lessons?.filter(l => l.completed_at).length /
+                (enrollment?.course?.sections?.reduce(
+                  (acc, section) => acc + section.lessons.length,
+                  0
+                ) ?? 1)) *
+              100
+            }% Hoàn thành`}
+          </Text>
           <Text style={styles.lessonCount}>
-            {enrollment.complete_lesson}/{enrollment.total_lesson} bài học
+            {enrollment?.enrollment_lessons?.filter(l => l.completed_at).length}/
+            {enrollment?.course?.sections?.reduce(
+              (acc, section) => acc + section.lessons.length,
+              0
+            )}
+            bài học
           </Text>
         </View>
       </View>
@@ -518,49 +634,105 @@ const UserDetailCourseScreen: React.FC<
       {/* Tabs */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === "content" && styles.activeTab]}
-          onPress={() => setActiveTab("content")}
+          style={[styles.tab, activeTab === 'content' && styles.activeTab]}
+          onPress={() => setActiveTab('content')}
         >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === "content" && styles.activeTabText,
-            ]}
-          >
+          <Text style={[styles.tabText, activeTab === 'content' && styles.activeTabText]}>
             Nội dung
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === "discussion" && styles.activeTab]}
-          onPress={() => setActiveTab("discussion")}
+          style={[styles.tab, activeTab === 'discussion' && styles.activeTab]}
+          onPress={() => setActiveTab('discussion')}
         >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === "discussion" && styles.activeTabText,
-            ]}
-          >
+          <Text style={[styles.tabText, activeTab === 'discussion' && styles.activeTabText]}>
             Thảo luận
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* Content */}
-      {activeTab === "content" ? (
-        <FlatList
-          style={styles.contentContainer}
-          data={sections}
-          keyExtractor={(section) => section.id.toString()}
-          renderItem={renderChapter}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={["#4a6ee0"]}
-              tintColor="#4a6ee0"
-            />
-          }
-        />
+      {activeTab === 'content' ? (
+        <ScrollView style={styles.contentContainer}>
+          {enrollment.course.sections.map((section, idx) => (
+            <View key={section.id} style={styles.chapterContainer}>
+              <View style={styles.chapterHeader}>
+                <View style={styles.chapterTitleContainer}>
+                  <Text style={styles.chapterTitle}>{section.name}</Text>
+                  <Text style={styles.chapterProgress}>
+                    {
+                      section.lessons.filter(l =>
+                        enrollment.enrollment_lessons.find(
+                          el => el.completed_at && el.lesson_id === l.id
+                        )
+                      ).length
+                    }
+                    /{section.lessons.length} bài học
+                  </Text>
+                </View>
+                <View style={styles.chapterProgressBarContainer}>
+                  <View
+                    style={[
+                      styles.chapterProgressBar,
+                      {
+                        width: `${(0 / section.lessons.length) * 100}%`,
+                      },
+                    ]}
+                  />
+                </View>
+              </View>
+
+              {section.lessons.map(lesson => {
+                lesson.lesson_status = getLessonStatus(lesson.id);
+                return (
+                  <TouchableOpacity
+                    key={lesson.id}
+                    style={[
+                      styles.lessonItem,
+                      lesson.lesson_status === 'locked' && styles.lockedLesson,
+                    ]}
+                    onPress={() => handleLessonPress(lesson)}
+                    disabled={lesson.lesson_status === 'locked'}
+                  >
+                    <View style={styles.lessonContent}>
+                      <View style={styles.lessonIconContainer}>
+                        {lesson.lesson_status === 'completed' ? (
+                          <Ionicons name="checkmark-circle" size={24} color="#2c9e69" />
+                        ) : lesson.lesson_status === 'locked' ? (
+                          <Ionicons name="lock-closed" size={24} color="#999" />
+                        ) : (
+                          <Ionicons name="play-circle" size={24} color="#4a6ee0" />
+                        )}
+                      </View>
+                      <View style={styles.lessonInfo}>
+                        <Text
+                          style={[
+                            styles.lessonTitle,
+                            lesson.lesson_status === 'locked' && styles.lockedText,
+                          ]}
+                        >
+                          {lesson.title}
+                        </Text>
+                        <Text style={styles.lessonDuration}>{lesson.duration}</Text>
+                      </View>
+                    </View>
+                    {lesson.lesson_status !== 'locked' && (
+                      <Ionicons
+                        name={
+                          lesson.lesson_status === 'completed'
+                            ? 'checkmark-circle'
+                            : 'chevron-forward'
+                        }
+                        size={20}
+                        color={lesson.lesson_status === 'completed' ? '#2c9e69' : '#666'}
+                      />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ))}
+        </ScrollView>
       ) : (
         <View style={styles.discussionContainer}>
           {/* Comment Input */}
@@ -572,10 +744,7 @@ const UserDetailCourseScreen: React.FC<
               onChangeText={setNewComment}
               multiline
             />
-            <TouchableOpacity
-              style={styles.submitButton}
-              onPress={handleCommentSubmit}
-            >
+            <TouchableOpacity style={styles.submitButton} onPress={handleCommentSubmit}>
               <Text style={styles.submitButtonText}>Gửi</Text>
             </TouchableOpacity>
           </View>
@@ -597,12 +766,6 @@ const UserDetailCourseScreen: React.FC<
           />
         </View>
       )}
-      <NotificationToast
-        visible={toastVisible}
-        message={toastMessage}
-        type={toastType}
-        onDismiss={() => setToastVisible(false)}
-      />
     </View>
   );
 };
@@ -610,17 +773,17 @@ const UserDetailCourseScreen: React.FC<
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: '#f8f9fa',
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "white",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
     paddingTop: 50,
     paddingBottom: 15,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: '#f0f0f0',
   },
   backButton: {
     marginRight: 12,
@@ -630,49 +793,49 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: 'bold',
+    color: '#333',
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: "#666",
+    color: '#666',
   },
   progressContainer: {
-    backgroundColor: "white",
+    backgroundColor: 'white',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: '#f0f0f0',
   },
   progressBarContainer: {
     height: 6,
-    backgroundColor: "#e0e0e0",
+    backgroundColor: '#e0e0e0',
     borderRadius: 3,
-    overflow: "hidden",
+    overflow: 'hidden',
     marginBottom: 8,
   },
   progressBar: {
-    height: "100%",
-    backgroundColor: "#4a6ee0",
+    height: '100%',
+    backgroundColor: '#4a6ee0',
   },
   progressTextContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   progressText: {
     fontSize: 14,
-    color: "#666",
+    color: '#666',
   },
   lessonCount: {
     fontSize: 14,
-    color: "#999",
+    color: '#999',
   },
   contentContainer: {
     flex: 1,
   },
   chapterContainer: {
-    backgroundColor: "white",
+    backgroundColor: 'white',
     marginBottom: 12,
     padding: 16,
   },
@@ -680,45 +843,45 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   chapterTitleContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
   },
   chapterTitle: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: 'bold',
+    color: '#333',
   },
   chapterProgress: {
     fontSize: 14,
-    color: "#666",
+    color: '#666',
   },
   chapterProgressBarContainer: {
     height: 4,
-    backgroundColor: "#e0e0e0",
+    backgroundColor: '#e0e0e0',
     borderRadius: 2,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
   chapterProgressBar: {
-    height: "100%",
-    backgroundColor: "#4a6ee0",
+    height: '100%',
+    backgroundColor: '#4a6ee0',
   },
   lessonItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: '#f0f0f0',
   },
   lockedLesson: {
     opacity: 0.7,
   },
   lessonContent: {
     flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   lessonIconContainer: {
     marginRight: 12,
@@ -728,75 +891,75 @@ const styles = StyleSheet.create({
   },
   lessonTitle: {
     fontSize: 14,
-    color: "#333",
+    color: '#333',
     marginBottom: 4,
   },
   lockedText: {
-    color: "#999",
+    color: '#999',
   },
   lessonDuration: {
     fontSize: 12,
-    color: "#666",
+    color: '#666',
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f8f9fa",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
   },
   loadingText: {
     fontSize: 16,
-    color: "#666",
+    color: '#666',
   },
   errorContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f8f9fa",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
   },
   errorText: {
     fontSize: 16,
-    color: "#666",
+    color: '#666',
   },
   tabContainer: {
-    flexDirection: "row",
-    backgroundColor: "white",
+    flexDirection: 'row',
+    backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: '#f0f0f0',
   },
   tab: {
     flex: 1,
     paddingVertical: 12,
-    alignItems: "center",
+    alignItems: 'center',
     borderBottomWidth: 2,
-    borderBottomColor: "transparent",
+    borderBottomColor: 'transparent',
   },
   activeTab: {
-    borderBottomColor: "#4a6ee0",
+    borderBottomColor: '#4a6ee0',
   },
   tabText: {
     fontSize: 16,
-    color: "#666",
-    fontWeight: "500",
+    color: '#666',
+    fontWeight: '500',
   },
   activeTabText: {
-    color: "#4a6ee0",
-    fontWeight: "bold",
+    color: '#4a6ee0',
+    fontWeight: 'bold',
   },
   discussionContainer: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: '#f8f9fa',
   },
   commentInputContainer: {
-    flexDirection: "row",
+    flexDirection: 'row',
     padding: 16,
-    backgroundColor: "white",
+    backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: '#f0f0f0',
   },
   commentInput: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -804,25 +967,25 @@ const styles = StyleSheet.create({
     maxHeight: 100,
   },
   submitButton: {
-    justifyContent: "center",
+    justifyContent: 'center',
     paddingHorizontal: 16,
   },
   submitButtonText: {
-    color: "#4a6ee0",
-    fontWeight: "bold",
+    color: '#4a6ee0',
+    fontWeight: 'bold',
   },
   commentsList: {
     flex: 1,
   },
   commentContainer: {
-    backgroundColor: "white",
+    backgroundColor: 'white',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: '#f0f0f0',
   },
   replyContainer: {
     marginLeft: 40,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: '#f8f9fa',
   },
   commentHeader: {
     marginBottom: 8,
@@ -832,16 +995,16 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 14,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: 'bold',
+    color: '#333',
   },
   timestamp: {
     fontSize: 12,
-    color: "#999",
+    color: '#999',
   },
   commentContent: {
     fontSize: 14,
-    color: "#333",
+    color: '#333',
     marginBottom: 8,
   },
   replyButton: {
@@ -849,7 +1012,7 @@ const styles = StyleSheet.create({
   },
   replyButtonText: {
     fontSize: 12,
-    color: "#4a6ee0",
+    color: '#4a6ee0',
   },
   retryButton: {
     marginTop: 16,
@@ -862,5 +1025,16 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
+
+// function UserDetailCourseLayout() {
+//   return (
+//     <NavigationIndependentTree>
+//       <Stack.Navigator initialRouteName="UserDetailCourse" screenOptions={{ headerShown: false }}>
+//         <Stack.Screen name="UserDetailCourse" component={UserDetailCourse} />
+//         <Stack.Screen name="UserViewLesson" component={UserViewLesson} />
+//       </Stack.Navigator>
+//     </NavigationIndependentTree>
+//   )
+// }
 
 export default UserDetailCourseScreen;

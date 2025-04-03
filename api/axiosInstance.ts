@@ -13,6 +13,7 @@ const axiosInstance = axios.create({
     'Accept': 'application/json',
   },
 });
+
 axiosInstance.interceptors.request.use(
   async (config) => {
     //console.log("Request interceptor", config);

@@ -1,188 +1,85 @@
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  FlatList,
+} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/types/RootStackParamList';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, FlatList, ActivityIndicator, RefreshControl } from 'react-native'
 import React, { useState, useEffect, useCallback } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 
 import { MyScreenProps } from '@/types/MyScreenProps';
-import * as SecureStore from 'expo-secure-store';
 import axiosInstance from '@/api/axiosInstance';
-
-// Types
+const Stack = createNativeStackNavigator<RootStackParamList>();
+// Define course interface
 interface Course {
-  id: number;
-  name: string;
-  description: string;
-  status: string;
-  total_rating: number;
-  image: string;
-  price: number;
-  discount: number;
-  category_id: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface UserEnrollment {
-  id: number;
-  course_id: number;
-  user_id: number;
-  total_lesson: number;
-  complete_lesson: number;
-  progress: number;
-  price: number;
-  rating: number | null;
-  review: string | null;
-  createdAt: string;
-  updatedAt: string;
-  course: Course;
-}
-
-interface CourseInProgress {
   id: number;
   enrollment_id: number;
   title: string;
   category: string;
   image: string;
   rating: number;
+}
+
+// Interface for in-progress courses
+interface CourseInProgress extends Course {
   progress: number;
   lastAccessed: string;
   totalLessons: number;
   completedLessons: number;
 }
 
-interface CourseCompleted {
-  id: number;
-  enrollment_id: number;
-  title: string;
-  category: string;
-  image: string;
-  rating: number;
+// Interface for completed courses
+interface CourseCompleted extends Course {
   completedDate: string;
   hasReviewed: boolean;
 }
 
-// API functions
-const getUserIdFromSecureStore = async (): Promise<string | null> => {
-  try {
-    const user = await SecureStore.getItemAsync('user');
-    const userData = user ? JSON.parse(user) : null;
-    return userData?.id || null;
-  } catch (error) {
-    console.error('Error retrieving user ID from SecureStore:', error);
-    return null;
-  }
-};
-
-const getUserEnrollments = async (userId: string): Promise<UserEnrollment[] | null> => {
-  try {
-    const url = `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_USER_ID}`.replace(':user_id', userId);
-    const response = await axiosInstance.get(url);
-    
-    if (response.status === 200 && response.data?.enrollments) {
-      return response.data.enrollments.map((enrollment: UserEnrollment) => ({
-        ...enrollment,
-        progress: Math.round((enrollment.complete_lesson / enrollment.total_lesson) * 100)
-      }));
-    }
-    return null;
-  } catch (error) {
-    console.error('Error retrieving user enrollments:', error);
-    return null;
-  }
-};
-
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('vi-VN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-};
-
-const getLastAccessedTime = (dateString: string): string => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInHours = Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60);
-  
-  if (diffInHours < 24) {
-    return 'Hôm nay';
-  } else if (diffInHours < 48) {
-    return 'Hôm qua';
-  } else if (diffInHours < 72) {
-    return '2 ngày trước';
-  } else if (diffInHours < 96) {
-    return '3 ngày trước';
-  } else {
-    return formatDate(dateString);
-  }
-};
-
-const Course: React.FC<MyScreenProps["UserCourseScreenProps"]> = ({ navigation, route }) => {
+const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, route }) => {
+  // State variables
   const [activeTab, setActiveTab] = useState<'progress' | 'completed'>('progress');
-  const [inProgressCourses, setInProgressCourses] = useState<CourseInProgress[]>([]);
-  const [completedCourses, setCompletedCourses] = useState<CourseCompleted[]>([]);
+  const [inProgressEnrollments, setInProgressEnrollments] = useState<CourseInProgress[]>([]);
+  const [completedEnrollments, setCompletedEnrollments] = useState<CourseCompleted[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchUserCourses = async () => {
+  const fetchInProgressEnrollments = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      
-      const userId = await getUserIdFromSecureStore();
-      if (!userId) {
-        setError('Không tìm thấy thông tin người dùng');
-        return;
-      }
+      const respone = await axiosInstance.get(
+        `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_IN_PROGRESS}`
+      );
 
-      const enrollments = await getUserEnrollments(userId);
-      if (!enrollments) {
-        setError('Không thể lấy danh sách khóa học');
-        return;
-      }
-
-      // Process in-progress courses  
-      const inProgress = enrollments
-        .filter(enrollment => enrollment.progress < 100)
-        .map(enrollment => ({
-          id: enrollment.course.id,
-          enrollment_id: enrollment.id,
-          title: enrollment.course.name,
-          category: enrollment.course.description.substring(0, 30) + '...',
-          image: enrollment.course.image,
-          rating: enrollment.course.total_rating,
-          progress: enrollment.progress,
-          lastAccessed: getLastAccessedTime(enrollment.updatedAt),
-          totalLessons: enrollment.total_lesson,
-          completedLessons: enrollment.complete_lesson
-        }));
-
-      // Process completed courses
-      const completed = enrollments
-        .filter(enrollment => enrollment.progress === 100)
-        .map(enrollment => ({
-          id: enrollment.course.id,
-          enrollment_id: enrollment.id,
-          title: enrollment.course.name,
-          category: enrollment.course.description.substring(0, 30) + '...',
-          image: enrollment.course.image,
-          rating: enrollment.course.total_rating,
-          completedDate: enrollment.updatedAt,
-          hasReviewed: enrollment.rating !== null
-        }));
-      setInProgressCourses(inProgress);
-      setCompletedCourses(completed);
+      setInProgressEnrollments(respone.data.enrollments);
     } catch (error) {
       console.error('Error fetching courses:', error);
-      setError('Có lỗi xảy ra khi tải dữ liệu');
-    } finally {
-      setLoading(false);
     }
   };
 
+  const fetchCompletedCourses = async () => {
+    try {
+      const respone = await axiosInstance.get(
+        `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_COMPLETED}`
+      );
+
+      setCompletedEnrollments(respone.data.enrollments);
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+    }
+  };
+  // Fetch user courses
   useEffect(() => {
-    fetchUserCourses();
+    fetchInProgressEnrollments();
+    // Simulated API call - replace with actual API in production
+
+    fetchCompletedCourses();
+
+    setLoading(false);
   }, []);
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -201,35 +98,19 @@ const Course: React.FC<MyScreenProps["UserCourseScreenProps"]> = ({ navigation, 
   const renderTabs = () => (
     <View style={styles.tabContainer}>
       <TouchableOpacity
-        style={[
-          styles.tab,
-          activeTab === 'progress' && styles.activeTab
-        ]}
+        style={[styles.tab, activeTab === 'progress' && styles.activeTab]}
         onPress={() => setActiveTab('progress')}
       >
-        <Text
-          style={[
-            styles.tabText,
-            activeTab === 'progress' && styles.activeTabText
-          ]}
-        >
+        <Text style={[styles.tabText, activeTab === 'progress' && styles.activeTabText]}>
           Đang học
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[
-          styles.tab,
-          activeTab === 'completed' && styles.activeTab
-        ]}
+        style={[styles.tab, activeTab === 'completed' && styles.activeTab]}
         onPress={() => setActiveTab('completed')}
       >
-        <Text
-          style={[
-            styles.tabText,
-            activeTab === 'completed' && styles.activeTabText
-          ]}
-        >
+        <Text style={[styles.tabText, activeTab === 'completed' && styles.activeTabText]}>
           Đã hoàn thành
         </Text>
       </TouchableOpacity>
@@ -237,19 +118,25 @@ const Course: React.FC<MyScreenProps["UserCourseScreenProps"]> = ({ navigation, 
   );
 
   // Render in-progress course
-  const renderInProgressCourse = ({ item }: { item: CourseInProgress }) => (
+  const renderInProgressCourse = ({ item }: { item: any }) => (
     <TouchableOpacity style={styles.courseCard}>
-      <Image source={{ uri: item.image }} style={styles.courseImage} />
+      <Image source={{ uri: item?.course?.image }} style={styles.courseImage} />
 
       <View style={styles.courseInfo}>
-        <Text style={styles.courseTitle} numberOfLines={1}>{item.title}</Text>
-        <Text style={styles.categoryText}>{item.category}</Text>
+        <Text style={styles.courseTitle} numberOfLines={1}>
+          {item?.course?.name}
+        </Text>
+        <Text style={styles.categoryText}>{item?.course?.category?.name}</Text>
 
         <View style={styles.progressContainer}>
           <ProgressBar progress={item.progress} />
           <View style={styles.progressTextContainer}>
-            <Text style={styles.progressText}>{item.progress}% Hoàn thành</Text>
-            <Text style={styles.lessonCount}>{item.completedLessons}/{item.totalLessons} bài học</Text>
+            <Text style={styles.progressText}>
+              {Math.round((item.complete_lesson / (item.total_lesson ?? 1)) * 100)}% Hoàn thành
+            </Text>
+            <Text style={styles.lessonCount}>
+              {item.complete_lesson}/{item.total_lesson} bài học
+            </Text>
           </View>
         </View>
 
@@ -258,42 +145,53 @@ const Course: React.FC<MyScreenProps["UserCourseScreenProps"]> = ({ navigation, 
 
       <TouchableOpacity
         style={styles.continueButton}
-        onPress={() => navigation.navigate('UserDetailCourseScreen', { enrollmentId: item.enrollment_id, courseId: item.id })}
+        onPress={() =>
+          navigation.navigate('UserDetailCourseScreen', {
+           enrollmentId: item.enrollment_id, courseId: item.course_id,
+            enrollmentId: item.id,
+          })
+        }
       >
         <Text style={styles.continueButtonText}>Tiếp tục</Text>
       </TouchableOpacity>
     </TouchableOpacity>
   );
 
+  // Format date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
   // Render completed course
-  const renderCompletedCourse = ({ item }: { item: CourseCompleted }) => (
-    <TouchableOpacity style={styles.courseCard} onPress={() =>
-      navigation.navigate('UserRatingScreen', { message: "" })}>
+  const renderCompletedCourse = ({ item }: { item: any }) => (
+    <TouchableOpacity
+      style={styles.courseCard}
+      onPress={() => navigation.navigate('UserRatingScreen', { message: '' })}
+    >
       <Image source={{ uri: item.image }} style={styles.courseImage} />
 
       <View style={styles.courseInfo}>
-        <Text style={styles.courseTitle} numberOfLines={1}>{item.title}</Text>
-        <Text style={styles.categoryText}>{item.category}</Text>
+        <Text style={styles.courseTitle} numberOfLines={1}>
+          {item?.course?.name}
+        </Text>
+        <Text style={styles.categoryText}>{item?.course?.category?.name}</Text>
 
         <View style={styles.completedInfoContainer}>
           <View style={styles.completedDateContainer}>
             <Ionicons name="calendar-outline" size={14} color="#666" />
-            <Text style={styles.completedDate}>
-              Hoàn thành: {formatDate(item.completedDate)}
-            </Text>
+            <Text style={styles.completedDate}>Hoàn thành: {formatDate(item.completed_at)}</Text>
           </View>
         </View>
       </View>
 
-      <TouchableOpacity style={styles.reviewButton} >
-        <Ionicons
-          name={item.hasReviewed ? "star" : "star-outline"}
-          size={16}
-          color="#4a6ee0"
-        />
-        <Text style={styles.reviewText}>
-          {item.hasReviewed ? "Xem đánh giá" : "Đánh giá"}
-        </Text>
+      <TouchableOpacity style={styles.reviewButton}>
+        <Ionicons name={item.hasReviewed ? 'star' : 'star-outline'} size={16} color="#4a6ee0" />
+        <Text style={styles.reviewText}>{item.hasReviewed ? 'Xem đánh giá' : 'Đánh giá'}</Text>
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -301,7 +199,6 @@ const Course: React.FC<MyScreenProps["UserCourseScreenProps"]> = ({ navigation, 
   if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4a6ee0" />
         <Text style={styles.loadingText}>Đang tải khóa học của bạn...</Text>
       </View>
     );
@@ -333,59 +230,48 @@ const Course: React.FC<MyScreenProps["UserCourseScreenProps"]> = ({ navigation, 
       {renderTabs()}
 
       {/* Course Lists */}
-      {activeTab === 'progress' ? (
-        <FlatList<CourseInProgress>
-          data={inProgressCourses}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => renderInProgressCourse({ item })}
-          ListEmptyComponent={() => (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="book-outline" size={50} color="#ccc" />
-              <Text style={styles.emptyText}>Bạn chưa bắt đầu khóa học nào</Text>
-              <TouchableOpacity 
-                style={styles.exploreCourseButton}
-                onPress={() => navigation.navigate('Main', { screen: 'Home' })}
-              >
-                <Text style={styles.exploreCourseText}>Khám phá khóa học</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={["#4a6ee0"]}
-            />
-          }
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        />
-      ) : (
-        <FlatList<CourseCompleted>
-          data={completedCourses}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => renderCompletedCourse({ item })}
-          ListEmptyComponent={() => (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="trophy-outline" size={50} color="#ccc" />
-              <Text style={styles.emptyText}>Bạn chưa hoàn thành khóa học nào</Text>
-              <Text style={styles.emptySubText}>Các khóa học đã hoàn thành sẽ hiển thị ở đây</Text>
-            </View>
-          )}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={["#4a6ee0"]}
-            />
-          }
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {activeTab === 'progress' ? (
+          <>
+            {inProgressEnrollments.length > 0 ? (
+              inProgressEnrollments.map(enrollment => (
+                <View key={enrollment.id.toString()}>
+                  {renderInProgressCourse({ item: enrollment })}
+                </View>
+              ))
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="book-outline" size={50} color="#ccc" />
+                <Text style={styles.emptyText}>Bạn chưa bắt đầu khóa học nào</Text>
+                <TouchableOpacity style={styles.exploreCourseButton}>
+                  <Text style={styles.exploreCourseText}>Khám phá khóa học</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </>
+        ) : (
+          <>
+            {completedEnrollments.length > 0 ? (
+              completedEnrollments.map(enrollment => (
+                <View key={enrollment.id.toString()}>
+                  {renderCompletedCourse({ item: enrollment })}
+                </View>
+              ))
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="trophy-outline" size={50} color="#ccc" />
+                <Text style={styles.emptyText}>Bạn chưa hoàn thành khóa học nào</Text>
+                <Text style={styles.emptySubText}>
+                  Các khóa học đã hoàn thành sẽ hiển thị ở đây
+                </Text>
+              </View>
+            )}
+          </>
+        )}
+      </ScrollView>
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -590,38 +476,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#4a6ee0',
     marginBottom: 8,
-    flexWrap: 'wrap',
-    flex: 1,
   },
   lastAccessedText: {
     fontSize: 12,
     color: '#666',
     marginTop: 5,
   },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#f8f9fa',
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 15,
-    marginBottom: 20,
-  },
-  retryButton: {
-    backgroundColor: '#4a6ee0',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-  },
-  retryButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
 });
 
-export default Course
+// function Course() {
+//   return (
+//     <NavigationIndependentTree>
+//       <Stack.Navigator initialRouteName='UserCourse' screenOptions={{ headerShown: false }}>
+//         <Stack.Screen name="UserCourse" component={CourseScreen} />
+//         <Stack.Screen name="UserDetailCourse" component={UserDetailCourse} />
+//         <Stack.Screen name="UserRating" component={UserRating} />
+//       </Stack.Navigator>
+//     </NavigationIndependentTree>
+//   )
+// }
+
+export default Course;
