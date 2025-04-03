@@ -102,12 +102,12 @@ const IndexScreen: React.FC<MyScreenProps["IndexScreenProps"]> = ({
 }) => {
   const homeRouter = useRouter();
   const [isProcessing, setIsProcessing] = useState(true);
-  // useEffect(() => {
-  //   if (isProcessing) {
-  //     processLogin(navigation, homeRouter);
-  //     setIsProcessing(false);
-  //   }
-  // }, [isProcessing]);
+  useEffect(() => {
+    if (isProcessing) {
+      processLogin(navigation, homeRouter);
+      setIsProcessing(false);
+    }
+  }, [isProcessing]);
   return (
     <View className="flex justify-center items-center h-full">
       <Text>Index Screen</Text>
@@ -237,16 +237,13 @@ function IndexLayout() {
           component={SearchCourseScreen}
         />
         {/* Test Screen */}
-        <Stack.Screen name="Test4" component={test4}/>
-          
+        <Stack.Screen name="Test4" component={test4} />
       </Stack.Navigator>
     </NavigationIndependentTree>
   );
 }
 const index = () => {
-  return (
-    <IndexLayout />
-  );
-}
+  return <IndexLayout />;
+};
 
 export default index;

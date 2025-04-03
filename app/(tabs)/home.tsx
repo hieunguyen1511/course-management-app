@@ -74,6 +74,9 @@ interface CourseInProgress extends Course {
   lastAccessed: string;
 }
 
+
+
+
 async function getUserInformation() {
   try {
     const user = await SecureStore.getItemAsync("user");
@@ -90,26 +93,57 @@ async function getUserInformation() {
   }
 }
 
-// async function getUserEnrollments() {
-//   try {
-//     const user = await getUserInformation();
-//     const jsonUser = JSON.parse(user);
-//     axiosInstance
-//       .get(
-//         `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_USER_ID}`.replace(
-//           ":user_id",
-//           jsonUser.id
-//         )
-//       )
-//       .then((res) => {
-//         console.log("User enrollments", res.data);
-//         return res.data;
-//       });
-//   } catch (e) {
-//     console.log("Error getting user enrollments", e);
-//     return JSON.stringify({});
-//   }
-// }
+async function getUserEnrollments() {
+  try {
+    const user = await getUserInformation();
+    const jsonUser = JSON.parse(user);
+    axiosInstance
+      .get(
+        `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_USER_ID}`.replace(
+          ":user_id",
+          jsonUser.id
+        )
+      )
+      .then((res) => {
+        console.log("User enrollments", res.data);
+        return res.data;
+      });
+  } catch (e) {
+    console.log("Error getting user enrollments", e);
+    return JSON.stringify({});
+  }
+}
+
+
+async function getReferenceCourse(){
+  
+}
+
+// Add this function to fetch courses by reference category ID
+async function getCoursesByReferenceCategory(categoryId?: number) {
+  try {
+    let url = `${process.env.EXPO_PUBLIC_API_GET_COURSES_BY_REFERENCES_CATEOGORY_ID}`;
+    
+    // Replace the category_id parameter in URL if provided
+    if (categoryId) {
+      url = url.replace(':category_id', categoryId.toString());
+    } else {
+      url = url.replace(':category_id', 'NaN');
+    }
+    
+    const response = await axiosInstance.get(url);
+    
+    if (response.status === 200) {
+      return response.data.course;
+    } else {
+      console.error("Failed to fetch courses:", response.status);
+      return [];
+    }
+  } catch (error) {
+    console.error("Error fetching courses by reference category:", error);
+    return [];
+  }
+}
 
 type HomeScreenProps = NativeStackScreenProps<RootStackParamList, "Home">;
 
@@ -192,121 +226,35 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
       setMessage(route.params.message);
     }
 
-    fectchUserInfo();
-    //fetchUserEnrollments();
-
-    // Fetch user courses in progress - Mock data
-    // setInProgressCourses([
-    //   {
-    //     id: 1,
-    //     title: 'React Native Fundamentals',
-    //     instructor: 'John Doe',
-    //     category: 'Programming',
-    //     price: 49.99,
-    //     image: 'https://via.placeholder.com/100',
-    //     rating: 4.7,
-    //     progress: 65,
-    //     nextLesson: 'Navigation in React Native',
-    //     lastAccessed: '2 days ago'
-    //   },
-    //   {
-    //     id: 2,
-    //     title: 'UI/UX Design Principles',
-    //     instructor: 'Sarah Smith',
-    //     category: 'Design',
-    //     price: 39.99,
-    //     image: 'https://via.placeholder.com/100',
-    //     rating: 4.5,
-    //     progress: 32,
-    //     nextLesson: 'Color Theory Basics',
-    //     lastAccessed: 'Yesterday'
-    //   }
-    // ]);
-
-    // Fetch suggested courses - Mock data
-    setSuggestedCourses([
-      {
-        id: 1,
-        category_id: 1,
-        name: "React Native for Beginners",
-        description: "Learn the basics of React Native",
-        status: 1,
-        price: 29.99,
-        discount: 0,
-        image: "https://via.placeholder.com/100",
-        total_rating: 4.5,
-        category: {
-          id: 1,
-          name: "Programming",
-        },
-      },
-      {
-        id: 2,
-        category_id: 2,
-        name: "Advanced React Native",
-        description: "Deep dive into React Native components",
-        status: 1,
-        price: 49.99,
-        discount: 10,
-        image: "https://via.placeholder.com/100",
-        total_rating: 4.8,
-        category: {
-          id: 1,
-          name: "Programming",
-        },
-      },
-      {
-        id: 3,
-        category_id: 3,
-        name: "UI Design for Mobile Apps",
-        description: "Master UI design principles for mobile apps",
-        status: 1,
-        price: 39.99,
-        discount: 5,
-        image: "https://via.placeholder.com/100",
-        total_rating: 4.6,
-        category: {
-          id: 2,
-          name: "Design",
-        },
-      },
-    ]);
-
-    // Fetch related courses - Mock data
-    setRelatedCourses([
-      {
-        id: 4,
-        category_id: 1,
-        name: "JavaScript Basics",
-        description: "Learn the fundamentals of JavaScript",
-        status: 1,
-        price: 19.99,
-        discount: 0,
-        image: "https://via.placeholder.com/100",
-        total_rating: 4.2,
-        category: {
-          id: 1,
-          name: "Programming",
-        },
-      },
-      {
-        id: 5,
-        category_id: 2,
-        name: "Graphic Design Fundamentals",
-        description: "Learn the basics of graphic design",
-        status: 1,
-        price: 24.99,
-        discount: 0,
-        image: "https://via.placeholder.com/100",
-        total_rating: 4.3,
-        category: {
-          id: 2,
-          name: "Design",
-        },
-      },
-    ]);
-
-    setLoading(false);
+    const fetchData = async () => {
+      setLoading(true);
+      
+      // Fetch user info
+      await fectchUserInfo();
+      
+      // Fetch suggested courses (category ID 1 for Programming)
+      const suggestedCoursesData = await getCoursesByReferenceCategory(1);
+      if (suggestedCoursesData && suggestedCoursesData.length > 0) {
+        setSuggestedCourses(suggestedCoursesData);
+      }
+      
+      // Fetch popular courses (no specific category to get all courses sorted by creation date)
+      const popularCoursesData = await getCoursesByReferenceCategory();
+      if (popularCoursesData && popularCoursesData.length > 0) {
+        setRelatedCourses(popularCoursesData);
+      }
+      
+      // Try to fetch user enrollments
+      try {
+        await fetchUserEnrollments();
+      } catch (error) {
+        console.error("Error fetching enrollments:", error);
+      }
+      
+      setLoading(false);
+    };
+    
+    fetchData();
   }, [route.params?.message]);
 
   // Render stars for ratings
@@ -364,7 +312,7 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
             <Text style={styles.priceText}>{course.price.toFixed(2)}</Text>
           )}
 
-          {renderRatingStars(course.total_rating)}
+          {renderRatingStars(course.total_rating? course.total_rating : 0)}
         </View>
       </View>
     </TouchableOpacity>
