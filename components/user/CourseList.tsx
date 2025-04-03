@@ -2,7 +2,7 @@ import React from "react";
 import { FlatList, ScrollView, StyleSheet } from "react-native";
 import Section from "./Section";
 import CourseCard from "./CourseCard";
-import { Course } from "@/types/Course";
+import { Course } from "@/types/user/Course";
 import { Strings } from "@/constants/Strings";
 const CourseList: React.FC<{
   title: string;

@@ -17,15 +17,10 @@ import { RootStackParamList } from "@/types/RootStackParamList";
 import { MyScreenProps } from "@/types/MyScreenProps";
 import axiosInstance from "@/api/axiosInstance";
 
-import { Course } from "@/types/Course";
+import { Course } from "@/types/user/Course";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-// Define types
-interface Category {
-  id: number;
-  name: string;
-}
 
 async function getAllPopularCourses() {
   try {

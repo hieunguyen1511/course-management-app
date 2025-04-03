@@ -3,26 +3,7 @@ import { View, Text, TouchableOpacity, Image } from "react-native";
 import { StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Strings } from "@/constants/Strings";
-
-interface UserEnrollments {
-    id: number;
-    user_id: number;
-    course_id: number;
-    total_lesson: number;
-    complete_lesson: number;
-    progress: number;
-    image: string;
-    createdAt: string;
-    updatedAt: string;
-    course: {
-      name: string;
-      description: string;
-      status: number;
-      price: number;
-      discount: number;
-    };
-  }
-  
+import { UserEnrollments } from "@/types/user/UserEnrollments";
 
 const InProgressCourseCard: React.FC<{
   item: UserEnrollments;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import { Course } from '@/types/Course';
+import { Course } from '@/types/user/Course';
 import { Strings } from '@/constants/Strings';
 
 interface CourseCardProps {

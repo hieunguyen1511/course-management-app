@@ -21,22 +21,9 @@ import { Strings } from "@/constants/Strings";
 import { RootStackParamList } from "../../types/RootStackParamList";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
+import { Course } from "@/types/user/Course";
+import { UserEnrollments } from "@/types/user/UserEnrollments";
 // Types for our courses data
-interface Course {
-  id: number;
-  category_id: number;
-  name: string;
-  description: string;
-  status: number;
-  price: number;
-  discount: number;
-  image: string;
-  total_rating: number;
-  category: {
-    id: number;
-    name: string;
-  };
-}
 
 interface User {
   id: number;
@@ -45,31 +32,6 @@ interface User {
   email: string;
   role: string;
   avatar: string;
-}
-
-interface UserEnrollments {
-  id: number;
-  user_id: number;
-  course_id: number;
-  total_lesson: number;
-  complete_lesson: number;
-  progress: number;
-  image: string;
-  createdAt: string;
-  updatedAt: string;
-  course: {
-    name: string;
-    description: string;
-    status: number;
-    price: number;
-    discount: number;
-  };
-}
-
-interface CourseInProgress extends Course {
-  progress: number;
-  nextLesson: string;
-  lastAccessed: string;
 }
 
 // Components
