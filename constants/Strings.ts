@@ -58,5 +58,9 @@ export const Strings = {
         last_accessed:"Lần truy cập gần nhất",
         loading_your_courses: 'Đang tải khóa học...',
     },
+    course_section:{
+        free_courses: 'Miễn phí',
+        currency_vnd: '.đ',
+    }
 
 }

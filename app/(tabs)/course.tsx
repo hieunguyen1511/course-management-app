@@ -529,17 +529,6 @@ const styles = StyleSheet.create({
   },
 });
 
-// function Course() {
-//   return (
-//     <NavigationIndependentTree>
-//       <Stack.Navigator initialRouteName='UserCourse' screenOptions={{ headerShown: false }}>
-//         <Stack.Screen name="UserCourse" component={CourseScreen} />
-//         <Stack.Screen name="UserDetailCourse" component={UserDetailCourse} />
-//         <Stack.Screen name="UserRating" component={UserRating} />
-//       </Stack.Navigator>
-//     </NavigationIndependentTree>
-//   )
-// }
 
 
 export default Course

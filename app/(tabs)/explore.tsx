@@ -20,8 +20,6 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 interface Category {
   id: number;
   name: string;
-  icon: string;
-  color: string;
 }
 
 interface Course {
@@ -54,13 +52,13 @@ const Explore: React.FC<MyScreenProps["ExploreScreenProps"]> = ({
   useEffect(() => {
     // Mock categories data
     setCategories([
-      { id: 1, name: "Lập trình", icon: "code-slash", color: "#4a6ee0" },
-      { id: 2, name: "Thiết kế", icon: "color-palette", color: "#e04a76" },
-      { id: 3, name: "Kinh doanh", icon: "briefcase", color: "#e0a64a" },
-      { id: 4, name: "Marketing", icon: "megaphone", color: "#4ae076" },
-      { id: 5, name: "Nhiếp ảnh", icon: "camera", color: "#8e4ae0" },
-      { id: 6, name: "Âm nhạc", icon: "musical-notes", color: "#e04a4a" },
-      { id: 7, name: "Khoa học dữ liệu", icon: "analytics", color: "#4acde0" },
+      { id: 1, name: "Lập trình" },
+      { id: 2, name: "Thiết kế"},
+      { id: 3, name: "Kinh doanh"},
+      { id: 4, name: "Marketing"},
+      { id: 5, name: "Nhiếp ảnh"},
+      { id: 6, name: "Âm nhạc"},
+      { id: 7, name: "Khoa học dữ liệu"},
     ]);
 
     // Mock courses data
@@ -167,20 +165,20 @@ const Explore: React.FC<MyScreenProps["ExploreScreenProps"]> = ({
         styles.categoryItem,
         {
           backgroundColor:
-            category.id === selectedCategory ? category.color : "white",
+            "white",
         },
       ]}
       onPress={() => handleCategoryPress(category.id)}
     >
-      <Ionicons
+      {/* <Ionicons
         name={category.icon as any}
         size={24}
         color={category.id === selectedCategory ? "white" : category.color}
-      />
+      /> */}
       <Text
         style={[
           styles.categoryName,
-          { color: category.id === selectedCategory ? "white" : "#333" },
+          { color: "#333" },
         ]}
       >
         {category.name}
@@ -416,15 +414,5 @@ const styles = StyleSheet.create({
   },
 });
 
-// function ExploreLayout() {
-//   return (
-//     <NavigationIndependentTree>
-//      <Stack.Navigator initialRouteName='Explore' screenOptions={{ headerShown: false }}>
-//       <Stack.Screen name="Explore" component={Explore} />
-//       <Stack.Screen name="SearchCourse" component={SearchCourse} />
-//      </Stack.Navigator>
-//     </NavigationIndependentTree>
-//   )
-// }
 
 export default Explore;
