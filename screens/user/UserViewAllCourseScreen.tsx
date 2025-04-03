@@ -14,6 +14,7 @@ import React, { useState, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
 
 import { MyScreenProps } from "@/types/MyScreenProps";
+import axiosInstance from "@/api/axiosInstance";
 
 interface Course {
   id: number;
@@ -30,21 +31,84 @@ interface Course {
     name: string;
   };
 }
+interface Category {
+  id: number;
+  name: string;
+}
 
-const CATEGORIES = [
-  { id: 0, name: "Tất cả" },
-  { id: 1, name: "Lập trình" },
-  { id: 2, name: "Thiết kế" },
-  { id: 3, name: "Kinh doanh" },
-];
+async function getAllSuggestedCourses(category_id: number | string) {
+  try {
+    let url = `${process.env.EXPO_PUBLIC_API_GET_COURSES_BY_REFERENCES_CATEOGORY_ID}`;
+    url = url.replace(":category_id", category_id?.toString() || "NaN");
 
-const COURSE_NAMES = [
-  "Lập trình React Native",
-  "JavaScript cơ bản đến nâng cao",
-  "Thiết kế UI/UX chuyên nghiệp",
-  "Phát triển Web Full Stack",
-  "Python cho người mới bắt đầu",
-];
+    const response = await axiosInstance.get(url);
+    if (response.status === 200) {
+      const courses = response.data.course;
+      return courses.sort((a: Course, b: Course) => {
+        if (a.total_rating > b.total_rating) return -1;
+        if (a.total_rating < b.total_rating) return 1;
+        return 0;
+      });
+    } else {
+      throw new Error("Failed to fetch courses");
+    }
+  } catch (error) {
+    console.error("Error fetching courses:", error);
+    return [];
+  }
+}
+async function getAllPopularCourses() {
+  try {
+    let url = `${process.env.EXPO_PUBLIC_API_GET_ALL_COURSES}`;
+    const response = await axiosInstance.get(url);
+    if (response.status === 200) {
+      return response.data.courses.sort((a: Course, b: Course) => {
+        if (a.total_rating > b.total_rating) return -1;
+        if (a.total_rating < b.total_rating) return 1;
+        return 0;
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching courses:", error);
+    return [];
+  }
+}
+
+async function getAllCoursesByCategoryId(category_id: number) {
+  try {
+    let url = `${process.env.EXPO_PUBLIC_API_GET_COURSES_BY_CATEGORY_ID}`;
+    url = url.replace(":id", category_id.toString());
+    const response = await axiosInstance.get(url);
+    if (response.status === 200) {
+      return response.data.courses.sort((a: Course, b: Course) => {
+        if (a.total_rating > b.total_rating) return -1;
+        if (a.total_rating < b.total_rating) return 1;
+        return 0;
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching courses:", error);
+    return [];
+  }
+}
+
+async function getAllCategories() {
+  try {
+    let url = `${process.env.EXPO_PUBLIC_API_GET_ALL_CATEGORIES}`;
+    const response = await axiosInstance.get(url);
+    if (response.status === 200) {
+      return response.data.categories.sort((a: Category, b: Category) => {
+        if (a.name > b.name) return 1;
+        if (a.name < b.name) return -1;
+        return 0;
+      });
+    } else {
+      throw new Error("Failed to fetch categories");
+    }
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+  }
+}
 
 // Format price to VND
 const formatPrice = (price: number): string => {
@@ -52,126 +116,73 @@ const formatPrice = (price: number): string => {
   return `${price.toLocaleString("vi-VN")}đ`;
 };
 
-// Mock data generator
-const generateMockCourses = (startId: number, count: number): Course[] => {
-  return Array.from({ length: count }, (_, index) => {
-    // 20% chance of being a free course
-    const isFree = Math.random() < 0.2;
-    const price = isFree ? 0 : Math.floor(Math.random() * 1500000) + 500000; // Random price between 500k and 2M VND
-    const discount =
-      !isFree && Math.random() > 0.5 ? Math.floor(Math.random() * 300000) : 0; // Random discount up to 300k VND
+// components/course/CourseHeader.tsx
+const CourseHeader: React.FC<{
+  title: string;
+  onBack: () => void;
+}> = ({ title, onBack }) => (
+  <View style={styles.header}>
+    <TouchableOpacity onPress={onBack} style={styles.backButton}>
+      <Ionicons name="arrow-back" size={24} color="#333" />
+    </TouchableOpacity>
+    <Text style={styles.headerTitle}>{title}</Text>
+  </View>
+);
 
-    return {
-      id: startId + index,
-      category_id: Math.floor(Math.random() * 3) + 1,
-      name: `Khóa học ${startId + index}: ${
-        COURSE_NAMES[Math.floor(Math.random() * COURSE_NAMES.length)]
-      }`,
-      description: `Đây là mô tả chi tiết cho khóa học ${
-        startId + index
-      }. Học mọi thứ bạn cần biết về chủ đề này.`,
-      status: 1,
-      price,
-      discount,
-      image: "course-image.jpg",
-      total_rating: Math.random() * 2 + 3,
-      category: {
-        id: Math.floor(Math.random() * 3) + 1,
-        name: ["Lập trình", "Thiết kế", "Kinh doanh"][
-          Math.floor(Math.random() * 3)
-        ],
-      },
-    };
-  });
+// components/course/CourseRating.tsx
+const CourseRating: React.FC<{ rating: number }> = ({ rating }) => (
+  <View style={styles.ratingContainer}>
+    {[1, 2, 3, 4, 5].map((star) => (
+      <Text key={star} style={styles.starText}>
+        {rating >= star ? "★" : "☆"}
+      </Text>
+    ))}
+    <Text style={styles.ratingNumber}>{Number(rating).toFixed(1)}</Text>
+  </View>
+);
+
+// components/course/CoursePrice.tsx
+const CoursePrice: React.FC<{
+  price: number;
+  discount: number;
+}> = ({ price, discount }) => {
+  if (price === 0) return <Text style={styles.freePrice}>Miễn phí</Text>;
+
+  if (discount > 0) {
+    return (
+      <View style={styles.priceContainer}>
+        <Text style={styles.discountPrice}>
+          {formatPrice(price - discount)}
+        </Text>
+        <Text style={styles.originalPrice}>{formatPrice(price)}</Text>
+      </View>
+    );
+  }
+
+  return <Text style={styles.price}>{formatPrice(price)}</Text>;
 };
 
-// Total mock courses to simulate
-const TOTAL_MOCK_COURSES = 45;
-
-const UserViewAllCourseScreen: React.FC<
-  MyScreenProps["UserViewAllCourseScreenProps"]
-> = ({ navigation, route }) => {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState(0);
-  const ITEMS_PER_PAGE = 10;
-
-  const fetchMockCourses = async (pageNumber: number, refresh = false) => {
-    if (!hasMore && !refresh) return;
-
-    setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    const startIndex = (pageNumber - 1) * ITEMS_PER_PAGE;
-    const remainingItems = TOTAL_MOCK_COURSES - startIndex;
-    const itemsToGenerate = Math.min(ITEMS_PER_PAGE, remainingItems);
-
-    if (itemsToGenerate <= 0) {
-      setHasMore(false);
-      setLoading(false);
-      return;
-    }
-
-    const newCourses = generateMockCourses(startIndex + 1, itemsToGenerate);
-
-    if (refresh) {
-      setCourses(newCourses);
-      setPage(1);
-      setHasMore(true);
-    } else {
-      setCourses((prev) => [...prev, ...newCourses]);
-    }
-
-    setHasMore(startIndex + itemsToGenerate < TOTAL_MOCK_COURSES);
-    setLoading(false);
-    setRefreshing(false);
-  };
-
-  useEffect(() => {
-    fetchMockCourses(1);
-  }, []);
-
-  useEffect(() => {
-    if (selectedCategory === 0) {
-      setFilteredCourses(courses);
-    } else {
-      const filtered = courses.filter(
-        (course) => course.category_id === selectedCategory
-      );
-      setFilteredCourses(filtered);
-    }
-  }, [courses, selectedCategory]);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchMockCourses(1, true);
-  };
-
-  const loadMore = () => {
-    if (!loading && hasMore) {
-      fetchMockCourses(page + 1);
-      setPage((prev) => prev + 1);
-    }
-  };
-
-  const renderCategoryFilter = () => (
+// components/course/CategoryFilter.tsx
+const CategoryFilter: React.FC<{
+  categories: Category[];
+  selectedCategory: number;
+  onSelectCategory: (id: number) => void;
+}> = ({ categories, selectedCategory, onSelectCategory }) => (
+  <View style={styles.categoryFilter}>
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      style={styles.categoryFilter}
+      style={styles.categoryScrollView}
+      contentContainerStyle={{ paddingRight: 16 }}
     >
-      {CATEGORIES.map((category) => (
+      {categories.map((category) => (
         <TouchableOpacity
           key={category.id}
           style={[
             styles.categoryButton,
             selectedCategory === category.id && styles.selectedCategoryButton,
           ]}
-          onPress={() => setSelectedCategory(category.id)}
+          onPress={() => onSelectCategory(category.id)}
         >
           <Text
             style={[
@@ -184,109 +195,222 @@ const UserViewAllCourseScreen: React.FC<
         </TouchableOpacity>
       ))}
     </ScrollView>
-  );
+  </View>
+);
 
-  const renderRatingStars = (rating: number) => {
-    return (
-      <View style={styles.ratingContainer}>
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Text key={star} style={styles.starText}>
-            {rating >= star ? "★" : "☆"}
-          </Text>
-        ))}
-        <Text style={styles.ratingNumber}>{Number(rating).toFixed(1)}</Text>
+// components/course/CourseItem.tsx
+const CourseItem: React.FC<{
+  course: Course;
+  onPress: (courseId: number) => void;
+}> = ({ course, onPress }) => (
+  <TouchableOpacity
+    style={styles.courseItem}
+    onPress={() => onPress(course.id)}
+  >
+    <Image
+      source={require("../../assets/images/course.jpg")}
+      style={styles.courseImage}
+    />
+    <View style={styles.courseContent}>
+      <Text style={styles.courseTitle} numberOfLines={2}>
+        {course.name}
+      </Text>
+      <Text style={styles.categoryText}>{course.category.name}</Text>
+      <Text style={styles.descriptionText} numberOfLines={2}>
+        {course.description}
+      </Text>
+      <View style={styles.priceRatingContainer}>
+        <CoursePrice price={course.price} discount={course.discount} />
       </View>
-    );
+      <CourseRating rating={course.total_rating} />
+    </View>
+  </TouchableOpacity>
+);
+
+const UserViewAllCourseScreen: React.FC<
+  MyScreenProps["UserViewAllCourseScreenProps"]
+> = ({ navigation, route }) => {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(0);
+
+  // State để xác định loại hiển thị
+  const [isSuggested, setIsSuggested] = useState<boolean>(false);
+  const [isPopular, setIsPopular] = useState<boolean>(false);
+  const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
+
+  // Fetch courses dựa trên params
+  const fetchCourses = async (refresh = false) => {
+    if (loading && !refresh) return;
+
+    setLoading(true);
+    try {
+      let fetchedCourses: Course[] = [];
+
+      if (isSuggested) {
+        // Fetch suggested courses với categoryId đúng
+        fetchedCourses = await getAllSuggestedCourses(categoryId || "NaN");
+      } else if (isPopular) {
+        if (selectedCategory !== 0) {
+          fetchedCourses =
+            (await getAllCoursesByCategoryId(selectedCategory)) || [];
+        } else {
+          fetchedCourses = (await getAllPopularCourses()) || [];
+        }
+      } else if (categoryId) {
+        fetchedCourses = (await getAllCoursesByCategoryId(categoryId)) || [];
+      } else if (selectedCategory !== 0) {
+        fetchedCourses =
+          (await getAllCoursesByCategoryId(selectedCategory)) || [];
+      } else {
+        fetchedCourses = (await getAllPopularCourses()) || [];
+      }
+
+      setCourses(fetchedCourses);
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   };
 
-  const renderCourseItem = ({ item }: { item: Course }) => (
-    <TouchableOpacity
-      style={styles.courseItem}
-      onPress={() => {
-        console.log("Navigate to course detail:", item.id);
-      }}
-    >
-      <Image
-        source={require("../../assets/images/course.jpg")}
-        style={styles.courseImage}
-      />
-      <View style={styles.courseContent}>
-        <Text style={styles.courseTitle} numberOfLines={2}>
-          {item.name}
-        </Text>
-        <Text style={styles.categoryText}>{item.category.name}</Text>
-        <Text style={styles.descriptionText} numberOfLines={2}>
-          {item.description}
-        </Text>
-        <View style={styles.priceRatingContainer}>
-          <View>
-            {item.price === 0 ? (
-              <Text style={styles.freePrice}>Miễn phí</Text>
-            ) : item.discount > 0 ? (
-              <View style={styles.priceContainer}>
-                <Text style={styles.discountPrice}>
-                  {formatPrice(item.price - item.discount)}
-                </Text>
-                <Text style={styles.originalPrice}>
-                  {formatPrice(item.price)}
-                </Text>
-              </View>
-            ) : (
-              <Text style={styles.price}>{formatPrice(item.price)}</Text>
-            )}
-          </View>
-          {renderRatingStars(item.total_rating)}
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+  // Fetch categories
+  const fetchCategories = async () => {
+    try {
+      const fetchedCategories = await getAllCategories();
+      if (fetchedCategories) {
+        setCategories([{ id: 0, name: "Tất cả" }, ...fetchedCategories]);
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  };
+  const loadData = async () => {
+    if (route.params) {
+      const { is_suggested, is_popular, category_id } = route.params;
+      setIsSuggested(is_suggested || false);
+      setIsPopular(is_popular || false);
+      setCategoryId(category_id);
 
-  const renderFooter = () => {
-    if (!loading) return null;
-    return (
-      <View style={styles.footer}>
-        <ActivityIndicator size="small" color="#4a6ee0" />
-      </View>
-    );
+      // Fetch data dựa trên params trực tiếp (không dùng state)
+      let fetchedCourses: Course[] = [];
+      if (is_suggested) {
+        // Dùng is_suggested từ params thay vì state
+        console.log("category_id", category_id);
+        fetchedCourses = await getAllSuggestedCourses(category_id || "NaN"); // Dùng category_id từ params
+      } else if (is_popular) {
+        // Dùng is_popular từ params
+        fetchedCourses = (await getAllPopularCourses()) || [];
+      } else if (category_id) {
+        // Dùng category_id từ params
+        fetchedCourses = (await getAllCoursesByCategoryId(category_id)) || [];
+      } else {
+        // Nếu không có params, load tất cả khóa học
+        fetchedCourses = (await getAllPopularCourses()) || [];
+      }
+      setCourses(fetchedCourses);
+
+      // Fetch categories nếu cần
+      if (!is_suggested && !category_id) {
+        // Dùng giá trị từ params
+        fetchCategories();
+      }
+    } else {
+      // Nếu không có params, load tất cả khóa học
+      const allCourses = (await getAllPopularCourses()) || [];
+      setCourses(allCourses);
+      fetchCategories();
+    }
+  };
+  useEffect(() => {
+    loadData();
+  }, [route.params]);
+
+  // Cập nhật useEffect cho việc thay đổi category
+  useEffect(() => {
+    const { is_suggested} = route.params || {};
+    if (is_suggested) {
+      return;
+    }
+    else if (!isSuggested && !categoryId) {
+      fetchCourses();
+    }
+    // Chỉ fetch lại khi thay đổi category trong trường hợp popular hoặc mặc định
+  }, [selectedCategory]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchCourses(true);
   };
 
-  const renderEmpty = () => {
+  const handleCoursePress = (courseId: number) => {
+    navigation.navigate("DetailCourseScreen", {
+      courseId,
+      message: "",
+    });
+  };
+
+  const handleCategorySelect = (categoryId: number) => {
+    setSelectedCategory(categoryId);
+  };
+
+  const getScreenTitle = () => {
+    if (isSuggested) return "Khóa học gợi ý";
+    if (isPopular) return "Khóa học phổ biến";
+    return "Tất cả khóa học";
+  };
+
+  const renderEmptyState = () => {
     if (loading) return null;
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>No courses found</Text>
+        <Text style={styles.emptyText}>Không tìm thấy khóa học nào</Text>
       </View>
     );
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, paddingTop: 16 }}>
       <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Tất cả khóa học</Text>
+        <CourseHeader
+          title={getScreenTitle()}
+          onBack={() => navigation.goBack()}
+        />
+
+        {!isSuggested && !categoryId && (
+          <CategoryFilter
+            categories={categories}
+            selectedCategory={selectedCategory}
+            onSelectCategory={handleCategorySelect}
+          />
+        )}
+
+        <View style={styles.listContainer}>
+          <FlatList
+            data={courses}
+            renderItem={({ item }) => (
+              <CourseItem course={item} onPress={handleCoursePress} />
+            )}
+            keyExtractor={(item) => item.id.toString()}
+            contentContainerStyle={[
+              styles.listContent,
+              courses.length === 0 && styles.emptyListContent,
+            ]}
+            ListEmptyComponent={renderEmptyState}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+          />
         </View>
 
-        {renderCategoryFilter()}
-
-        <FlatList
-          data={filteredCourses}
-          renderItem={renderCourseItem}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.listContent}
-          ListFooterComponent={renderFooter}
-          ListEmptyComponent={renderEmpty}
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.3}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-        />
+        {loading && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color="#4a6ee0" />
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -314,8 +438,13 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#1f2937",
   },
+  listContainer: {
+    flex: 1,
+    width: "100%",
+  },
   listContent: {
     padding: 16,
+    flexGrow: 1,
   },
   courseItem: {
     flexDirection: "row",
@@ -330,6 +459,8 @@ const styles = StyleSheet.create({
     elevation: 2,
     borderWidth: 1,
     borderColor: "#f3f4f6",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   courseImage: {
     width: 96,
@@ -403,11 +534,15 @@ const styles = StyleSheet.create({
   footer: {
     paddingVertical: 16,
   },
-  emptyContainer: {
-    flex: 1,
+  emptyListContent: {
+    flexGrow: 1,
     justifyContent: "center",
+  },
+  emptyContainer: {
     alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 32,
+    width: "100%",
   },
   emptyText: {
     color: "#6b7280",
@@ -415,10 +550,11 @@ const styles = StyleSheet.create({
   },
   categoryFilter: {
     backgroundColor: "white",
-    paddingVertical: 12,
+    paddingVertical: 5,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#e5e7eb",
+    width: "100%",
   },
   categoryButton: {
     paddingLeft: 8,
@@ -440,6 +576,19 @@ const styles = StyleSheet.create({
   },
   selectedCategoryText: {
     color: "white",
+  },
+  loadingOverlay: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+  },
+  categoryScrollView: {
+    width: "100%",
   },
 });
 

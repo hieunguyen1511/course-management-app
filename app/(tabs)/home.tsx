@@ -146,7 +146,7 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
         );
         const firstEnrollment = sortedEnrollments.slice(0, 1);
         setReferenceCategoryId(
-          firstEnrollment[0]?.course?.category_id || "NaN"
+          firstEnrollment[0].course.category_id || "NaN"
         );
         const mappedData = firstEnrollment.map((item: UserEnrollments) => ({
           id: item.id,
@@ -327,7 +327,8 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
         data={inProgressCourses}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.continueCard} 
+          <TouchableOpacity
+            style={styles.continueCard}
             onPress={() =>
               navigation.navigate("UserDetailCourseScreen", {
                 courseId: item.course_id,
@@ -379,7 +380,11 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
         </Text>
         <TouchableOpacity
           onPress={() =>
-            navigation.navigate("UserViewAllCourseScreen", { message: "" })
+            navigation.navigate("UserViewAllCourseScreen", {
+              message: "Hello from Home Suggest Course",
+              is_suggested: true,
+              category_id: parseInt(referenceCategoryId.toString()),
+            })
           }
         >
           <Text style={styles.viewAllText}>{Strings.user_home.view_all}</Text>
@@ -405,7 +410,10 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
         </Text>
         <TouchableOpacity
           onPress={() =>
-            navigation.navigate("UserViewAllCourseScreen", { message: "" })
+            navigation.navigate("UserViewAllCourseScreen", {
+              message: "Hello from Home Popular Course",
+              is_popular: true,
+            })
           }
         >
           <Text style={styles.viewAllText}>{Strings.user_home.view_all}</Text>
