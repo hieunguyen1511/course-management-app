@@ -1,209 +1,227 @@
-import {
-  View,
-  Text,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-  FlatList,
-  Dimensions,
-  StyleSheet,
-} from "react-native";
-import React, { useState } from "react";
-import { Ionicons } from "@expo/vector-icons";
+import React, { useState, useEffect, useCallback } from "react";
+import { View, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, Text } from "react-native";
 import { MyScreenProps } from "@/types/MyScreenProps";
-import { RootStackParamList } from "@/types/RootStackParamList";
-import { NavigationIndependentTree } from "@react-navigation/native";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import UserViewLesson from "@/screens/user/UserViewLessonScreen";
+import * as SecureStore from "expo-secure-store";
+import axiosInstance from "@/api/axiosInstance";
+//components
+import CourseHeader from "@/components/user/CourseHeader";
+import CourseContent from "@/components/user/CourseContent";
+import CourseReviews from "@/components/user/CourseReviews";
+import CourseActionButton from "@/components/user/CourseActionButton";
+import { Course, Section, Enrollment } from "@/types/user/DetailCourse";
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
-
-interface Section {
-  id: number;
-  title: string;
-  lessons: Lesson[];
-}
-
-interface Lesson {
-  id: number;
-  title: string;
-  duration: string;
-  isCompleted?: boolean;
-}
-
-interface Review {
-  id: number;
-  userName: string;
-  rating: number;
-  comment: string;
-  date: string;
-  userAvatar?: string;
-}
-
-// Mock data for testing
-const mockCourse = {
-  id: 1,
-  title: "Khóa học Lập trình React Native từ A đến Z",
-  category: "Lập trình",
-  description:
-    "Học lập trình React Native thông qua việc xây dựng các ứng dụng thực tế. Khóa học toàn diện này bao gồm mọi thứ từ cơ bản đến nâng cao, bao gồm Redux, Navigation và tích hợp API.",
-  price: 1999000,
-  discount: 200000,
-  rating: 4.8,
-  totalStudents: 1234,
-  totalReviews: 456,
-  image: "course-image.jpg",
-  sections: [
-    {
-      id: 1,
-      title: "Bắt đầu",
-      lessons: [
-        {
-          id: 1,
-          title: "Giới thiệu về React Native",
-          duration: "10:30",
-          isCompleted: true,
-        },
-        { id: 2, title: "Thiết lập môi trường phát triển", duration: "15:45" },
-        { id: 3, title: "Ứng dụng đầu tiên của bạn", duration: "20:15" },
-      ],
-    },
-    {
-      id: 2,
-      title: "Khái niệm cốt lõi",
-      lessons: [
-        { id: 4, title: "Components và Props", duration: "25:00" },
-        { id: 5, title: "Quản lý State", duration: "30:20" },
-        { id: 6, title: "Cơ bản về Navigation", duration: "22:15" },
-      ],
-    },
-  ],
+// API Functions
+const getDetailCourse = async (course_id: number): Promise<Course | null> => {
+  try {
+    let url = `${process.env.EXPO_PUBLIC_API_GET_COURSE_BY_ID_WITH_COUNT_ENROLLMENT}`;
+    url = url.replace(":id", course_id.toString());
+    const response = await axiosInstance.get(url);
+    if (response.status === 200 && response.data?.course) {
+      return response.data.course;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching course details:", error);
+    return null;
+  }
 };
 
-const mockReviews: Review[] = [
-  {
-    id: 1,
-    userName: "Nguyễn Thị An",
-    rating: 5,
-    comment: "Khóa học rất tuyệt vời! Giải thích rõ ràng và có nhiều ví dụ thực tế.",
-    date: "2024-03-15",
-  },
-  {
-    id: 2,
-    userName: "Trần Văn Bình",
-    rating: 4,
-    comment: "Nội dung tốt nhưng một số phần có thể chi tiết hơn.",
-    date: "2024-03-10",
-  },
-];
+const getEnrollment = async (course_id: number): Promise<Enrollment[]> => {
+  try {
+    let url = `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_COURSE_ID}`;
+    url = url.replace(":course_id", course_id.toString());
+    const response = await axiosInstance.get(url);
+    return response.status === 200 ? response.data.enrollments || [] : [];
+  } catch (error) {
+    console.error("Error fetching enrollment:", error);
+    return [];
+  }
+};
+
+const getSections = async (course_id: number): Promise<Section[]> => {
+  try {
+    let url = `${process.env.EXPO_PUBLIC_API_GET_SECTION_BY_COURSE_ID_WITH_LESSON}`;
+    url = url.replace(":course_id", course_id.toString());
+    const response = await axiosInstance.get(url);
+    return response.status === 200 ? response.data.sections || [] : [];
+  } catch (error) {
+    console.error("Error fetching sections:", error);
+    return [];
+  }
+};
+
+const getUserInformation = async (): Promise<any> => {
+  try {
+    const user = await SecureStore.getItemAsync("user");
+    return user ? JSON.parse(user) : null;
+  } catch (error) {
+    console.error("Error getting user:", error);
+    return null;
+  }
+};
+
+const getUserInformationById = async (user_id: number): Promise<any> => {
+  try {
+    let url = `${process.env.EXPO_PUBLIC_API_GET_USER_BY_ID}`;
+    url = url.replace(":id", user_id.toString());
+    const response = await axiosInstance.get(url);
+    return response.status === 200 ? response.data.user : null;
+  } catch (error) {
+    console.error("Error fetching user information:", error);
+    return null;
+  }
+};
+
+// Components
+const UpdateProfileModal = ({ visible, onClose, onUpdate }: {
+  visible: boolean;
+  onClose: () => void;
+  onUpdate: () => void;
+}) => (
+  <Modal visible={visible} transparent={true} animationType="fade">
+    <View style={styles.modalContainer}>
+      <View style={styles.modalContent}>
+        <Text style={styles.modalTitle}>Cập nhật thông tin</Text>
+        <Text style={styles.modalText}>
+          Vui lòng cập nhật đầy đủ thông tin cá nhân (số điện thoại và ngày sinh) trước khi đăng ký khóa học.
+        </Text>
+        <View style={styles.modalButtons}>
+          <TouchableOpacity
+            style={[styles.modalButton, styles.cancelButton]}
+            onPress={onClose}
+          >
+            <Text style={styles.cancelButtonText}>Hủy</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.modalButton, styles.updateButton]}
+            onPress={onUpdate}
+          >
+            <Text style={styles.updateButtonText}>Cập nhật</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  </Modal>
+);
 
 const DetailCourseScreen: React.FC<MyScreenProps["DetailCourseScreenProps"]> = ({
   navigation,
   route,
 }) => {
+  const { courseId } = route.params || 1;
+  const [course, setCourse] = useState<Course | null>(null);
+  const [sections, setSections] = useState<Section[]>([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"content" | "reviews">("content");
-  const screenWidth = Dimensions.get("window").width;
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [showUpdateProfileModal, setShowUpdateProfileModal] = useState(false);
 
-  const renderRatingStars = (rating: number) => {
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [sectionsData, enrollmentsData, courseData] = await Promise.all([
+        getSections(courseId),
+        getEnrollment(courseId),
+        getDetailCourse(courseId),
+      ]);
+
+      if (sectionsData) setSections(sectionsData);
+      if (enrollmentsData) setEnrollments(enrollmentsData);
+      if (courseData) setCourse(courseData);
+
+      const userInfo = await getUserInformation();
+      if (enrollmentsData && userInfo?.id) {
+        setIsEnrolled(enrollmentsData.some(enrollment => enrollment.user_id === userInfo.id));
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [courseId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const checkUserInfo = async (): Promise<boolean> => {
+    try {
+      const userInfo = await getUserInformation();
+      if (!userInfo?.id) {
+        console.error("User not found");
+        return false;
+      }
+
+      const userDetails = await getUserInformationById(userInfo.id);
+      if (!userDetails || userDetails.phone === "" || userDetails.birth === null) {
+        setShowUpdateProfileModal(true);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error("Error checking user info:", error);
+      return false;
+    }
+  };
+
+  const handleEnroll = async () => {
+    try {
+      const userInfo = await getUserInformation();
+      if (!userInfo?.id) {
+        console.error("User not found");
+        return;
+      }
+
+      const isUserInfoComplete = await checkUserInfo();
+      if (!isUserInfoComplete) return;
+
+      const response = await axiosInstance.post(
+        `${process.env.EXPO_PUBLIC_API_ENROLL_COURSE}`,
+        { course_id: courseId, user_id: userInfo.id }
+      );
+
+      if (response.status === 200) {
+        setIsEnrolled(true);
+        const enrollmentsData = await getEnrollment(courseId);
+        if (enrollmentsData) setEnrollments(enrollmentsData);
+      }
+    } catch (error) {
+      console.error("Error enrolling in course:", error);
+    }
+  };
+
+  const handleLessonPress = (lesson: any) => {
+    if (!isEnrolled) return;
+    navigation.navigate("UserViewLessonScreen", {
+      lessonId: lesson.id,
+      courseId: courseId,
+    });
+  };
+
+  if (loading) {
     return (
-      <View style={styles.ratingContainer}>
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Text key={star} style={styles.starIcon}>
-            {rating >= star ? "★" : "☆"}
-          </Text>
-        ))}
-        <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#3b82f6" />
       </View>
     );
-  };
+  }
 
-  const renderSection = ({ item }: { item: Section }) => (
-    <View style={styles.sectionContainer}>
-      <Text style={styles.sectionTitle}>{item.title}</Text>
-      {item.lessons.map((lesson) => (
-        <View
-          key={lesson.id}
-          style={styles.lessonContainer}
-        >
-          <View style={styles.lessonContent}>
-            {lesson.isCompleted ? (
-              <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-            ) : (
-              <Ionicons name="play-circle-outline" size={20} color="#666" />
-            )}
-            <Text style={styles.lessonTitle}>{lesson.title}</Text>
-          </View>
-          <Text style={styles.lessonDuration}>{lesson.duration}</Text>
-        </View>
-      ))}
-    </View>
-  );
-
-  const renderReview = ({ item }: { item: Review }) => (
-    <View style={styles.reviewContainer}>
-      <View style={styles.reviewHeader}>
-        <View style={styles.avatarContainer}>
-          <Text style={styles.avatarText}>
-            {item.userName.charAt(0)}
-          </Text>
-        </View>
-        <View style={styles.reviewInfo}>
-          <Text style={styles.reviewerName}>{item.userName}</Text>
-          {renderRatingStars(item.rating)}
-        </View>
+  if (!course) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>Không tìm thấy khóa học</Text>
       </View>
-      <Text style={styles.reviewComment}>{item.comment}</Text>
-      <Text style={styles.reviewDate}>
-        {new Date(item.date).toLocaleDateString()}
-      </Text>
-    </View>
-  );
-
-  const formatPrice = (price: number) => {
-    if (price === 0) return "Miễn phí";
-    return `${price.toLocaleString('vi-VN')}đ`;
-  };
+    );
+  }
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.headerContainer}>
-        <Image
-          source={require("../../assets/images/course.jpg")}
-          style={[styles.headerImage, { width: screenWidth, height: 200 }]}
-        />
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Content */}
+      <CourseHeader
+        course={course}
+        onBackPress={() => navigation.goBack()}
+      />
       <ScrollView style={styles.scrollView}>
-        <View style={styles.courseInfo}>
-          <Text style={styles.courseTitle}>
-            {mockCourse.title}
-          </Text>
-          <Text style={styles.categoryText}>{mockCourse.category}</Text>
-
-          <View style={styles.ratingContainer}>
-            <View style={styles.ratingInfo}>
-              {renderRatingStars(mockCourse.rating)}
-              <Text style={styles.reviewCount}>
-                ({mockCourse.totalReviews} đánh giá)
-              </Text>
-            </View>
-            <Text style={styles.studentCount}>
-              {mockCourse.totalStudents} học viên
-            </Text>
-          </View>
-
-          <Text style={styles.description}>{mockCourse.description}</Text>
-        </View>
-
-        {/* Tabs */}
         <View style={styles.tabContainer}>
           <TouchableOpacity
             style={[
@@ -239,55 +257,36 @@ const DetailCourseScreen: React.FC<MyScreenProps["DetailCourseScreenProps"]> = (
           </TouchableOpacity>
         </View>
 
-        {/* Tab Content */}
         <View style={styles.tabContent}>
           {activeTab === "content" ? (
-            <FlatList
-              data={mockCourse.sections}
-              renderItem={renderSection}
-              keyExtractor={(item) => item.id.toString()}
-              scrollEnabled={false}
+            <CourseContent
+              sections={sections}
+              isEnrolled={isEnrolled}
+              onLessonPress={handleLessonPress}
             />
           ) : (
-            <FlatList
-              data={mockReviews}
-              renderItem={renderReview}
-              keyExtractor={(item) => item.id.toString()}
-              scrollEnabled={false}
-            />
+            <CourseReviews enrollments={enrollments} />
           )}
         </View>
       </ScrollView>
 
-      {/* Bottom Action Button */}
-      <View style={styles.bottomContainer}>
-        <View style={styles.priceContainer}>
-          {mockCourse.discount > 0 ? (
-            <View style={styles.discountPriceContainer}>
-              <Text style={styles.discountPrice}>
-                {formatPrice(mockCourse.price - mockCourse.discount)}
-              </Text>
-              <Text style={styles.originalPrice}>
-                {formatPrice(mockCourse.price)}
-              </Text>
-            </View>
-          ) : (
-            <Text style={styles.price}>
-              {formatPrice(mockCourse.price)}
-            </Text>
-          )}
-        </View>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => {
-            console.log("Đăng ký/Mua khóa học");
-          }}
-        >
-          <Text style={styles.actionButtonText}>
-            {mockCourse.price === 0 ? "Đăng ký ngay" : "Mua ngay"}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <CourseActionButton
+        course={course}
+        isEnrolled={isEnrolled}
+        onEnroll={handleEnroll}
+        onContinue={() => handleLessonPress(sections[0]?.lessons[0])}
+      />
+
+      <UpdateProfileModal
+        visible={showUpdateProfileModal}
+        onClose={() => setShowUpdateProfileModal(false)}
+        onUpdate={() => {
+          setShowUpdateProfileModal(false);
+          navigation.navigate("EditProfileScreen", {
+            message: "Vui lòng cập nhật đầy đủ thông tin cá nhân (số điện thoại và ngày sinh) trước khi đăng ký khóa học."
+          });
+        }}
+      />
     </View>
   );
 };
@@ -295,74 +294,14 @@ const DetailCourseScreen: React.FC<MyScreenProps["DetailCourseScreenProps"]> = (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
-  },
-  headerContainer: {
-    backgroundColor: 'white',
-  },
-  headerImage: {
-    width: '100%',
-    height: 200,
-  },
-  backButton: {
-    position: 'absolute',
-    top: 48,
-    left: 16,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 8,
+    backgroundColor: "#f9fafb",
   },
   scrollView: {
     flex: 1,
   },
-  courseInfo: {
-    padding: 16,
-    backgroundColor: 'white',
-  },
-  courseTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 8,
-  },
-  categoryText: {
-    color: '#dc2626',
-    marginBottom: 8,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  ratingInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  starIcon: {
-    color: '#fbbf24',
-    fontSize: 18,
-    marginRight: 2,
-  },
-  ratingText: {
-    color: '#4b5563',
-    fontSize: 14,
-    marginLeft: 8,
-  },
-  reviewCount: {
-    color: '#4b5563',
-    marginLeft: 8,
-  },
-  studentCount: {
-    color: '#4b5563',
-  },
-  description: {
-    color: '#4b5563',
-    marginBottom: 16,
-  },
   tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
+    flexDirection: "row",
+    backgroundColor: "white",
     marginBottom: 8,
   },
   tabButton: {
@@ -371,143 +310,85 @@ const styles = StyleSheet.create({
   },
   activeTabButton: {
     borderBottomWidth: 2,
-    borderBottomColor: '#3b82f6',
+    borderBottomColor: "#3b82f6",
   },
   tabText: {
-    textAlign: 'center',
-    color: '#4b5563',
+    textAlign: "center",
+    color: "#4b5563",
   },
   activeTabText: {
-    color: '#3b82f6',
-    fontWeight: 'bold',
+    color: "#3b82f6",
+    fontWeight: "bold",
   },
   tabContent: {
     padding: 16,
   },
-  sectionContainer: {
-    marginBottom: 16,
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 16,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  sectionTitle: {
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorText: {
+    color: "#dc2626",
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 8,
   },
-  lessonContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  lessonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  modalContainer: {
     flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
-  lessonTitle: {
-    marginLeft: 12,
-    color: '#4b5563',
-    flex: 1,
+  modalContent: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 20,
+    width: "80%",
+    maxWidth: 400,
   },
-  lessonDuration: {
-    color: '#6b7280',
-    fontSize: 14,
-  },
-  reviewContainer: {
-    backgroundColor: 'white',
-    padding: 16,
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#1f2937",
     marginBottom: 12,
+    textAlign: "center",
+  },
+  modalText: {
+    fontSize: 16,
+    color: "#4b5563",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
     borderRadius: 8,
+    marginHorizontal: 8,
   },
-  reviewHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
+  cancelButton: {
+    backgroundColor: "#f3f4f6",
   },
-  avatarContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#e5e7eb',
-    alignItems: 'center',
-    justifyContent: 'center',
+  updateButton: {
+    backgroundColor: "#3b82f6",
   },
-  avatarText: {
-    color: '#4b5563',
-    fontWeight: 'bold',
+  cancelButtonText: {
+    color: "#4b5563",
+    textAlign: "center",
+    fontWeight: "bold",
   },
-  reviewInfo: {
-    marginLeft: 12,
-  },
-  reviewerName: {
-    fontWeight: 'bold',
-    color: '#1f2937',
-  },
-  reviewComment: {
-    color: '#4b5563',
-    marginTop: 8,
-  },
-  reviewDate: {
-    color: '#9ca3af',
-    fontSize: 14,
-    marginTop: 8,
-  },
-  bottomContainer: {
-    padding: 16,
-    backgroundColor: 'white',
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-  },
-  priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  discountPriceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  discountPrice: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#059669',
-  },
-  originalPrice: {
-    color: '#9ca3af',
-    textDecorationLine: 'line-through',
-    marginLeft: 8,
-  },
-  price: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#059669',
-  },
-  actionButton: {
-    backgroundColor: '#3b82f6',
-    paddingVertical: 16,
-    borderRadius: 8,
-  },
-  actionButtonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
-    fontSize: 18,
+  updateButtonText: {
+    color: "white",
+    textAlign: "center",
+    fontWeight: "bold",
   },
 });
 
-// function DetailCourseLayout() {
-//   return (
-//     <NavigationIndependentTree>
-//       <Stack.Navigator initialRouteName='DetailCourse' screenOptions={{ headerShown: false }}>
-//         <Stack.Screen name="DetailCourse" component={DetailCourse} />
-//         <Stack.Screen name="UserViewLesson" component={UserViewLesson} />
-//       </Stack.Navigator>
-//     </NavigationIndependentTree>
-//   )
-// }
 export default DetailCourseScreen;

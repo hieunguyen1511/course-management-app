@@ -26,6 +26,7 @@ import { ToastType } from "@/components/NotificationToast";
 
 async function saveUserInformation(user: any) {
   try {
+    await SecureStore.deleteItemAsync("user");
     await SecureStore.setItemAsync("user", JSON.stringify(user));
   } catch (e) {
     console.log("Error saving user", e);

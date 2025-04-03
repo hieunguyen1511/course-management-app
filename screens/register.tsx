@@ -138,7 +138,7 @@ const RegisterScreen: React.FC<MyScreenProps["RegisterScreenProps"]> = ({
             fullname: formData.fullname,
             username: formData.username,
             email: formData.email,
-            birth: "2000-01-01",
+            birth: "",
             password: formData.password,
             role: UserRole.USER,
             phone: formData.phone,

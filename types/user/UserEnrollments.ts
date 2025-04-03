@@ -10,6 +10,7 @@ export interface UserEnrollments {
   createdAt: string;
   updatedAt: string;
   course: {
+    id: number;
     name: string;
     description: string;
     status: number;

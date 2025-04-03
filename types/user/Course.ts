@@ -1,15 +1,16 @@
 export interface Course {
   id: number;
-  category_id: number;
   name: string;
   description: string;
   status: number;
   price: number;
   discount: number;
-  image: string;
+  category_id: number;
   total_rating: number;
+  enrollment_count: number;
+  image: string;
   category: {
     id: number;
     name: string;
   };
-} 
+}
