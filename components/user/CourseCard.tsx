@@ -1,77 +1,94 @@
-import React from "react";
-import { View, Text, TouchableOpacity, Image } from "react-native";
-import { StyleSheet } from "react-native";
-import { Strings } from "@/constants/Strings";
+import React from 'react';
+import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { Course } from '@/types/Course';
+import { Strings } from '@/constants/Strings';
 
-interface Course {
-    id: number;
-    category_id: number;
-    name: string;
-    description: string;
-    status: number;
-    price: number;
-    discount: number;
-    image: string;
-    total_rating: number;
-    category: {
-      id: number;
-      name: string;
-    };
-  }
-
-const CourseCard: React.FC<{
+interface CourseCardProps {
   course: Course;
-  onPress: () => void;
-  renderRatingStars: (rating: number) => React.ReactNode;
-}> = ({ course, onPress, renderRatingStars }) => (
-  <TouchableOpacity style={styles.courseCard} onPress={onPress}>
-    <Image
-      source={require("../../assets/images/course.jpg")}
-      style={styles.courseImage}
-    />
-    <View style={styles.courseCardContent}>
-      <Text style={styles.courseCardTitle} numberOfLines={2}>
-        {course.name}
-      </Text>
-      <Text style={{ color: "#cf3f3f" }}>{course.category.name}</Text>
-      <Text style={styles.instructorName} numberOfLines={1}>
-        {course.description}
-      </Text>
-      <View style={styles.courseCardFooter}>
-        {course.price > 0 ? (
-          course.discount > 0 ? (
-            <Text style={styles.priceText}>
-              {course.price * (1 - course.discount / 100)}{" "}
-              {Strings.course_section.currency_vnd}{" "}
-              <Text
-                style={{ textDecorationLine: "line-through", color: "#999" }}
-              >
-                {course.price.toFixed(0)} {Strings.course_section.currency_vnd}
+  onPress?: (course: Course) => void;
+  renderRatingStars?: (rating: number) => React.ReactNode;
+}
+
+const CourseCard: React.FC<CourseCardProps> = ({ course, onPress, renderRatingStars }) => {
+  const formatPrice = (price: number): string => {
+    if (price === 0) return "Miễn phí";
+    return `${price.toLocaleString("vi-VN")}đ`;
+  };
+
+  return (
+    <TouchableOpacity 
+      style={styles.courseCard}
+      onPress={() => onPress?.(course)}
+    >
+      <Image 
+        source={
+          course.image 
+            ? { uri: course.image }
+            : require("../../assets/images/course.jpg")
+        } 
+        style={styles.courseImage} 
+      />
+      <View style={styles.courseCardContent}>
+        <Text style={styles.courseCardTitle} numberOfLines={2}>
+          {course.name}
+        </Text>
+        <Text style={styles.courseCardDescription}>
+          {course.description.substring(0, 25)+"..." }
+        </Text>
+
+        <Text style={styles.categoryText}>
+          {course.category?.name}
+        </Text>
+        <View style={styles.courseCardFooter}>
+          <View>
+            {course.price === 0 ? (
+              <Text style={styles.priceText}>{Strings.course_section.free_courses}</Text>
+            ) : course.discount > 0 ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.priceText}>
+                  {formatPrice(course.price - course.discount)}
+                </Text>
+                <Text style={[styles.priceText, { 
+                  textDecorationLine: 'line-through',
+                  color: '#666',
+                  fontSize: 12,
+                  marginLeft: 4
+                }]}>
+                  {formatPrice(course.price)}
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.priceText}>
+                {formatPrice(course.price)}
               </Text>
-            </Text>
-          ) : (
-            <Text style={styles.priceText}>
-              {course.price.toFixed(0)} {Strings.course_section.currency_vnd}
-            </Text>
-          )
-        ) : (
-          <Text style={styles.priceText}>
-            {Strings.course_section.free_courses}
-          </Text>
-        )}
+            )}
+          </View>
+         
+        </View>
+        <View style={styles.ratingContainer}>
+            {renderRatingStars ? renderRatingStars(course.total_rating) : (
+              <>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Text key={star} style={styles.starIcon}>
+                    {course.total_rating >= star ? "★" : "☆"}
+                  </Text>
+                ))}
+                <Text style={styles.ratingText}>{course.total_rating?course.total_rating.toFixed(1):0}</Text>
+              </>
+            )}
+          </View>
       </View>
-      <View style={styles.ratingContainer}>
-        {renderRatingStars(course.total_rating || 0)}
-      </View>
-    </View>
-  </TouchableOpacity>
-);
+    </TouchableOpacity>
+  );
+};
+
 const styles = StyleSheet.create({
   courseCard: {
     width: 180,
     backgroundColor: "white",
     borderRadius: 8,
     marginHorizontal: 5,
+    marginBottom: 10,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "#f0f0f0",
@@ -93,8 +110,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     color: "#333",
-    marginBottom: 4,
-    height: 40,
+    marginBottom: 0,
+  },
+  courseCardDescription: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 5,
+  },
+
+  categoryText: {
+    fontSize: 12,
+    color: "#e04a4a",
+    marginBottom: 5,
+    fontWeight: "500",
+  },
+  courseCardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 5,
   },
   priceText: {
     fontSize: 14,
@@ -105,16 +139,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  instructorName: {
+  starIcon: {
+    color: "#ffb100",
+    fontSize: 12,
+    marginRight: 1,
+  },
+  ratingText: {
     fontSize: 12,
     color: "#666",
-    marginBottom: 5,
-  },
-  courseCardFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 5,
+    marginLeft: 2,
   },
 });
 

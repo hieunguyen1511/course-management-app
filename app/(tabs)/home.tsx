@@ -14,8 +14,6 @@ import {
 } from "react-native";
 import React, { useState, useEffect, useCallback } from "react";
 
-import { Ionicons } from "@expo/vector-icons";
-
 import { useLocalSearchParams } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "@/api/axiosInstance";
@@ -120,30 +118,40 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
   const { tmessage } = useLocalSearchParams();
   const [message, setMessage] = useState("");
   const [userName, setUserName] = useState("User");
-  const [inProgressCourses, setInProgressCourses] = useState<UserEnrollments[]>([]);
+  const [inProgressCourses, setInProgressCourses] = useState<UserEnrollments[]>(
+    []
+  );
   const [suggestedCourses, setSuggestedCourses] = useState<Course[]>([]);
   const [popularCourses, setPopularCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [referenceCategoryId, setReferenceCategoryId] = useState<number | string>("NaN");
+  const [referenceCategoryId, setReferenceCategoryId] = useState<
+    number | string
+  >("NaN");
 
   // Helper functions
-  const renderRatingStars = useCallback((rating: number) => (
-    <View style={styles.ratingContainer}>
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Text key={star} style={styles.starIcon}>
-          {rating >= star ? "★" : "☆"}
-        </Text>
-      ))}
-      <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
-    </View>
-  ), []);
+  const renderRatingStars = useCallback(
+    (rating: number) => (
+      <View style={styles.ratingContainer}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Text key={star} style={styles.starIcon}>
+            {rating >= star ? "★" : "☆"}
+          </Text>
+        ))}
+        <Text style={styles.ratingText}>{rating ? rating.toFixed(1) : 0}</Text>
+      </View>
+    ),
+    []
+  );
 
-  const renderProgressBar = useCallback(({ progress }: { progress: number }) => (
-    <View style={styles.progressBarContainer}>
-      <View style={[styles.progressBar, { width: `${progress}%` }]} />
-    </View>
-  ), []);
+  const renderProgressBar = useCallback(
+    ({ progress }: { progress: number }) => (
+      <View style={styles.progressBarContainer}>
+        <View style={[styles.progressBar, { width: `${progress}%` }]} />
+      </View>
+    ),
+    []
+  );
 
   // Fetch user enrollments
   const fetchUserEnrollments = useCallback(async (userId: number) => {
@@ -174,7 +182,8 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
           },
           total_lesson: item.total_lesson || 0,
           complete_lesson: item.complete_lesson || 0,
-          progress: Math.round((item.complete_lesson / item.total_lesson) * 100) || 0,
+          progress:
+            Math.round((item.complete_lesson / item.total_lesson) * 100) || 0,
           updatedAt: new Intl.DateTimeFormat("vi-VN", {
             day: "2-digit",
             month: "2-digit",
@@ -203,7 +212,9 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
         await fetchUserEnrollments(userInfo.id);
       }
 
-      const suggestedCoursesData = await getCoursesByReferenceCategory(referenceCategoryId);
+      const suggestedCoursesData = await getCoursesByReferenceCategory(
+        referenceCategoryId
+      );
       if (suggestedCoursesData?.length > 0) {
         setSuggestedCourses(suggestedCoursesData);
       }
@@ -232,99 +243,105 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
     setRefreshing(false);
   }, [fetchData]);
 
-  const renderInProgressSection = useCallback(() => (
-    <Section
-      title={Strings.user_home.continue_learning}
-      showViewAll={false}
-    >
-      <FlatList
-        data={inProgressCourses}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <InProgressCourseCard
-            item={item}
-            onPress={() =>
-              navigation.navigate("UserDetailCourseScreen", {
-                courseId: item.course_id,
-                message: "",
-              })
-            }
-            renderProgressBar={renderProgressBar}
-          />
-        )}
-        ListEmptyComponent={() => (
-          <Text style={styles.noCourses}>
-            {Strings.user_home.no_enrolled_courses}
-          </Text>
-        )}
-      />
-    </Section>
-  ), [inProgressCourses, navigation, renderProgressBar]);
+  const renderInProgressSection = useCallback(
+    () => (
+      <Section title={Strings.user_home.continue_learning} showViewAll={false}>
+        <FlatList
+          data={inProgressCourses}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <InProgressCourseCard
+              item={item}
+              onPress={() =>
+                navigation.navigate("UserDetailCourseScreen", {
+                  courseId: item.course_id,
+                  message: "",
+                })
+              }
+              renderProgressBar={renderProgressBar}
+            />
+          )}
+          ListEmptyComponent={() => (
+            <Text style={styles.noCourses}>
+              {Strings.user_home.no_enrolled_courses}
+            </Text>
+          )}
+        />
+      </Section>
+    ),
+    [inProgressCourses, navigation, renderProgressBar]
+  );
 
-  const renderSuggestedCoursesSection = useCallback(() => (
-    <Section
-      title={Strings.user_home.suggest_courses}
-      onViewAllPress={() =>
-        navigation.navigate("UserViewAllCourseScreen", {
-          message: "Hello from Home Suggest Course",
-          is_suggested: true,
-          category_id: parseInt(referenceCategoryId.toString()),
-        })
-      }
-    >
-      <FlatList
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        data={suggestedCourses}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <CourseCard
-            course={item}
-            onPress={() =>
-              navigation.navigate("DetailCourseScreen", {
-                courseId: item.id,
-                message: "",
-              })
-            }
-            renderRatingStars={renderRatingStars}
-          />
-        )}
-        contentContainerStyle={styles.horizontalList}
-      />
-    </Section>
-  ), [suggestedCourses, navigation, renderRatingStars, referenceCategoryId]);
+  const renderSuggestedCoursesSection = useCallback(
+    () => (
+      <Section
+        title={Strings.user_home.suggest_courses}
+        onViewAllPress={() =>
+          navigation.navigate("UserViewAllCourseScreen", {
+            message: "Hello from Home Suggest Course",
+            is_suggested: true,
+            category_id: parseInt(referenceCategoryId.toString()),
+          })
+        }
+      >
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={suggestedCourses}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <CourseCard
+              course={item}
+              onPress={() =>
+                navigation.navigate("DetailCourseScreen", {
+                  courseId: item.id,
+                  message: "",
+                })
+              }
+              renderRatingStars={renderRatingStars}
+            />
+          )}
+          contentContainerStyle={styles.horizontalList}
+        />
+      </Section>
+    ),
+    [suggestedCourses, navigation, renderRatingStars, referenceCategoryId]
+  );
 
-  const renderPopularCoursesSection = useCallback(() => (
-    <Section
-      title={Strings.user_home.popular_courses}
-      onViewAllPress={() =>
-        navigation.navigate("UserViewAllCourseScreen", {
-          message: "Hello from Home Popular Course",
-          is_popular: true,
-        })
-      }
-    >
-      <FlatList
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        data={popularCourses}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <CourseCard
-            course={item}
-            onPress={() =>
-              navigation.navigate("DetailCourseScreen", {
-                courseId: item.id,
-                message: "",
-              })
-            }
-            renderRatingStars={renderRatingStars}
-          />
-        )}
-        contentContainerStyle={styles.horizontalList}
-      />
-    </Section>
-  ), [popularCourses, navigation, renderRatingStars]);
+  const renderPopularCoursesSection = useCallback(
+    () => (
+      <Section
+        title={Strings.user_home.popular_courses}
+        onViewAllPress={() =>
+          navigation.navigate("UserViewAllCourseScreen", {
+            message: "Hello from Home Popular Course",
+            is_popular: true,
+          })
+        }
+      >
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={popularCourses}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <CourseCard
+              course={item}
+              onPress={() =>
+                navigation.navigate("DetailCourseScreen", {
+                  courseId: item.id,
+                  message: "",
+                })
+              }
+              renderRatingStars={renderRatingStars}
+            />
+          )}
+          contentContainerStyle={styles.horizontalList}
+        />
+      </Section>
+    ),
+    [popularCourses, navigation, renderRatingStars]
+  );
 
   if (loading) {
     return (
@@ -344,7 +361,9 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
         ListHeaderComponent={
           <Header
             userName={userName}
-            onProfilePress={() => navigation.navigate("Account", { message: "" })}
+            onProfilePress={() =>
+              navigation.navigate("Account", { message: "" })
+            }
           />
         }
         showsVerticalScrollIndicator={false}
@@ -386,7 +405,7 @@ const styles = StyleSheet.create({
     height: "100%",
     paddingTop: 100,
   },
-  
+
   lastSection: {
     marginBottom: 30,
   },
@@ -416,9 +435,7 @@ const styles = StyleSheet.create({
   horizontalList: {
     marginLeft: -5,
   },
-  
- 
- 
+
   starIcon: {
     color: "#ffb100",
     fontSize: 12,
