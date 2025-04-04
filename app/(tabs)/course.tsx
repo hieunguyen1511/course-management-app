@@ -1,11 +1,18 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/types/RootStackParamList';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, FlatList, ActivityIndicator, RefreshControl } from 'react-native'
-import React, { useState, useEffect, useCallback } from 'react'
-import { Ionicons } from '@expo/vector-icons'
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  FlatList,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
 
 import { MyScreenProps } from '@/types/MyScreenProps';
 import axiosInstance from '@/api/axiosInstance';
@@ -29,6 +36,8 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
   const [inProgressEnrollments, setInProgressEnrollments] = useState<Enrollment[]>([]);
   const [completedEnrollments, setCompletedEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchInProgressEnrollments = async () => {
     try {
@@ -72,9 +81,9 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
   );
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchUserCourses();
+    await fetchAllData();
     setRefreshing(false);
-  }, [fetchUserCourses]);
+  }, [fetchAllData]);
 
   // Render progress bar
   const ProgressBar = ({ progress }: { progress: number }) => (
@@ -213,10 +222,7 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
       <View style={styles.errorContainer}>
         <Ionicons name="alert-circle-outline" size={50} color="#ff6b6b" />
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity
-          style={styles.retryButton}
-          onPress={fetchUserCourses}
-        >
+        <TouchableOpacity style={styles.retryButton} onPress={fetchAllData}>
           <Text style={styles.retryButtonText}>Thử lại</Text>
         </TouchableOpacity>
       </View>
@@ -485,6 +491,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginTop: 5,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#f8f9fa',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 15,
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#4a6ee0',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
 

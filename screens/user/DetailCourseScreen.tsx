@@ -203,9 +203,7 @@ const DetailCourseScreen: React.FC<MyScreenProps['DetailCourseScreenProps']> = (
       if (enrollmentsData && userInfo?.id) {
         setIsEnrolled(enrollmentsData.some(enrollment => enrollment.user_id === userInfo.id));
         setEnrollmentId(
-          enrollmentsData.find(
-            (enrollment) => enrollment.user_id === userInfo.id
-          )?.id || 0
+          enrollmentsData.find(enrollment => enrollment.user_id === userInfo.id)?.id || 0
         );
       }
     } catch (error) {
@@ -261,9 +259,7 @@ const DetailCourseScreen: React.FC<MyScreenProps['DetailCourseScreenProps']> = (
           navigation.replace('UserDetailCourseScreen', {
             enrollmentId: response.data.enrollment.id,
             courseId: courseId,
-            enrollmentId: response.data.enrollment.id,
-            message_from_detail_course_screen:
-              'Đăng ký khóa học thành công, chào mừng bạn!',
+            message_from_detail_course_screen: 'Đăng ký khóa học thành công, chào mừng bạn!',
           });
         } else {
           console.error('Error enrolling in course:', response.data);

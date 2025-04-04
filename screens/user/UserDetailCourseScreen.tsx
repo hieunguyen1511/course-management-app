@@ -1,13 +1,22 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  RefreshControl,
+  FlatList,
+} from 'react-native';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { MyScreenProps } from '@/types/MyScreenProps';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/types/RootStackParamList';
 import { Enrollment, Lesson } from '@/types/apiModels';
 import axiosInstance from '@/api/axiosInstance';
-import dayjs from 'dayjs';
 import { useFocusEffect } from '@react-navigation/native';
+import { showToast, ToastType } from '@/components/NotificationToast';
+import dayjs from 'dayjs';
 
 interface User {
   id: number;
@@ -29,17 +38,17 @@ interface Comment {
   replies?: Comment[];
 }
 
-interface Lesson {
-  id: number;
-  section_id: number;
-  title: string;
-  duration?: string;
-  isCompleted?: boolean;
-  isLocked?: boolean;
-  createdAt: string;
-  updatedAt: string;
-  order?: number;
-}
+// interface Lesson {
+//   id: number;
+//   section_id: number;
+//   title: string;
+//   duration?: string;
+//   isCompleted?: boolean;
+//   isLocked?: boolean;
+//   createdAt: string;
+//   updatedAt: string;
+//   order?: number;
+// }
 
 interface Section {
   id: number;
@@ -51,15 +60,11 @@ interface Section {
   lessons: Lesson[];
 }
 
-
-
-
-
 // api function
 async function getSectionByCourseId_withLesson(course_id: number) {
   try {
     let url = `${process.env.EXPO_PUBLIC_API_GET_SECTION_BY_COURSE_ID_WITH_LESSON}`;
-    url = url.replace(":course_id", course_id.toString());
+    url = url.replace(':course_id', course_id.toString());
     const response = await axiosInstance.get(url);
     const mapdata = response.data.sections.map((item: Section) => {
       return {
@@ -83,7 +88,7 @@ async function getSectionByCourseId_withLesson(course_id: number) {
 async function getCommentByCourseWithUser(course_id: number) {
   try {
     let url = `${process.env.EXPO_PUBLIC_API_GET_COMMENT_BY_COURSE_ID_WITH_USER}`;
-    url = url.replace(":course_id", course_id.toString());
+    url = url.replace(':course_id', course_id.toString());
     const response = await axiosInstance.get(url);
     const mapdata = response.data.comments.map((item: Comment) => {
       return {
@@ -109,7 +114,7 @@ async function getCommentByCourseWithUser(course_id: number) {
 async function getEnrollmentByIdWithCourse(enrollment_id: number) {
   try {
     let url = `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_ID_WITH_COURSE}`;
-    url = url.replace(":id", enrollment_id.toString());
+    url = url.replace(':id', enrollment_id.toString());
     const response = await axiosInstance.get(url);
     const data = {
       id: response.data.enrollment.id,
@@ -135,7 +140,7 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
   navigation,
   route,
 }) => {
-  const { enrollmentId, courseId, enrollmentId } = route.params || { courseId: 1, enrollmentId: 1 };
+  const { enrollmentId, courseId } = route.params || { courseId: 1, enrollmentId: 1 };
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -143,12 +148,12 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
   const [activeTab, setActiveTab] = useState<'content' | 'discussion'>('content');
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
+
   const [refreshing, setRefreshing] = useState(false);
 
   // Toast state
   const [toastVisible, setToastVisible] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
+  const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<ToastType>(ToastType.SUCCESS);
 
   const fetchEnrollmentByID = async (eID: number) => {
@@ -171,7 +176,17 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
           cID.toString()
         ) || ''
       );
-      return response?.data?.comments;
+
+      const parentComments = response.data.comments.filter(
+        (item: Comment) => item.parent_id === null
+      );
+      parentComments.forEach((comment: Comment) => {
+        comment.replies = response.data.comments.filter(
+          (item: Comment) => item.parent_id === comment.id
+        );
+      });
+
+      return parentComments;
     } catch (error) {
       console.error('Error fetching comments by course ID:', error);
       throw error;
@@ -196,6 +211,12 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
     }, [enrollmentId, courseId])
   );
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchAllData();
+    setRefreshing(false);
+  }, [fetchAllData]);
+
   const handleLessonPress = (lesson: Lesson) => {
     // Navigate to lesson content
     navigation.navigate('UserViewLessonScreen', {
@@ -206,7 +227,7 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
 
   const handleCommentSubmit = useCallback(async () => {
     if (!newComment.trim()) {
-      showToast("Vui lòng nhập nội dung bình luận", ToastType.INFO);
+      showToast('Vui lòng nhập nội dung bình luận', ToastType.INFO);
       return;
     }
 
@@ -219,159 +240,109 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
       });
 
       if (response.status === 201 && response.data?.comment) {
-        const newCommentObj: Comment = {
-          ...response.data.comment,
-          user: response.data.comment.user || {
-            id: 0,
-            username: "Bạn",
-            fullname: "Bạn",
-            email: "",
-            avatar: "https://via.placeholder.com/40",
-          },
-        };
-
-        setComments((prev) => {
-          if (replyingTo) {
-            const updatedComments = prev.map((comment) => {
-              if (comment.id === replyingTo) {
-                return {
-                  ...comment,
-                  replies: [...(comment.replies || []), newCommentObj],
-                };
-              }
-              return comment;
-            });
-            return updatedComments;
-          } else {
-            return [newCommentObj, ...prev];
-          }
-        });
-
         setNewComment('');
         setLoading(false);
-    const newComments = await fetchCommentsByCourseID(courseId);
-    setComments(newComments);
-        showToast("Bình luận đã được gửi", ToastType.SUCCESS);
+        const newComments = await fetchCommentsByCourseID(courseId);
+        setComments(newComments);
+        showToast('Bình luận đã được gửi', ToastType.SUCCESS);
       } else {
-        showToast("Không thể gửi bình luận", ToastType.ERROR);
+        showToast('Không thể gửi bình luận', ToastType.ERROR);
       }
     } catch (error) {
-      console.error("Error posting comment:", error);
-      showToast("Có lỗi xảy ra khi gửi bình luận", ToastType.ERROR);
+      console.error('Error posting comment:', error);
+      showToast('Có lỗi xảy ra khi gửi bình luận', ToastType.ERROR);
     }
   }, [courseId, newComment, replyingTo, showToast]);
 
-  const renderChapter = useCallback(
-    ({ item }: { item: Section }) => {
-      return (
-        <View key={item.id} style={styles.chapterContainer}>
-          <View style={styles.chapterHeader}>
-            <View style={styles.chapterTitleContainer}>
-              <Text style={styles.chapterTitle}>{item.name}</Text>
-              <Text style={styles.chapterProgress}>
-                {item.lessons.filter(lesson => !lesson.isLocked).length}/{item.lessons.length} bài học
-              </Text>
-            </View>
-            <View style={styles.chapterProgressBarContainer}>
-              <View
-                style={[
-                  styles.chapterProgressBar,
-                  {
-                    width: `${
-                      (item.lessons.filter(lesson => !lesson.isLocked).length / item.lessons.length) * 100
-                    }%`,
-                  },
-                ]}
-              />
-            </View>
-          </View>
+  // const renderChapter = useCallback(
+  //   ({ item }: { item: Section }) => {
+  //     return (
+  //       <View key={item.id} style={styles.chapterContainer}>
+  //         <View style={styles.chapterHeader}>
+  //           <View style={styles.chapterTitleContainer}>
+  //             <Text style={styles.chapterTitle}>{item.name}</Text>
+  //             <Text style={styles.chapterProgress}>
+  //               {item.lessons.filter(lesson => !lesson.isLocked).length}/{item.lessons.length} bài
+  //               học
+  //             </Text>
+  //           </View>
+  //           <View style={styles.chapterProgressBarContainer}>
+  //             <View
+  //               style={[
+  //                 styles.chapterProgressBar,
+  //                 {
+  //                   width: `${
+  //                     (item.lessons.filter(lesson => !lesson.isLocked).length /
+  //                       item.lessons.length) *
+  //                     100
+  //                   }%`,
+  //                 },
+  //               ]}
+  //             />
+  //           </View>
+  //         </View>
 
-          <FlatList
-            data={item.lessons}
-            keyExtractor={(lesson) => lesson.id.toString()}
-            renderItem={({ item: lesson }) => (
-              <TouchableOpacity
-                key={lesson.id}
-                style={[
-                  styles.lessonItem,
-                  lesson.isLocked && styles.lockedLesson,
-                ]}
-                onPress={() => handleLessonPress(lesson)}
-                disabled={lesson.isLocked}
-              >
-                <View style={styles.lessonContent}>
-                  <View style={styles.lessonIconContainer}>
-                    {!lesson.isLocked ? (
-                      <Ionicons
-                        name="play-circle"
-                        size={24}
-                        color="#4a6ee0"
-                      />
-                    ) : (
-                      <Ionicons name="lock-closed" size={24} color="#999" />
-                    )}
-                  </View>
-                  <View style={styles.lessonInfo}>
-                    <Text
-                      style={[
-                        styles.lessonTitle,
-                        lesson.isLocked && styles.lockedText,
-                      ]}
-                    >
-                      {lesson.title}
-                    </Text>
-                    <Text style={styles.lessonDuration}>{lesson.duration}</Text>
-                  </View>
-                </View>
-                {!lesson.isLocked && (
-                  <Ionicons
-                    name="chevron-forward"
-                    size={20}
-                    color="#666"
-                  />
-                )}
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-      );
-    },
-    [handleLessonPress]
-  );
+  //         <FlatList
+  //           data={item.lessons}
+  //           keyExtractor={lesson => lesson.id.toString()}
+  //           renderItem={({ item: lesson }) => (
+  //             <TouchableOpacity
+  //               key={lesson.id}
+  //               style={[styles.lessonItem, lesson.isLocked && styles.lockedLesson]}
+  //               onPress={() => handleLessonPress(lesson)}
+  //               disabled={lesson.isLocked}
+  //             >
+  //               <View style={styles.lessonContent}>
+  //                 <View style={styles.lessonIconContainer}>
+  //                   {!lesson.isLocked ? (
+  //                     <Ionicons name="play-circle" size={24} color="#4a6ee0" />
+  //                   ) : (
+  //                     <Ionicons name="lock-closed" size={24} color="#999" />
+  //                   )}
+  //                 </View>
+  //                 <View style={styles.lessonInfo}>
+  //                   <Text style={[styles.lessonTitle, lesson.isLocked && styles.lockedText]}>
+  //                     {lesson.title}
+  //                   </Text>
+  //                   <Text style={styles.lessonDuration}>{lesson.duration}</Text>
+  //                 </View>
+  //               </View>
+  //               {!lesson.isLocked && <Ionicons name="chevron-forward" size={20} color="#666" />}
+  //             </TouchableOpacity>
+  //           )}
+  //         />
+  //       </View>
+  //     );
+  //   },
+  //   [handleLessonPress]
+  // );
 
   const renderComment = useCallback(
     ({ item: comment }: { item: Comment }) => (
       <View key={comment.id} style={[styles.commentContainer]}>
         <View style={styles.commentHeader}>
           <View style={styles.commentInfo}>
-            <Text style={styles.userName}>
-              {comment.user?.fullname || "Người dùng"}
-            </Text>
+            <Text style={styles.userName}>{comment.user?.fullname || 'Người dùng'}</Text>
             <Text style={styles.timestamp}>
-              {new Date(comment.createdAt).toLocaleString("vi-VN")}
+              {dayjs(comment.createdAt).format('DD/MM/YYYY HH:mm')}
             </Text>
           </View>
         </View>
         <Text style={styles.commentContent}>{comment.content}</Text>
-        <TouchableOpacity
-          style={styles.replyButton}
-          onPress={() => setReplyingTo(comment.id)}
-        >
+        <TouchableOpacity style={styles.replyButton} onPress={() => setReplyingTo(comment.id)}>
           <Text style={styles.replyButtonText}>Trả lời</Text>
         </TouchableOpacity>
         {comment.replies && comment.replies.length > 0 && (
           <FlatList
             data={comment.replies}
-            keyExtractor={(reply) => reply.id.toString()}
+            keyExtractor={reply => reply.id.toString()}
             renderItem={({ item: reply }) => (
               <View style={[styles.commentContainer, styles.replyContainer]}>
                 <View style={styles.commentHeader}>
                   <View style={styles.commentInfo}>
-                    <Text style={styles.userName}>
-                      {reply.user?.fullname || "Người dùng"}
-                    </Text>
+                    <Text style={styles.userName}>{reply.user?.fullname || 'Người dùng'}</Text>
                     <Text style={styles.timestamp}>
-                      {new Date(reply.createdAt).toLocaleString("vi-VN")}
+                      {dayjs(reply.createdAt).format('DD/MM/YYYY HH:mm')}
                     </Text>
                   </View>
                 </View>
@@ -398,10 +369,7 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>Không thể tải nội dung khóa học</Text>
-        <TouchableOpacity
-          style={styles.retryButton}
-          onPress={fetchCourseDetail}
-        >
+        <TouchableOpacity style={styles.retryButton} onPress={fetchAllData}>
           <Text style={styles.retryButtonText}>Thử lại</Text>
         </TouchableOpacity>
       </View>
@@ -472,10 +440,12 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
           <Text style={styles.progressText}>
             {`${Math.round(
               ((enrollment?.enrollment_lessons?.filter(l => l.completed_at).length ?? 0) /
-                (enrollment?.course?.sections?.reduce(
-                  (acc, section) => acc + section.lessons.length,
-                  0
-                ) ?? 1)) *
+                (enrollment?.course?.sections?.length > 0
+                  ? enrollment?.course?.sections?.reduce(
+                      (acc, section) => acc + section.lessons.length,
+                      0
+                    )
+                  : 1)) *
                 100
             )}% Hoàn thành`}
           </Text>
@@ -627,13 +597,13 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
           <FlatList
             style={styles.commentsList}
             data={comments}
-            keyExtractor={(comment) => comment.id.toString()}
+            keyExtractor={comment => comment.id.toString()}
             renderItem={renderComment}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                colors={["#4a6ee0"]}
+                colors={['#4a6ee0']}
                 tintColor="#4a6ee0"
               />
             }
@@ -895,12 +865,12 @@ const styles = StyleSheet.create({
   retryButton: {
     marginTop: 16,
     padding: 12,
-    backgroundColor: "#4a6ee0",
+    backgroundColor: '#4a6ee0',
     borderRadius: 8,
   },
   retryButtonText: {
-    color: "white",
-    fontWeight: "bold",
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
 
