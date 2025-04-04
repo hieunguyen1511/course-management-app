@@ -1,7 +1,26 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
-import { Section } from '@/types/user/DetailCourse';
+
+ interface Lesson {
+  id: number;
+  section_id: number;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+} 
+
+
+ interface Section {
+  id: number;
+  course_id: number;
+  name: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+  lessons: Lesson[];
+}
+
 
 interface CourseContentProps {
   sections: Section[];

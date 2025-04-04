@@ -1,7 +1,23 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
-import { Course } from '@/types/user/DetailCourse';
+
+interface Course {
+  id: number;
+  category_id: number;
+  name: string;
+  description: string;
+  status: number;
+  price: number;
+  discount: number;
+  image: string;
+  total_rating: number;
+  enrollment_count: number;
+  category: {
+    id: number;
+    name: string;
+  };
+}
 
 interface CourseHeaderProps {
   course: Course;
@@ -42,9 +58,9 @@ const CourseHeader: React.FC<CourseHeaderProps> = ({ course, onBackPress }) => {
         <View style={styles.ratingContainer}>
           <View style={styles.ratingInfo}>
             {renderRatingStars(course.total_rating)}
-            <Text style={styles.reviewCount}>
+            {/* <Text style={styles.reviewCount}>
               ({course.enrollment_count} đánh giá)
-            </Text>
+            </Text> */}
           </View>
           <Text style={styles.studentCount}>
             {course.enrollment_count} học viên

@@ -15,7 +15,7 @@ const axiosInstance = axios.create({
 });
 axiosInstance.interceptors.request.use(
   async (config) => {
-    console.log("Request interceptor", config);
+    //console.log("Request interceptor", config);
     
     const token = await getAccessToken();
     //console.log(token)
@@ -23,7 +23,7 @@ axiosInstance.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.log("Request interceptor error", error);
+    //console.log("Request interceptor error", error);
     return Promise.reject(error);
   }
 );

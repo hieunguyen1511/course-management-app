@@ -21,18 +21,54 @@ import { Strings } from "@/constants/Strings";
 import { RootStackParamList } from "../../types/RootStackParamList";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import { Course } from "@/types/user/Course";
-import { UserEnrollments } from "@/types/user/UserEnrollments";
+
 // Types for our courses data
+interface Course {
+  id: number;
+  name: string;
+  description: string;
+  status: number;
+  price: number;
+  discount: number;
+  category_id: number;
+  total_rating: number;
+  enrollment_count: number;
+  image: string;
+  category: {
+      id: number;
+      name: string;
+  };
+}
+
+interface UserEnrollments {
+  id: number;
+  user_id: number;
+  course_id: number;
+  total_lesson: number;
+  complete_lesson: number;
+  progress: number;
+  image: string;
+  createdAt: string;
+  updatedAt: string;
+  course: {
+      id: number;
+      name: string;
+      description: string;
+      status: number;
+      price: number;
+      discount: number;
+  };
+}
 
 interface User {
   id: number;
   username: string;
-  fullName: string;
+  fullname: string;
   email: string;
   role: string;
   avatar: string;
 }
+
 
 // Components
 import Section from "@/components/user/Section";
@@ -179,7 +215,7 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
     try {
       const userInfo = await getUserInformation();
       if (userInfo) {
-        setUserName(userInfo.fullName || "User");
+        setUserName(userInfo.fullname || "User");
 
         if (userInfo.id) {
           await fetchUserEnrollments(userInfo.id);

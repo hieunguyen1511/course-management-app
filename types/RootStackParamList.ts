@@ -29,7 +29,7 @@ export type RootStackParamList = {
     SearchCourseScreen: { message?: string };
     UserViewAllEnrollmentScreen: { message?: string };    
     UserRatingScreen: { message?: string };
-    UserDetailCourseScreen: { courseId: number; message?: string };
+    UserDetailCourseScreen: { courseId: number; message?: string; message_from_detail_course_screen?: string }; 
     UserViewLessonScreen: { courseId: number; lessonId: number; message?: string };
     ChangePasswordScreen: { message?: string };
     EditProfileScreen: { message?: string };

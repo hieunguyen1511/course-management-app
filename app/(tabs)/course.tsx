@@ -1,106 +1,184 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, FlatList } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, FlatList, ActivityIndicator } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { Ionicons } from '@expo/vector-icons'
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/types/RootStackParamList';
-import { MyScreenProps } from '@/types/MyScreenProps';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
-// Define course interface
+import { MyScreenProps } from '@/types/MyScreenProps';
+import * as SecureStore from 'expo-secure-store';
+import axiosInstance from '@/api/axiosInstance';
+
+// Types
 interface Course {
+  id: number;
+  name: string;
+  description: string;
+  status: string;
+  total_rating: number;
+  image: string;
+  price: number;
+  discount: number;
+  category_id: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface UserEnrollment {
+  id: number;
+  course_id: number;
+  user_id: number;
+  total_lesson: number;
+  complete_lesson: number;
+  progress: number;
+  price: number;
+  rating: number | null;
+  review: string | null;
+  createdAt: string;
+  updatedAt: string;
+  course: Course;
+}
+
+interface CourseInProgress {
   id: number;
   title: string;
   category: string;
   image: string;
   rating: number;
-}
-
-// Interface for in-progress courses
-interface CourseInProgress extends Course {
   progress: number;
   lastAccessed: string;
   totalLessons: number;
   completedLessons: number;
 }
 
-// Interface for completed courses
-interface CourseCompleted extends Course {
+interface CourseCompleted {
+  id: number;
+  title: string;
+  category: string;
+  image: string;
+  rating: number;
   completedDate: string;
   hasReviewed: boolean;
 }
 
+// API functions
+const getUserIdFromSecureStore = async (): Promise<string | null> => {
+  try {
+    const user = await SecureStore.getItemAsync('user');
+    const userData = user ? JSON.parse(user) : null;
+    return userData?.id || null;
+  } catch (error) {
+    console.error('Error retrieving user ID from SecureStore:', error);
+    return null;
+  }
+};
+
+const getUserEnrollments = async (userId: string): Promise<UserEnrollment[] | null> => {
+  try {
+    const url = `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_USER_ID}`.replace(':user_id', userId);
+    const response = await axiosInstance.get(url);
+    
+    if (response.status === 200 && response.data?.enrollments) {
+      return response.data.enrollments.map((enrollment: UserEnrollment) => ({
+        ...enrollment,
+        progress: Math.round((enrollment.complete_lesson / enrollment.total_lesson) * 100)
+      }));
+    }
+    return null;
+  } catch (error) {
+    console.error('Error retrieving user enrollments:', error);
+    return null;
+  }
+};
+
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('vi-VN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
+
+const getLastAccessedTime = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInHours = Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60);
+  
+  if (diffInHours < 24) {
+    return 'Hôm nay';
+  } else if (diffInHours < 48) {
+    return 'Hôm qua';
+  } else if (diffInHours < 72) {
+    return '2 ngày trước';
+  } else if (diffInHours < 96) {
+    return '3 ngày trước';
+  } else {
+    return formatDate(dateString);
+  }
+};
+
 const Course: React.FC<MyScreenProps["UserCourseScreenProps"]> = ({ navigation, route }) => {
-  // State variables
   const [activeTab, setActiveTab] = useState<'progress' | 'completed'>('progress');
   const [inProgressCourses, setInProgressCourses] = useState<CourseInProgress[]>([]);
   const [completedCourses, setCompletedCourses] = useState<CourseCompleted[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch user courses
-  useEffect(() => {
-    // Simulated API call - replace with actual API in production
-    setTimeout(() => {
-      // Mock data for in-progress courses
-      setInProgressCourses([
-        {
-          id: 1,
-          title: 'Lập trình React Native cơ bản',
-          category: 'Lập trình',
-          image: 'https://via.placeholder.com/100',
-          rating: 4.7,
-          progress: 65,
-          lastAccessed: '2 ngày trước',
-          totalLessons: 12,
-          completedLessons: 8
-        },
-        {
-          id: 2,
-          title: 'Nguyên tắc thiết kế UI/UX',
-          category: 'Thiết kế',
-          image: 'https://via.placeholder.com/100',
-          rating: 4.5,
-          progress: 32,
-          lastAccessed: 'Hôm qua',
-          totalLessons: 10,
-          completedLessons: 3
-        },
-        {
-          id: 3,
-          title: 'Chiến lược Marketing số',
-          category: 'Marketing',
-          image: 'https://via.placeholder.com/100',
-          rating: 4.2,
-          progress: 78,
-          lastAccessed: '3 giờ trước',
-          totalLessons: 8,
-          completedLessons: 6
-        }
-      ]);
+  const fetchUserCourses = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const userId = await getUserIdFromSecureStore();
+      if (!userId) {
+        setError('Không tìm thấy thông tin người dùng');
+        return;
+      }
 
-      // Mock data for completed courses
-      setCompletedCourses([
-        {
-          id: 4,
-          title: 'JavaScript cơ bản',
-          category: 'Lập trình',
-          image: 'https://via.placeholder.com/100',
-          rating: 4.6,
-          completedDate: '2023-05-15',
-          hasReviewed: true
-        },
-        {
-          id: 5,
-          title: 'HTML & CSS cơ bản',
-          category: 'Lập trình Web',
-          image: 'https://via.placeholder.com/100',
-          rating: 4.8,
-          completedDate: '2023-03-20',
-          hasReviewed: false
-        }
-      ]);
+      const enrollments = await getUserEnrollments(userId);
+      if (!enrollments) {
+        setError('Không thể lấy danh sách khóa học');
+        return;
+      }
 
+      // Process in-progress courses
+      const inProgress = enrollments
+        .filter(enrollment => enrollment.progress < 100)
+        .map(enrollment => ({
+          id: enrollment.course.id,
+          title: enrollment.course.name,
+          category: enrollment.course.description.substring(0, 30) + '...',
+          image: enrollment.course.image,
+          rating: enrollment.course.total_rating,
+          progress: enrollment.progress,
+          lastAccessed: getLastAccessedTime(enrollment.updatedAt),
+          totalLessons: enrollment.total_lesson,
+          completedLessons: enrollment.complete_lesson
+        }));
+
+      // Process completed courses
+      const completed = enrollments
+        .filter(enrollment => enrollment.progress === 100)
+        .map(enrollment => ({
+          id: enrollment.course.id,
+          title: enrollment.course.name,
+          category: enrollment.course.description.substring(0, 30) + '...',
+          image: enrollment.course.image,
+          rating: enrollment.course.total_rating,
+          completedDate: enrollment.updatedAt,
+          hasReviewed: enrollment.rating !== null
+        }));
+
+      setInProgressCourses(inProgress);
+      setCompletedCourses(completed);
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+      setError('Có lỗi xảy ra khi tải dữ liệu');
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserCourses();
   }, []);
 
   // Render progress bar
@@ -178,16 +256,6 @@ const Course: React.FC<MyScreenProps["UserCourseScreenProps"]> = ({ navigation, 
     </TouchableOpacity>
   );
 
-  // Format date
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
   // Render completed course
   const renderCompletedCourse = ({ item }: { item: CourseCompleted }) => (
     <TouchableOpacity style={styles.courseCard} onPress={() =>
@@ -225,7 +293,23 @@ const Course: React.FC<MyScreenProps["UserCourseScreenProps"]> = ({ navigation, 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#4a6ee0" />
         <Text style={styles.loadingText}>Đang tải khóa học của bạn...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Ionicons name="alert-circle-outline" size={50} color="#ff6b6b" />
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity 
+          style={styles.retryButton}
+          onPress={fetchUserCourses}
+        >
+          <Text style={styles.retryButtonText}>Thử lại</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -291,7 +375,10 @@ const Course: React.FC<MyScreenProps["UserCourseScreenProps"]> = ({ navigation, 
               <View style={styles.emptyContainer}>
                 <Ionicons name="book-outline" size={50} color="#ccc" />
                 <Text style={styles.emptyText}>Bạn chưa bắt đầu khóa học nào</Text>
-                <TouchableOpacity style={styles.exploreCourseButton}>
+                <TouchableOpacity 
+                  style={styles.exploreCourseButton}
+                  onPress={() => navigation.navigate('Main', { screen: 'Home' })}
+                >
                   <Text style={styles.exploreCourseText}>Khám phá khóa học</Text>
                 </TouchableOpacity>
               </View>
@@ -521,14 +608,38 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#4a6ee0',
     marginBottom: 8,
+    flexWrap: 'wrap',
+    flex: 1,
   },
   lastAccessedText: {
     fontSize: 12,
     color: '#666',
     marginTop: 5,
   },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#f8f9fa',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 15,
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#4a6ee0',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
 });
-
-
 
 export default Course

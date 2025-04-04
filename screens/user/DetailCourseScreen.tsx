@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity, Modal, Text } from "react-native";
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+  Modal,
+  Text,
+} from "react-native";
 import { MyScreenProps } from "@/types/MyScreenProps";
 import * as SecureStore from "expo-secure-store";
 import axiosInstance from "@/api/axiosInstance";
@@ -8,7 +16,59 @@ import CourseHeader from "@/components/user/CourseHeader";
 import CourseContent from "@/components/user/CourseContent";
 import CourseReviews from "@/components/user/CourseReviews";
 import CourseActionButton from "@/components/user/CourseActionButton";
-import { Course, Section, Enrollment } from "@/types/user/DetailCourse";
+
+interface Course {
+  id: number;
+  category_id: number;
+  name: string;
+  description: string;
+  status: number;
+  price: number;
+  discount: number;
+  image: string;
+  total_rating: number;
+  enrollment_count: number;
+  category: {
+    id: number;
+    name: string;
+  };
+}
+
+interface User {
+  id: number;
+  fullname: string;
+  username: string;
+  avatar: string;
+}
+
+interface Enrollment {
+  id: number;
+  course_id: number;
+  user_id: number;
+  rating?: number;
+  review?: string;
+  createdAt: string;
+  updatedAt: string;
+  user: User;
+}
+
+interface Section {
+  id: number;
+  course_id: number;
+  name: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+  lessons: Lesson[];
+}
+
+interface Lesson {
+  id: number;
+  section_id: number;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 // API Functions
 const getDetailCourse = async (course_id: number): Promise<Course | null> => {
@@ -72,8 +132,24 @@ const getUserInformationById = async (user_id: number): Promise<any> => {
   }
 };
 
+async function getTotalLessonFromSections(
+  sections: Section[]
+): Promise<number> {
+  let totalLesson = 0;
+  for (const section of sections) {
+    if (section.lessons) {
+      totalLesson += section.lessons.length;
+    }
+  }
+  return totalLesson;
+}
+
 // Components
-const UpdateProfileModal = ({ visible, onClose, onUpdate }: {
+const UpdateProfileModal = ({
+  visible,
+  onClose,
+  onUpdate,
+}: {
   visible: boolean;
   onClose: () => void;
   onUpdate: () => void;
@@ -83,7 +159,8 @@ const UpdateProfileModal = ({ visible, onClose, onUpdate }: {
       <View style={styles.modalContent}>
         <Text style={styles.modalTitle}>Cập nhật thông tin</Text>
         <Text style={styles.modalText}>
-          Vui lòng cập nhật đầy đủ thông tin cá nhân (số điện thoại và ngày sinh) trước khi đăng ký khóa học.
+          Vui lòng cập nhật đầy đủ thông tin cá nhân (số điện thoại và ngày
+          sinh) trước khi đăng ký khóa học.
         </Text>
         <View style={styles.modalButtons}>
           <TouchableOpacity
@@ -104,10 +181,9 @@ const UpdateProfileModal = ({ visible, onClose, onUpdate }: {
   </Modal>
 );
 
-const DetailCourseScreen: React.FC<MyScreenProps["DetailCourseScreenProps"]> = ({
-  navigation,
-  route,
-}) => {
+const DetailCourseScreen: React.FC<
+  MyScreenProps["DetailCourseScreenProps"]
+> = ({ navigation, route }) => {
   const { courseId } = route.params || 1;
   const [course, setCourse] = useState<Course | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
@@ -132,7 +208,11 @@ const DetailCourseScreen: React.FC<MyScreenProps["DetailCourseScreenProps"]> = (
 
       const userInfo = await getUserInformation();
       if (enrollmentsData && userInfo?.id) {
-        setIsEnrolled(enrollmentsData.some(enrollment => enrollment.user_id === userInfo.id));
+        setIsEnrolled(
+          enrollmentsData.some(
+            (enrollment) => enrollment.user_id === userInfo.id
+          )
+        );
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -154,7 +234,11 @@ const DetailCourseScreen: React.FC<MyScreenProps["DetailCourseScreenProps"]> = (
       }
 
       const userDetails = await getUserInformationById(userInfo.id);
-      if (!userDetails || userDetails.phone === "" || userDetails.birth === null) {
+      if (
+        !userDetails ||
+        userDetails.phone === "" ||
+        userDetails.birth === null
+      ) {
         setShowUpdateProfileModal(true);
         return false;
       }
@@ -167,24 +251,37 @@ const DetailCourseScreen: React.FC<MyScreenProps["DetailCourseScreenProps"]> = (
 
   const handleEnroll = async () => {
     try {
-      const userInfo = await getUserInformation();
-      if (!userInfo?.id) {
-        console.error("User not found");
-        return;
-      }
+      if (course?.price === 0) {
+        let url = `${process.env.EXPO_PUBLIC_API_CREATE_ENROLLMENT}`;
+        const totalLesson = await getTotalLessonFromSections(sections);
+        const price = course?.price - (course?.price * course?.discount) / 100;
+        const response = await axiosInstance.post(url, {
+          course_id: courseId,
+          user_id: 1,
+          total_lesson: totalLesson,
+          complete_lesson: 0,
+          price: price,
+          rating: null,
+          review: null,
+        });
+        if (response.status === 201) {
+          setIsEnrolled(true);
+          const enrollmentsData = await getEnrollment(courseId);
+          if (enrollmentsData) setEnrollments(enrollmentsData);
+          navigation.replace("UserDetailCourseScreen", {
+            courseId: courseId,
+            message_from_detail_course_screen: "Đăng ký khóa học thành công, chao mừng bạn!",
+          });
+        } else {
+          console.error("Error enrolling in course:", response.data);
+          return;
+        }
+        //console.log("Enrollment response:", response.data);
 
-      const isUserInfoComplete = await checkUserInfo();
-      if (!isUserInfoComplete) return;
-
-      const response = await axiosInstance.post(
-        `${process.env.EXPO_PUBLIC_API_ENROLL_COURSE}`,
-        { course_id: courseId, user_id: userInfo.id }
-      );
-
-      if (response.status === 200) {
-        setIsEnrolled(true);
-        const enrollmentsData = await getEnrollment(courseId);
-        if (enrollmentsData) setEnrollments(enrollmentsData);
+        // console.log("Total lesson:", totalLesson);
+        // console.log("Price:", price);
+      } else {
+        console.log("Chua xu ly thanh toan cho khoa hoc khong mien phi");
       }
     } catch (error) {
       console.error("Error enrolling in course:", error);
@@ -193,8 +290,7 @@ const DetailCourseScreen: React.FC<MyScreenProps["DetailCourseScreenProps"]> = (
 
   const handleLessonPress = (lesson: any) => {
     if (!isEnrolled) return;
-    navigation.navigate("UserViewLessonScreen", {
-      lessonId: lesson.id,
+    navigation.navigate("UserDetailCourseScreen", {
       courseId: courseId,
     });
   };
@@ -217,10 +313,7 @@ const DetailCourseScreen: React.FC<MyScreenProps["DetailCourseScreenProps"]> = (
 
   return (
     <View style={styles.container}>
-      <CourseHeader
-        course={course}
-        onBackPress={() => navigation.goBack()}
-      />
+      <CourseHeader course={course} onBackPress={() => navigation.goBack()} />
       <ScrollView style={styles.scrollView}>
         <View style={styles.tabContainer}>
           <TouchableOpacity
@@ -274,7 +367,7 @@ const DetailCourseScreen: React.FC<MyScreenProps["DetailCourseScreenProps"]> = (
         course={course}
         isEnrolled={isEnrolled}
         onEnroll={handleEnroll}
-        onContinue={() => handleLessonPress(sections[0]?.lessons[0])}
+        onContinue={() => handleLessonPress(courseId)}
       />
 
       <UpdateProfileModal
@@ -283,7 +376,8 @@ const DetailCourseScreen: React.FC<MyScreenProps["DetailCourseScreenProps"]> = (
         onUpdate={() => {
           setShowUpdateProfileModal(false);
           navigation.navigate("EditProfileScreen", {
-            message: "Vui lòng cập nhật đầy đủ thông tin cá nhân (số điện thoại và ngày sinh) trước khi đăng ký khóa học."
+            message:
+              "Vui lòng cập nhật đầy đủ thông tin cá nhân (số điện thoại và ngày sinh) trước khi đăng ký khóa học.",
           });
         }}
       />

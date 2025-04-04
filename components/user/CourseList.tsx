@@ -2,8 +2,26 @@ import React from "react";
 import { FlatList, ScrollView, StyleSheet } from "react-native";
 import Section from "./Section";
 import CourseCard from "./CourseCard";
-import { Course } from "@/types/user/Course";
+
 import { Strings } from "@/constants/Strings";
+
+
+interface Course {
+  id: number;
+  category_id: number;
+  name: string;
+  description: string;
+  status: number;
+  price: number;
+  discount: number;
+  image: string;
+  total_rating: number;
+  enrollment_count: number;
+  category: {
+    id: number;
+    name: string;
+  };
+}
 const CourseList: React.FC<{
   title: string;
   courses: Course[];

@@ -1,7 +1,24 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import { Course } from '@/types/user/Course';
+
 import { Strings } from '@/constants/Strings';
+
+interface Course {
+  id: number;
+  category_id: number;
+  name: string;
+  description: string;
+  status: number;
+  price: number;
+  discount: number;
+  image: string;
+  total_rating: number;
+  enrollment_count: number;
+  category: {
+    id: number;
+    name: string;
+  };
+}
 
 interface CourseCardProps {
   course: Course;

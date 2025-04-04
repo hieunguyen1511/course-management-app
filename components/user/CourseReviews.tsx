@@ -1,6 +1,23 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList } from 'react-native';
-import { Enrollment } from '@/types/user/DetailCourse';
+
+interface User {
+  id: number;
+  fullname: string;
+  username: string;
+  avatar: string;
+}
+interface Enrollment {
+  id: number;
+  course_id: number;
+  user_id: number;
+  rating?: number;
+  review?: string;
+  createdAt: string;
+  updatedAt: string;
+  user: User;
+}
+
 
 interface CourseReviewsProps {
   enrollments: Enrollment[];

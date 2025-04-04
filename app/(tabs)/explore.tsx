@@ -17,7 +17,29 @@ import { RootStackParamList } from "@/types/RootStackParamList";
 import { MyScreenProps } from "@/types/MyScreenProps";
 import axiosInstance from "@/api/axiosInstance";
 
-import { Course } from "@/types/user/Course";
+interface Category {
+  id: number;
+  name: string;
+}
+
+
+interface Course {
+  id: number;
+  name: string;
+  description: string;
+  status: number;
+  price: number;
+  discount: number;
+  category_id: number;
+  total_rating: number;
+  enrollment_count: number;
+  image: string;
+  category: {
+    id: number;
+    name: string;
+  };
+}
+
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
