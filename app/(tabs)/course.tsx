@@ -11,6 +11,7 @@ import { MyScreenProps } from '@/types/MyScreenProps';
 import axiosInstance from '@/api/axiosInstance';
 import { useFocusEffect } from '@react-navigation/native';
 import dayjs from 'dayjs';
+import { Enrollment } from '@/types/apiModels';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 // Define course interface
 interface Course {
@@ -22,25 +23,11 @@ interface Course {
   rating: number;
 }
 
-// Interface for in-progress courses
-interface CourseInProgress extends Course {
-  progress: number;
-  lastAccessed: string;
-  totalLessons: number;
-  completedLessons: number;
-}
-
-// Interface for completed courses
-interface CourseCompleted extends Course {
-  completedDate: string;
-  hasReviewed: boolean;
-}
-
 const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, route }) => {
   // State variables
   const [activeTab, setActiveTab] = useState<'progress' | 'completed'>('progress');
-  const [inProgressEnrollments, setInProgressEnrollments] = useState<CourseInProgress[]>([]);
-  const [completedEnrollments, setCompletedEnrollments] = useState<CourseCompleted[]>([]);
+  const [inProgressEnrollments, setInProgressEnrollments] = useState<Enrollment[]>([]);
+  const [completedEnrollments, setCompletedEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchInProgressEnrollments = async () => {
@@ -120,7 +107,7 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
   );
 
   // Render in-progress course
-  const renderInProgressCourse = ({ item }: { item: any }) => (
+  const renderInProgressCourse = ({ item }: { item: Enrollment }) => (
     <TouchableOpacity style={styles.courseCard}>
       <Image source={{ uri: item?.course?.image }} style={styles.courseImage} />
 
@@ -131,29 +118,41 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
         <Text style={styles.categoryText}>{item?.course?.category?.name}</Text>
 
         <View style={styles.progressContainer}>
-          <ProgressBar progress={(item.total_lesson_completed / item.total_lesson) * 100} />
+          <ProgressBar
+            progress={
+              ((item.total_lesson_completed ?? 0) /
+                (item.total_lesson > 0 ? item.total_lesson : 1)) *
+              100
+            }
+          />
           <View style={styles.progressTextContainer}>
             <Text style={styles.progressText}>
-              {Math.round((item.total_lesson_completed / (item.total_lesson ?? 1)) * 100)}% Hoàn
-              thành
+              {Math.round(
+                ((item.total_lesson_completed ?? 0) /
+                  (item.total_lesson > 0 ? item.total_lesson : 1)) *
+                  100
+              )}
+              % Hoàn thành
             </Text>
             <Text style={styles.lessonCount}>
-              {item.total_lesson_completed}/{item.total_lesson} bài học
+              {item.total_lesson_completed}/{item.total_lesson ?? 0} bài học
             </Text>
           </View>
         </View>
 
-        <Text style={styles.lastAccessedText}>
-          Truy cập lần cuối: {dayjs(item.last_access).format('DD/MM/YYYY hh:mm')}
-        </Text>
+        {item.last_access && (
+          <Text style={styles.lastAccessedText}>
+            Truy cập lần cuối: {dayjs(item.last_access).format('DD/MM/YYYY hh:mm')}
+          </Text>
+        )}
       </View>
 
       <TouchableOpacity
         style={styles.continueButton}
         onPress={() =>
           navigation.navigate('UserDetailCourseScreen', {
-           enrollmentId: item.enrollment_id, courseId: item.course_id,
             enrollmentId: item.id,
+            courseId: item.course_id,
           })
         }
       >

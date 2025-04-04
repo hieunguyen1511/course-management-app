@@ -259,6 +259,7 @@ const DetailCourseScreen: React.FC<MyScreenProps['DetailCourseScreenProps']> = (
           const enrollmentsData = await getEnrollment(courseId);
           if (enrollmentsData) setEnrollments(enrollmentsData);
           navigation.replace('UserDetailCourseScreen', {
+            enrollmentId: response.data.enrollment.id,
             courseId: courseId,
             enrollmentId: response.data.enrollment.id,
             message_from_detail_course_screen:

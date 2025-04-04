@@ -154,10 +154,7 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
   const fetchEnrollmentByID = async (eID: number) => {
     try {
       const response = await axiosInstance.get(
-        process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_ID?.replace(
-          ':enrollment_id',
-          eID.toString()
-        ) || ''
+        process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_ID?.replace(':id', eID.toString()) || ''
       );
       return response?.data?.enrollment;
     } catch (error) {
@@ -430,6 +427,7 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
       }
     }
   };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -448,7 +446,15 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
         <View style={styles.progressBarContainer}>
           <View
             style={[
-              styles.progressBar,
+              (enrollment?.enrollment_lessons?.filter(l => l.completed_at).length /
+                (enrollment?.course?.sections?.reduce(
+                  (acc, section) => acc + section.lessons.length,
+                  0
+                ) ?? 1)) *
+                100 ===
+              100
+                ? styles.completedProgress
+                : styles.progressBar,
               {
                 width: `${
                   (enrollment?.enrollment_lessons?.filter(l => l.completed_at).length /
@@ -465,7 +471,7 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
         <View style={styles.progressTextContainer}>
           <Text style={styles.progressText}>
             {`${Math.round(
-              (enrollment?.enrollment_lessons?.filter(l => l.completed_at).length /
+              ((enrollment?.enrollment_lessons?.filter(l => l.completed_at).length ?? 0) /
                 (enrollment?.course?.sections?.reduce(
                   (acc, section) => acc + section.lessons.length,
                   0
@@ -513,22 +519,37 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
                 <View style={styles.chapterTitleContainer}>
                   <Text style={styles.chapterTitle}>{section.name}</Text>
                   <Text style={styles.chapterProgress}>
-                    {
-                      section.lessons.filter(l =>
-                        enrollment.enrollment_lessons.find(
-                          el => el.completed_at && el.lesson_id === l.id
-                        )
-                      ).length
-                    }
-                    /{section.lessons.length} bài học
+                    {section.lessons.filter(l =>
+                      enrollment.enrollment_lessons.find(
+                        el => el.completed_at && el.lesson_id === l.id
+                      )
+                    ).length ?? 0}
+                    /{section.lessons.length ?? 0} bài học
                   </Text>
                 </View>
                 <View style={styles.chapterProgressBarContainer}>
                   <View
                     style={[
-                      styles.chapterProgressBar,
+                      ((section.lessons.filter(l =>
+                        enrollment.enrollment_lessons.find(
+                          el => el.completed_at && el.lesson_id === l.id
+                        )
+                      ).length ?? 0) /
+                        (section.lessons.length ?? 1)) *
+                        100 ===
+                      100
+                        ? styles.completedProgress
+                        : styles.chapterProgressBar,
                       {
-                        width: `${(0 / section.lessons.length) * 100}%`,
+                        width: `${
+                          ((section.lessons.filter(l =>
+                            enrollment.enrollment_lessons.find(
+                              el => el.completed_at && el.lesson_id === l.id
+                            )
+                          ).length ?? 0) /
+                            (section.lessons.length ?? 1)) *
+                          100
+                        }%`,
                       },
                     ]}
                   />
@@ -709,6 +730,10 @@ const styles = StyleSheet.create({
   chapterProgress: {
     fontSize: 14,
     color: '#666',
+  },
+  completedProgress: {
+    backgroundColor: '#28a745',
+    height: '100%',
   },
   chapterProgressBarContainer: {
     height: 4,

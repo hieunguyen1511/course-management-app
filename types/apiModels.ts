@@ -3,7 +3,7 @@ export interface Enrollment {
   course_id: number;
   user_id: number;
   total_lesson: number;
-  complete_lesson: number;
+  total_lesson_completed: number;
   last_access: any;
   price: any;
   rating: any;
