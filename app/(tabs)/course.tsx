@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, FlatList, ActivityIndicator } from 'react-native'
-import React, { useState, useEffect } from 'react'
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, FlatList, ActivityIndicator, RefreshControl } from 'react-native'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 
 import { MyScreenProps } from '@/types/MyScreenProps';
@@ -38,6 +38,7 @@ interface UserEnrollment {
 
 interface CourseInProgress {
   id: number;
+  enrollment_id: number;
   title: string;
   category: string;
   image: string;
@@ -50,6 +51,7 @@ interface CourseInProgress {
 
 interface CourseCompleted {
   id: number;
+  enrollment_id: number;
   title: string;
   category: string;
   image: string;
@@ -121,6 +123,7 @@ const Course: React.FC<MyScreenProps["UserCourseScreenProps"]> = ({ navigation, 
   const [completedCourses, setCompletedCourses] = useState<CourseCompleted[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchUserCourses = async () => {
     try {
@@ -139,11 +142,12 @@ const Course: React.FC<MyScreenProps["UserCourseScreenProps"]> = ({ navigation, 
         return;
       }
 
-      // Process in-progress courses
+      // Process in-progress courses  
       const inProgress = enrollments
         .filter(enrollment => enrollment.progress < 100)
         .map(enrollment => ({
           id: enrollment.course.id,
+          enrollment_id: enrollment.id,
           title: enrollment.course.name,
           category: enrollment.course.description.substring(0, 30) + '...',
           image: enrollment.course.image,
@@ -159,6 +163,7 @@ const Course: React.FC<MyScreenProps["UserCourseScreenProps"]> = ({ navigation, 
         .filter(enrollment => enrollment.progress === 100)
         .map(enrollment => ({
           id: enrollment.course.id,
+          enrollment_id: enrollment.id,
           title: enrollment.course.name,
           category: enrollment.course.description.substring(0, 30) + '...',
           image: enrollment.course.image,
@@ -166,7 +171,6 @@ const Course: React.FC<MyScreenProps["UserCourseScreenProps"]> = ({ navigation, 
           completedDate: enrollment.updatedAt,
           hasReviewed: enrollment.rating !== null
         }));
-
       setInProgressCourses(inProgress);
       setCompletedCourses(completed);
     } catch (error) {
@@ -180,6 +184,11 @@ const Course: React.FC<MyScreenProps["UserCourseScreenProps"]> = ({ navigation, 
   useEffect(() => {
     fetchUserCourses();
   }, []);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchUserCourses();
+    setRefreshing(false);
+  }, [fetchUserCourses]);
 
   // Render progress bar
   const ProgressBar = ({ progress }: { progress: number }) => (
@@ -249,7 +258,7 @@ const Course: React.FC<MyScreenProps["UserCourseScreenProps"]> = ({ navigation, 
 
       <TouchableOpacity
         style={styles.continueButton}
-        onPress={() => navigation.navigate('UserDetailCourseScreen', { courseId: item.id })}
+        onPress={() => navigation.navigate('UserDetailCourseScreen', { enrollmentId: item.enrollment_id, courseId: item.id })}
       >
         <Text style={styles.continueButtonText}>Tiếp tục</Text>
       </TouchableOpacity>
@@ -289,8 +298,7 @@ const Course: React.FC<MyScreenProps["UserCourseScreenProps"]> = ({ navigation, 
     </TouchableOpacity>
   );
 
-  // Loading state
-  if (loading) {
+  if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#4a6ee0" />
@@ -299,7 +307,7 @@ const Course: React.FC<MyScreenProps["UserCourseScreenProps"]> = ({ navigation, 
     );
   }
 
-  if (error) {
+  if (error && !refreshing) {
     return (
       <View style={styles.errorContainer}>
         <Ionicons name="alert-circle-outline" size={50} color="#ff6b6b" />
@@ -322,86 +330,59 @@ const Course: React.FC<MyScreenProps["UserCourseScreenProps"]> = ({ navigation, 
       </View>
 
       {/* Tabs */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === 'progress' && styles.activeTab
-          ]}
-          onPress={() => setActiveTab('progress')}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === 'progress' && styles.activeTabText
-            ]}
-          >
-            Đang học
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === 'completed' && styles.activeTab
-          ]}
-          onPress={() => setActiveTab('completed')}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === 'completed' && styles.activeTabText
-            ]}
-          >
-            Đã hoàn thành
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {renderTabs()}
 
       {/* Course Lists */}
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {activeTab === 'progress' ? (
-          <>
-            {inProgressCourses.length > 0 ? (
-              inProgressCourses.map(course => (
-                <View key={course.id.toString()}>
-                  {renderInProgressCourse({ item: course })}
-                </View>
-              ))
-            ) : (
-              <View style={styles.emptyContainer}>
-                <Ionicons name="book-outline" size={50} color="#ccc" />
-                <Text style={styles.emptyText}>Bạn chưa bắt đầu khóa học nào</Text>
-                <TouchableOpacity 
-                  style={styles.exploreCourseButton}
-                  onPress={() => navigation.navigate('Main', { screen: 'Home' })}
-                >
-                  <Text style={styles.exploreCourseText}>Khám phá khóa học</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </>
-        ) : (
-          <>
-            {completedCourses.length > 0 ? (
-              completedCourses.map(course => (
-                <View key={course.id.toString()}>
-                  {renderCompletedCourse({ item: course })}
-                </View>
-              ))
-            ) : (
-              <View style={styles.emptyContainer}>
-                <Ionicons name="trophy-outline" size={50} color="#ccc" />
-                <Text style={styles.emptyText}>Bạn chưa hoàn thành khóa học nào</Text>
-                <Text style={styles.emptySubText}>Các khóa học đã hoàn thành sẽ hiển thị ở đây</Text>
-              </View>
-            )}
-          </>
-        )}
-      </ScrollView>
+      {activeTab === 'progress' ? (
+        <FlatList<CourseInProgress>
+          data={inProgressCourses}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => renderInProgressCourse({ item })}
+          ListEmptyComponent={() => (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="book-outline" size={50} color="#ccc" />
+              <Text style={styles.emptyText}>Bạn chưa bắt đầu khóa học nào</Text>
+              <TouchableOpacity 
+                style={styles.exploreCourseButton}
+                onPress={() => navigation.navigate('Main', { screen: 'Home' })}
+              >
+                <Text style={styles.exploreCourseText}>Khám phá khóa học</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={["#4a6ee0"]}
+            />
+          }
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        />
+      ) : (
+        <FlatList<CourseCompleted>
+          data={completedCourses}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => renderCompletedCourse({ item })}
+          ListEmptyComponent={() => (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="trophy-outline" size={50} color="#ccc" />
+              <Text style={styles.emptyText}>Bạn chưa hoàn thành khóa học nào</Text>
+              <Text style={styles.emptySubText}>Các khóa học đã hoàn thành sẽ hiển thị ở đây</Text>
+            </View>
+          )}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={["#4a6ee0"]}
+            />
+          }
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </View>
   )
 }
@@ -455,6 +436,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
     paddingBottom: 30,
+    flexGrow: 1,
   },
   courseCard: {
     flexDirection: 'row',

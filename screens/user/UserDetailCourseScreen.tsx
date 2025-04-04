@@ -6,78 +6,248 @@ import {
   TouchableOpacity,
   Image,
   TextInput,
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
 } from "react-native";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { MyScreenProps } from "@/types/MyScreenProps";
-import { NavigationIndependentTree } from "@react-navigation/native";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { RootStackParamList } from "@/types/RootStackParamList";
+
 import { ToastType } from "@/components/NotificationToast";
 import NotificationToast from "@/components/NotificationToast";
+import axiosInstance from "@/api/axiosInstance";
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+
+interface Course{
+  id: number;
+  category_id: number;
+  name: string;
+  description: string;
+  status: number;
+  total_rating: number | null;
+  image: string | null;
+  price: number;
+  discount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Enrollment {
+  id: number;
+  course_id: number;
+  user_id: number;
+  total_lesson: number;
+  complete_lesson: number;
+  price: number;
+  rating: number | null;
+  review: string | null;
+  createdAt: string;
+  updatedAt: string;
+  course: Course;
+}
+
+interface User {
+  id: number;
+  username: string;
+  fullname: string;
+  email: string;
+  avatar?: string | null;
+}
+
 interface Comment {
   id: number;
-  userId: number;
-  userName: string;
-  userAvatar: string;
+  user_id: number;
+  course_id: number;
   content: string;
-  timestamp: string;
-  replies: Comment[];
+  parent_id: number;
+  createdAt: string;
+  updatedAt: string;
+  user: User;
+  replies?: Comment[];
 }
 
 interface Lesson {
   id: number;
+  section_id: number;
   title: string;
-  duration: string;
-  isCompleted: boolean;
-  isLocked: boolean;
+  duration?: string;
+  isCompleted?: boolean;
+  isLocked?: boolean;
+  createdAt: string;
+  updatedAt: string;
+  order?: number;
 }
 
-interface Chapter {
+interface Section {
   id: number;
-  title: string;
+  course_id: number;
+  name: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
   lessons: Lesson[];
-  totalLessons: number;
-  completedLessons: number;
 }
 
-interface CourseDetail {
-  id: number;
-  title: string;
-  category: string;
-  image: string;
-  rating: number;
-  progress: number;
-  totalLessons: number;
-  completedLessons: number;
-  chapters: Chapter[];
-  comments: Comment[];
+
+
+
+
+// api function
+async function getSectionByCourseId_withLesson(course_id: number) {
+  try {
+    let url = `${process.env.EXPO_PUBLIC_API_GET_SECTION_BY_COURSE_ID_WITH_LESSON}`;
+    url = url.replace(":course_id", course_id.toString());
+    const response = await axiosInstance.get(url);
+    const mapdata = response.data.sections.map((item: Section) => {
+      return {
+        ...item,
+        id: item.id,
+        course_id: item.course_id,
+        name: item.name,
+        description: item.description,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        lessons: item.lessons,
+      };
+    });
+    return mapdata;
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+}
+
+async function getCommentByCourseWithUser(course_id: number) {
+  try {
+    let url = `${process.env.EXPO_PUBLIC_API_GET_COMMENT_BY_COURSE_ID_WITH_USER}`;
+    url = url.replace(":course_id", course_id.toString());
+    const response = await axiosInstance.get(url);
+    const mapdata = response.data.comments.map((item: Comment) => {
+      return {
+        ...item,
+        id: item.id,
+        user_id: item.user_id,
+        course_id: item.course_id,
+        content: item.content,
+        parent_id: item.parent_id,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        user: item.user,
+        replies: item.replies,
+      };
+    });
+    return mapdata;
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+}
+
+async function getEnrollmentByIdWithCourse(enrollment_id: number) {
+  try {
+    let url = `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_ID_WITH_COURSE}`;
+    url = url.replace(":id", enrollment_id.toString());
+    const response = await axiosInstance.get(url);
+    const data = {
+      id: response.data.enrollment.id,
+      course_id: response.data.enrollment.course_id,
+      user_id: response.data.enrollment.user_id,
+      total_lesson: response.data.enrollment.total_lesson,
+      complete_lesson: response.data.enrollment.complete_lesson,
+      price: response.data.enrollment.price,
+      rating: response.data.enrollment.rating,
+      review: response.data.enrollment.review,
+      createdAt: response.data.enrollment.createdAt,
+      updatedAt: response.data.enrollment.updatedAt,
+      course: response.data.enrollment.course,
+    };
+    return data;
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
 }
 
 const UserDetailCourseScreen: React.FC<
   MyScreenProps["UserDetailCourseScreenProps"]
 > = ({ navigation, route }) => {
-  const { courseId } = route.params || 1;
-  const [course, setCourse] = useState<CourseDetail | null>(null);
+  const { courseId, enrollmentId } = route.params || { courseId: 1, enrollmentId: 1 };
+  const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
+  const [sections, setSections] = useState<Section[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"content" | "discussion">(
-    "content"
-  );
+  const [activeTab, setActiveTab] = useState<"content" | "discussion">("content");
   const [newComment, setNewComment] = useState("");
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Toast state
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<ToastType>(ToastType.SUCCESS);
 
-  const showToast = async (message: string | "", type: ToastType) => {
+  const showToast = useCallback((message: string, type: ToastType) => {
     setToastMessage(message);
     setToastType(type);
     setToastVisible(true);
-  };
+  }, []);
+
+  const processLessons = useCallback((lessons: Lesson[], totalCompleted: number, currentIndex: number) => {
+    // Sort lessons by order
+    const sortedLessons = [...lessons].sort(
+      (a, b) => (a.order || 0) - (b.order || 0)
+    );
+
+    // Update lesson locked status based on total completed lessons
+    return sortedLessons.map((lesson, index) => ({
+      ...lesson,
+      // Unlock lessons based on total completed lessons across all sections
+      isLocked: (currentIndex + index) >= totalCompleted
+    }));
+  }, []);
+
+  const fetchCourseDetail = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [sectionsData, commentsData, enrollmentData] = await Promise.all([
+        getSectionByCourseId_withLesson(courseId),
+        getCommentByCourseWithUser(courseId),
+        getEnrollmentByIdWithCourse(enrollmentId)
+      ]);
+      
+      if (sectionsData && commentsData && enrollmentData) {
+        setEnrollment(enrollmentData);
+        
+        // Process lessons for each section based on total completed lessons
+        let currentIndex = -1;
+        const processedSections = sectionsData.map((section: Section) => {
+          const processedSection = {
+            ...section,
+            lessons: processLessons(section.lessons, enrollmentData.complete_lesson, currentIndex)
+          };
+          currentIndex += section.lessons.length;
+          return processedSection;
+        });
+        
+        setSections(processedSections);
+        setComments(commentsData);
+      } else {
+        showToast("Không thể tải thông tin khóa học", ToastType.ERROR);
+      }
+    } catch (error) {
+      console.error("Error fetching course detail:", error);
+      showToast("Có lỗi xảy ra khi tải dữ liệu", ToastType.ERROR);
+    } finally {
+      setLoading(false);
+    }
+  }, [courseId, enrollmentId, showToast, processLessons]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchCourseDetail();
+    setRefreshing(false);
+  }, [fetchCourseDetail]);
 
   useEffect(() => {
     if (route.params?.message_from_detail_course_screen) {
@@ -88,253 +258,228 @@ const UserDetailCourseScreen: React.FC<
         );
       }, 300);
     }
+    fetchCourseDetail();
+  }, [
+    fetchCourseDetail,
+    route.params?.message_from_detail_course_screen,
+    showToast,
+  ]);
 
-    // Simulate API call to fetch course details
-    setTimeout(() => {
-      const mockCourse: CourseDetail = {
-        id: courseId,
-        title: "Lập trình React Native cơ bản",
-        category: "Lập trình",
-        image: "https://via.placeholder.com/100",
-        rating: 4.7,
-        progress: 65,
-        totalLessons: 12,
-        completedLessons: 8,
-        chapters: [
-          {
-            id: 1,
-            title: "Chương 1: Giới thiệu về React Native",
-            totalLessons: 3,
-            completedLessons: 3,
-            lessons: [
-              {
-                id: 1,
-                title: "1.1 Giới thiệu về React Native",
-                duration: "15:00",
-                isCompleted: true,
-                isLocked: false,
-              },
-              {
-                id: 2,
-                title: "1.2 Cài đặt môi trường phát triển",
-                duration: "20:00",
-                isCompleted: true,
-                isLocked: false,
-              },
-              {
-                id: 3,
-                title: "1.3 Tạo ứng dụng đầu tiên",
-                duration: "25:00",
-                isCompleted: true,
-                isLocked: false,
-              },
-            ],
-          },
-          {
-            id: 2,
-            title: "Chương 2: Các thành phần cơ bản",
-            totalLessons: 4,
-            completedLessons: 2,
-            lessons: [
-              {
-                id: 4,
-                title: "2.1 View và Text",
-                duration: "18:00",
-                isCompleted: true,
-                isLocked: false,
-              },
-              {
-                id: 5,
-                title: "2.2 Image và Button",
-                duration: "20:00",
-                isCompleted: true,
-                isLocked: false,
-              },
-              {
-                id: 6,
-                title: "2.3 TextInput và Form",
-                duration: "25:00",
-                isCompleted: false,
-                isLocked: false,
-              },
-              {
-                id: 7,
-                title: "2.4 ScrollView và FlatList",
-                duration: "30:00",
-                isCompleted: false,
-                isLocked: true,
-              },
-            ],
-          },
-          {
-            id: 3,
-            title: "Chương 3: Navigation và State Management",
-            totalLessons: 5,
-            completedLessons: 0,
-            lessons: [
-              {
-                id: 8,
-                title: "3.1 React Navigation cơ bản",
-                duration: "25:00",
-                isCompleted: false,
-                isLocked: true,
-              },
-              {
-                id: 9,
-                title: "3.2 Stack Navigation",
-                duration: "30:00",
-                isCompleted: false,
-                isLocked: true,
-              },
-              {
-                id: 10,
-                title: "3.3 Tab Navigation",
-                duration: "25:00",
-                isCompleted: false,
-                isLocked: true,
-              },
-              {
-                id: 11,
-                title: "3.4 State Management với Context",
-                duration: "35:00",
-                isCompleted: false,
-                isLocked: true,
-              },
-              {
-                id: 12,
-                title: "3.5 Redux trong React Native",
-                duration: "40:00",
-                isCompleted: false,
-                isLocked: true,
-              },
-            ],
-          },
-        ],
-        comments: [
-          {
-            id: 1,
-            userId: 1,
-            userName: "Nguyễn Văn A",
-            userAvatar: "https://via.placeholder.com/40",
-            content: "Khóa học rất hay và dễ hiểu!",
-            timestamp: "2 giờ trước",
-            replies: [
-              {
-                id: 2,
-                userId: 2,
-                userName: "Trần Thị B",
-                userAvatar: "https://via.placeholder.com/40",
-                content: "Đồng ý với bạn!",
-                timestamp: "1 giờ trước",
-                replies: [],
-              },
-            ],
-          },
-          {
-            id: 3,
-            userId: 3,
-            userName: "Lê Văn C",
-            userAvatar: "https://via.placeholder.com/40",
-            content: "Có ai đang học chương 2 không?",
-            timestamp: "3 giờ trước",
-            replies: [],
-          },
-        ],
-      };
-      setCourse(mockCourse);
-      setLoading(false);
-    }, 1000);
-  }, [courseId, route.params]);
+  const handleLessonPress = useCallback(
+    (lesson: Lesson) => {
+      if (lesson.isLocked) {
+        showToast(
+          "Bạn cần hoàn thành các bài học trước đó trước",
+          ToastType.INFO
+        );
+        return;
+      }
+      navigation.navigate("UserViewLessonScreen", {
+        lessonId: lesson.id,
+        courseId: courseId,
+      });
+    },
+    [courseId, navigation, showToast]
+  );
 
-  const handleLessonPress = (lesson: Lesson) => {
-    if (lesson.isLocked) {
-      // Show message that lesson is locked
+  const handleCommentSubmit = useCallback(async () => {
+    if (!newComment.trim()) {
+      showToast("Vui lòng nhập nội dung bình luận", ToastType.INFO);
       return;
     }
-    // Navigate to lesson content
-    navigation.navigate("UserViewLessonScreen", {
-      lessonId: lesson.id,
-      courseId: courseId,
-    });
-  };
 
-  const handleCommentSubmit = () => {
-    if (!newComment.trim()) return;
-
-    const newCommentObj: Comment = {
-      id: Date.now(),
-      userId: 4, // Current user ID
-      userName: "Bạn",
-      userAvatar: "https://via.placeholder.com/40",
-      content: newComment,
-      timestamp: "Vừa nãy",
-      replies: [],
-    };
-
-    if (replyingTo) {
-      // Add reply to existing comment
-      setCourse((prev) => {
-        if (!prev) return prev;
-        const updatedComments = prev.comments.map((comment) => {
-          if (comment.id === replyingTo) {
-            return {
-              ...comment,
-              replies: [...comment.replies, newCommentObj],
-            };
-          }
-          return comment;
-        });
-        return { ...prev, comments: updatedComments };
+    try {
+      const url = `${process.env.EXPO_PUBLIC_API_POST_COMMENT}`;
+      const response = await axiosInstance.post(url, {
+        course_id: courseId,
+        content: newComment,
+        parent_id: replyingTo,
       });
-    } else {
-      // Add new comment
-      setCourse((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          comments: [newCommentObj, ...prev.comments],
+
+      if (response.status === 201 && response.data?.comment) {
+        const newCommentObj: Comment = {
+          ...response.data.comment,
+          user: response.data.comment.user || {
+            id: 0,
+            username: "Bạn",
+            fullname: "Bạn",
+            email: "",
+            avatar: "https://via.placeholder.com/40",
+          },
         };
-      });
+
+        setComments((prev) => {
+          if (replyingTo) {
+            const updatedComments = prev.map((comment) => {
+              if (comment.id === replyingTo) {
+                return {
+                  ...comment,
+                  replies: [...(comment.replies || []), newCommentObj],
+                };
+              }
+              return comment;
+            });
+            return updatedComments;
+          } else {
+            return [newCommentObj, ...prev];
+          }
+        });
+
+        setNewComment("");
+        setReplyingTo(null);
+        showToast("Bình luận đã được gửi", ToastType.SUCCESS);
+      } else {
+        showToast("Không thể gửi bình luận", ToastType.ERROR);
+      }
+    } catch (error) {
+      console.error("Error posting comment:", error);
+      showToast("Có lỗi xảy ra khi gửi bình luận", ToastType.ERROR);
     }
+  }, [courseId, newComment, replyingTo, showToast]);
 
-    setNewComment("");
-    setReplyingTo(null);
-  };
+  const renderChapter = useCallback(
+    ({ item }: { item: Section }) => {
+      return (
+        <View key={item.id} style={styles.chapterContainer}>
+          <View style={styles.chapterHeader}>
+            <View style={styles.chapterTitleContainer}>
+              <Text style={styles.chapterTitle}>{item.name}</Text>
+              <Text style={styles.chapterProgress}>
+                {item.lessons.filter(lesson => !lesson.isLocked).length}/{item.lessons.length} bài học
+              </Text>
+            </View>
+            <View style={styles.chapterProgressBarContainer}>
+              <View
+                style={[
+                  styles.chapterProgressBar,
+                  {
+                    width: `${
+                      (item.lessons.filter(lesson => !lesson.isLocked).length / item.lessons.length) * 100
+                    }%`,
+                  },
+                ]}
+              />
+            </View>
+          </View>
 
-  const renderComment = (comment: Comment, isReply: boolean = false) => (
-    <View
-      key={comment.id}
-      style={[styles.commentContainer, isReply && styles.replyContainer]}
-    >
-      <View style={styles.commentHeader}>
-        <View style={styles.commentInfo}>
-          <Text style={styles.userName}>{comment.userName}</Text>
-          <Text style={styles.timestamp}>{comment.timestamp}</Text>
+          <FlatList
+            data={item.lessons}
+            keyExtractor={(lesson) => lesson.id.toString()}
+            renderItem={({ item: lesson }) => (
+              <TouchableOpacity
+                key={lesson.id}
+                style={[
+                  styles.lessonItem,
+                  lesson.isLocked && styles.lockedLesson,
+                ]}
+                onPress={() => handleLessonPress(lesson)}
+                disabled={lesson.isLocked}
+              >
+                <View style={styles.lessonContent}>
+                  <View style={styles.lessonIconContainer}>
+                    {!lesson.isLocked ? (
+                      <Ionicons
+                        name="play-circle"
+                        size={24}
+                        color="#4a6ee0"
+                      />
+                    ) : (
+                      <Ionicons name="lock-closed" size={24} color="#999" />
+                    )}
+                  </View>
+                  <View style={styles.lessonInfo}>
+                    <Text
+                      style={[
+                        styles.lessonTitle,
+                        lesson.isLocked && styles.lockedText,
+                      ]}
+                    >
+                      {lesson.title}
+                    </Text>
+                    <Text style={styles.lessonDuration}>{lesson.duration}</Text>
+                  </View>
+                </View>
+                {!lesson.isLocked && (
+                  <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color="#666"
+                  />
+                )}
+              </TouchableOpacity>
+            )}
+          />
         </View>
+      );
+    },
+    [handleLessonPress]
+  );
+
+  const renderComment = useCallback(
+    ({ item: comment }: { item: Comment }) => (
+      <View key={comment.id} style={[styles.commentContainer]}>
+        <View style={styles.commentHeader}>
+          <View style={styles.commentInfo}>
+            <Text style={styles.userName}>
+              {comment.user?.fullname || "Người dùng"}
+            </Text>
+            <Text style={styles.timestamp}>
+              {new Date(comment.createdAt).toLocaleString("vi-VN")}
+            </Text>
+          </View>
+        </View>
+        <Text style={styles.commentContent}>{comment.content}</Text>
+        <TouchableOpacity
+          style={styles.replyButton}
+          onPress={() => setReplyingTo(comment.id)}
+        >
+          <Text style={styles.replyButtonText}>Trả lời</Text>
+        </TouchableOpacity>
+        {comment.replies && comment.replies.length > 0 && (
+          <FlatList
+            data={comment.replies}
+            keyExtractor={(reply) => reply.id.toString()}
+            renderItem={({ item: reply }) => (
+              <View style={[styles.commentContainer, styles.replyContainer]}>
+                <View style={styles.commentHeader}>
+                  <View style={styles.commentInfo}>
+                    <Text style={styles.userName}>
+                      {reply.user?.fullname || "Người dùng"}
+                    </Text>
+                    <Text style={styles.timestamp}>
+                      {new Date(reply.createdAt).toLocaleString("vi-VN")}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.commentContent}>{reply.content}</Text>
+              </View>
+            )}
+          />
+        )}
       </View>
-      <Text style={styles.commentContent}>{comment.content}</Text>
-      <TouchableOpacity
-        style={styles.replyButton}
-        onPress={() => setReplyingTo(comment.id)}
-      >
-        <Text style={styles.replyButtonText}>Trả lời</Text>
-      </TouchableOpacity>
-      {comment.replies.map((reply) => renderComment(reply, true))}
-    </View>
+    ),
+    []
   );
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#4a6ee0" />
         <Text style={styles.loadingText}>Đang tải nội dung khóa học...</Text>
       </View>
     );
   }
 
-  if (!course) {
+  if (!enrollment) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Không tìm thấy khóa học</Text>
+        <Text style={styles.errorText}>Không thể tải nội dung khóa học</Text>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={fetchCourseDetail}
+        >
+          <Text style={styles.retryButtonText}>Thử lại</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -350,8 +495,8 @@ const UserDetailCourseScreen: React.FC<
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>{course.title}</Text>
-          <Text style={styles.headerSubtitle}>{course.category}</Text>
+          <Text style={styles.headerTitle}>{enrollment.course.name}</Text>
+          <Text style={styles.headerSubtitle}>{enrollment.course.description}</Text>
         </View>
       </View>
 
@@ -359,13 +504,13 @@ const UserDetailCourseScreen: React.FC<
       <View style={styles.progressContainer}>
         <View style={styles.progressBarContainer}>
           <View
-            style={[styles.progressBar, { width: `${course.progress}%` }]}
+            style={[styles.progressBar, { width: `${(enrollment.complete_lesson / enrollment.total_lesson) * 100}%` }]}
           />
         </View>
         <View style={styles.progressTextContainer}>
-          <Text style={styles.progressText}>{course.progress}% Hoàn thành</Text>
+          <Text style={styles.progressText}>{Math.round((enrollment.complete_lesson / enrollment.total_lesson) * 100)}% Hoàn thành</Text>
           <Text style={styles.lessonCount}>
-            {course.completedLessons}/{course.totalLessons} bài học
+            {enrollment.complete_lesson}/{enrollment.total_lesson} bài học
           </Text>
         </View>
       </View>
@@ -402,89 +547,20 @@ const UserDetailCourseScreen: React.FC<
 
       {/* Content */}
       {activeTab === "content" ? (
-        <ScrollView style={styles.contentContainer}>
-          {course.chapters.map((chapter) => (
-            <View key={chapter.id} style={styles.chapterContainer}>
-              <View style={styles.chapterHeader}>
-                <View style={styles.chapterTitleContainer}>
-                  <Text style={styles.chapterTitle}>{chapter.title}</Text>
-                  <Text style={styles.chapterProgress}>
-                    {chapter.completedLessons}/{chapter.totalLessons} bài học
-                  </Text>
-                </View>
-                <View style={styles.chapterProgressBarContainer}>
-                  <View
-                    style={[
-                      styles.chapterProgressBar,
-                      {
-                        width: `${
-                          (chapter.completedLessons / chapter.totalLessons) *
-                          100
-                        }%`,
-                      },
-                    ]}
-                  />
-                </View>
-              </View>
-
-              {chapter.lessons.map((lesson) => (
-                <TouchableOpacity
-                  key={lesson.id}
-                  style={[
-                    styles.lessonItem,
-                    lesson.isLocked && styles.lockedLesson,
-                  ]}
-                  onPress={() => handleLessonPress(lesson)}
-                  disabled={lesson.isLocked}
-                >
-                  <View style={styles.lessonContent}>
-                    <View style={styles.lessonIconContainer}>
-                      {lesson.isCompleted ? (
-                        <Ionicons
-                          name="checkmark-circle"
-                          size={24}
-                          color="#2c9e69"
-                        />
-                      ) : lesson.isLocked ? (
-                        <Ionicons name="lock-closed" size={24} color="#999" />
-                      ) : (
-                        <Ionicons
-                          name="play-circle"
-                          size={24}
-                          color="#4a6ee0"
-                        />
-                      )}
-                    </View>
-                    <View style={styles.lessonInfo}>
-                      <Text
-                        style={[
-                          styles.lessonTitle,
-                          lesson.isLocked && styles.lockedText,
-                        ]}
-                      >
-                        {lesson.title}
-                      </Text>
-                      <Text style={styles.lessonDuration}>
-                        {lesson.duration}
-                      </Text>
-                    </View>
-                  </View>
-                  {!lesson.isLocked && (
-                    <Ionicons
-                      name={
-                        lesson.isCompleted
-                          ? "checkmark-circle"
-                          : "chevron-forward"
-                      }
-                      size={20}
-                      color={lesson.isCompleted ? "#2c9e69" : "#666"}
-                    />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          ))}
-        </ScrollView>
+        <FlatList
+          style={styles.contentContainer}
+          data={sections}
+          keyExtractor={(section) => section.id.toString()}
+          renderItem={renderChapter}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={["#4a6ee0"]}
+              tintColor="#4a6ee0"
+            />
+          }
+        />
       ) : (
         <View style={styles.discussionContainer}>
           {/* Comment Input */}
@@ -505,9 +581,20 @@ const UserDetailCourseScreen: React.FC<
           </View>
 
           {/* Comments List */}
-          <ScrollView style={styles.commentsList}>
-            {course.comments.map((comment) => renderComment(comment))}
-          </ScrollView>
+          <FlatList
+            style={styles.commentsList}
+            data={comments}
+            keyExtractor={(comment) => comment.id.toString()}
+            renderItem={renderComment}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={["#4a6ee0"]}
+                tintColor="#4a6ee0"
+              />
+            }
+          />
         </View>
       )}
       <NotificationToast
@@ -763,6 +850,16 @@ const styles = StyleSheet.create({
   replyButtonText: {
     fontSize: 12,
     color: "#4a6ee0",
+  },
+  retryButton: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: "#4a6ee0",
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "white",
+    fontWeight: "bold",
   },
 });
 

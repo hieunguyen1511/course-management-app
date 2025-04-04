@@ -192,7 +192,7 @@ const DetailCourseScreen: React.FC<
   const [activeTab, setActiveTab] = useState<"content" | "reviews">("content");
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [showUpdateProfileModal, setShowUpdateProfileModal] = useState(false);
-
+  const [enrollmentId, setEnrollmentId] = useState<number>(0);
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -212,6 +212,11 @@ const DetailCourseScreen: React.FC<
           enrollmentsData.some(
             (enrollment) => enrollment.user_id === userInfo.id
           )
+        );
+        setEnrollmentId(
+          enrollmentsData.find(
+            (enrollment) => enrollment.user_id === userInfo.id
+          )?.id || 0
         );
       }
     } catch (error) {
@@ -270,7 +275,9 @@ const DetailCourseScreen: React.FC<
           if (enrollmentsData) setEnrollments(enrollmentsData);
           navigation.replace("UserDetailCourseScreen", {
             courseId: courseId,
-            message_from_detail_course_screen: "Đăng ký khóa học thành công, chao mừng bạn!",
+            enrollmentId: response.data.enrollment.id,
+            message_from_detail_course_screen:
+              "Đăng ký khóa học thành công, chào mừng bạn!",
           });
         } else {
           console.error("Error enrolling in course:", response.data);
@@ -291,6 +298,7 @@ const DetailCourseScreen: React.FC<
   const handleLessonPress = (lesson: any) => {
     if (!isEnrolled) return;
     navigation.navigate("UserDetailCourseScreen", {
+      enrollmentId: enrollmentId,
       courseId: courseId,
     });
   };
