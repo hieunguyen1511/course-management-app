@@ -1,41 +1,41 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, Platform } from 'react-native'
-import React, { useState } from 'react'
-import { Ionicons } from '@expo/vector-icons'
+import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 // import DateTimePicker from '@react-native-community/datetimepicker'
-import * as ImagePicker from 'expo-image-picker'
-import { MyScreenProps } from '@/types/MyScreenProps'
+import * as ImagePicker from 'expo-image-picker';
+import { MyScreenProps } from '@/types/MyScreenProps';
 
-const EditProfile: React.FC<MyScreenProps["EditProfileScreenProps"]> = ({ navigation, route }) => {
-  const [avatar, setAvatar] = useState<string | null>(null)
-  const [fullName, setFullName] = useState('')
-  const [dateOfBirth, setDateOfBirth] = useState(new Date())
-  const [phoneNumber, setPhoneNumber] = useState('')
-  const [showDatePicker, setShowDatePicker] = useState(false)
+const EditProfile: React.FC<MyScreenProps['EditProfileScreenProps']> = ({ navigation, route }) => {
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const [fullName, setFullName] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState(new Date());
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 1,
-    })
+    });
 
     if (!result.canceled) {
-      setAvatar(result.assets[0].uri)
+      setAvatar(result.assets[0].uri);
     }
-  }
+  };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(false)
+    setShowDatePicker(false);
     if (selectedDate) {
-      setDateOfBirth(selectedDate)
+      setDateOfBirth(selectedDate);
     }
-  }
+  };
 
   const handleSave = () => {
     // TODO: Implement save functionality
-    console.log('Save profile:', { avatar, fullName, dateOfBirth, phoneNumber })
-  }
+    console.log('Save profile:', { avatar, fullName, dateOfBirth, phoneNumber });
+  };
 
   return (
     <View style={styles.container}>
@@ -82,13 +82,8 @@ const EditProfile: React.FC<MyScreenProps["EditProfileScreenProps"]> = ({ naviga
           {/* Date of Birth */}
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Ngày sinh</Text>
-            <TouchableOpacity
-              style={styles.dateInput}
-              onPress={() => setShowDatePicker(true)}
-            >
-              <Text style={styles.dateText}>
-                {dateOfBirth.toLocaleDateString('vi-VN')}
-              </Text>
+            <TouchableOpacity style={styles.dateInput} onPress={() => setShowDatePicker(true)}>
+              <Text style={styles.dateText}>{dateOfBirth.toLocaleDateString('vi-VN')}</Text>
             </TouchableOpacity>
             {showDatePicker && (
               // <DateTimePicker
@@ -99,7 +94,6 @@ const EditProfile: React.FC<MyScreenProps["EditProfileScreenProps"]> = ({ naviga
               //   maximumDate={new Date()}
               // />
               <Text>TODO: DateTimePicker</Text>
-          
             )}
           </View>
 
@@ -123,8 +117,8 @@ const EditProfile: React.FC<MyScreenProps["EditProfileScreenProps"]> = ({ naviga
         </TouchableOpacity>
       </View>
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -235,6 +229,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-})
+});
 
-export default EditProfile
+export default EditProfile;

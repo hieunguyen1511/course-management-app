@@ -22,7 +22,12 @@ export type RootStackParamList = {
   Test2: { message?: string };
   Test3: { message?: string };
   Test4: { message?: string };
-  UserViewAllCourseScreen: { message?: string; is_suggested?: boolean, is_popular?: boolean; category_id?: number };
+  UserViewAllCourseScreen: {
+    message?: string;
+    is_suggested?: boolean;
+    is_popular?: boolean;
+    category_id?: number;
+  };
   DetailCourseScreen: { courseId: number; message?: string };
   SearchCourseScreen: { message?: string };
   UserViewAllEnrollmentScreen: { message?: string };

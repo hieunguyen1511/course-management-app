@@ -1,6 +1,6 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput } from 'react-native'
-import React, { useState, useEffect } from 'react'
-import { Ionicons } from '@expo/vector-icons'
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 
 // Define type for category
 interface Category {
@@ -22,11 +22,21 @@ const CategoryScreen = () => {
     // Mock data - replace with actual API call
     setTimeout(() => {
       setCategories([
-        { id: 1, name: 'Programming', description: 'Software development courses', courseCount: 12 },
+        {
+          id: 1,
+          name: 'Programming',
+          description: 'Software development courses',
+          courseCount: 12,
+        },
         { id: 2, name: 'Design', description: 'UI/UX and graphic design', courseCount: 8 },
         { id: 3, name: 'Marketing', description: 'Digital marketing strategies', courseCount: 5 },
         { id: 4, name: 'Business', description: 'Entrepreneurship and management', courseCount: 7 },
-        { id: 5, name: 'Data Science', description: 'Data analysis and machine learning', courseCount: 9 },
+        {
+          id: 5,
+          name: 'Data Science',
+          description: 'Data analysis and machine learning',
+          courseCount: 9,
+        },
       ]);
       setLoading(false);
     }, 1000);
@@ -63,17 +73,17 @@ const CategoryScreen = () => {
         <Text style={styles.categoryDescription}>{item.description}</Text>
         <Text style={styles.courseCount}>{item.courseCount} courses</Text>
       </View>
-      
+
       <View style={styles.actions}>
-        <TouchableOpacity 
-          style={[styles.iconButton, styles.editButton]} 
+        <TouchableOpacity
+          style={[styles.iconButton, styles.editButton]}
           onPress={() => handleEditCategory(item)}
         >
           <Ionicons name="create-outline" size={20} color="#4a6ee0" />
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.iconButton, styles.deleteButton]} 
+
+        <TouchableOpacity
+          style={[styles.iconButton, styles.deleteButton]}
           onPress={() => confirmDelete(item)}
         >
           <Ionicons name="trash-outline" size={20} color="#e04a4a" />
@@ -96,7 +106,7 @@ const CategoryScreen = () => {
         <Text style={styles.headerTitle}>Categories</Text>
         <AddCategoryButton />
       </View>
-      
+
       {/* Categories list */}
       {loading ? (
         <Text style={styles.loadingText}>Loading categories...</Text>
@@ -104,12 +114,12 @@ const CategoryScreen = () => {
         <FlatList
           data={categories}
           renderItem={renderCategoryItem}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
         />
       )}
-      
+
       {/* Delete confirmation modal */}
       <Modal
         animationType="fade"
@@ -121,20 +131,20 @@ const CategoryScreen = () => {
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Confirm Delete</Text>
             <Text style={styles.modalMessage}>
-              Are you sure you want to delete the category "{selectedCategory?.name}"?
-              This will also remove all courses in this category.
+              Are you sure you want to delete the category "{selectedCategory?.name}"? This will
+              also remove all courses in this category.
             </Text>
-            
+
             <View style={styles.modalButtons}>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.cancelButton]} 
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setDeleteModalVisible(false)}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.deleteConfirmButton]} 
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.deleteConfirmButton]}
                 onPress={handleDeleteCategory}
               >
                 <Text style={styles.deleteButtonText}>Delete</Text>
@@ -144,8 +154,8 @@ const CategoryScreen = () => {
         </View>
       </Modal>
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -292,7 +302,7 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     color: 'white',
     fontWeight: '500',
-  }
+  },
 });
 
-export default CategoryScreen
+export default CategoryScreen;

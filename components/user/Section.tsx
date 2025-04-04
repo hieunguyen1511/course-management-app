@@ -1,7 +1,7 @@
-import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
-import { StyleSheet } from "react-native";
-import { Strings } from "@/constants/Strings";
+import React from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { Strings } from '@/constants/Strings';
 const Section: React.FC<{
   title: string;
   onViewAllPress?: () => void;
@@ -23,24 +23,24 @@ const Section: React.FC<{
 const styles = StyleSheet.create({
   section: {
     padding: 20,
-    backgroundColor: "white",
+    backgroundColor: 'white',
     marginBottom: 12,
   },
   sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 15,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: 'bold',
+    color: '#333',
     marginBottom: 15,
   },
   viewAllText: {
-    color: "#4a6ee0",
-    fontWeight: "600",
+    color: '#4a6ee0',
+    fontWeight: '600',
   },
 });
 export default Section;

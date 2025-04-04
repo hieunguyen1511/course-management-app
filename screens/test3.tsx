@@ -92,19 +92,19 @@
 //         </View>
 //       </View>
 //       <View style={styles.actionButtons}>
-//         <TouchableOpacity 
+//         <TouchableOpacity
 //           style={[styles.actionButton, styles.viewButton]}
 //           onPress={() => navigation.navigate('ViewCourse', { courseId: parseInt(item.id) })}
 //         >
 //           <Ionicons name="eye" size={20} color="#fff" />
 //         </TouchableOpacity>
-//         <TouchableOpacity 
+//         <TouchableOpacity
 //           style={[styles.actionButton, styles.editButton]}
 //           onPress={() => navigation.navigate('EditCourse', { courseId: parseInt(item.id) })}
 //         >
 //           <Ionicons name="pencil" size={20} color="#fff" />
 //         </TouchableOpacity>
-//         <TouchableOpacity 
+//         <TouchableOpacity
 //           style={[styles.actionButton, styles.deleteButton]}
 //           onPress={() => handleDeletePress(item)}
 //         >
@@ -126,7 +126,7 @@
 //             onChangeText={setSearchQuery}
 //           />
 //         </View>
-//         <TouchableOpacity 
+//         <TouchableOpacity
 //           style={styles.addButton}
 //           onPress={() => navigation.navigate('AddCourse', { message: 'Hello' })}
 //         >
@@ -134,8 +134,8 @@
 //         </TouchableOpacity>
 //       </View>
 
-//       <ScrollView 
-//         horizontal 
+//       <ScrollView
+//         horizontal
 //         showsHorizontalScrollIndicator={false}
 //         style={styles.categoryContainer}
 //       >
@@ -182,13 +182,13 @@
 //               Hành động này không thể hoàn tác.
 //             </Text>
 //             <View style={styles.modalButtons}>
-//               <TouchableOpacity 
+//               <TouchableOpacity
 //                 style={[styles.modalButton, styles.cancelButton]}
 //                 onPress={handleCancelDelete}
 //               >
 //                 <Text style={styles.cancelButtonText}>Hủy</Text>
 //               </TouchableOpacity>
-//               <TouchableOpacity 
+//               <TouchableOpacity
 //                 style={[styles.modalButton, styles.confirmButton]}
 //                 onPress={handleConfirmDelete}
 //               >

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,14 +10,14 @@ import {
   Platform,
   StyleSheet,
   ActivityIndicator,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { MyScreenProps } from "@/types/MyScreenProps";
-import { Strings } from "@/constants/Strings";
-import "../global.css";
-import HorizontalRule from "@/components/ui/HorizontalRule";
-import axiosInstance from "@/api/axiosInstance";
-import NotificationToast, { ToastType } from "@/components/NotificationToast";
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { MyScreenProps } from '@/types/MyScreenProps';
+import { Strings } from '@/constants/Strings';
+import '../global.css';
+import HorizontalRule from '@/components/ui/HorizontalRule';
+import axiosInstance from '@/api/axiosInstance';
+import NotificationToast, { ToastType } from '@/components/NotificationToast';
 
 enum UserRole {
   ADMIN = 0,
@@ -30,7 +30,7 @@ interface FormData {
   email: string;
   password: string;
   confirmPassword: string;
-  phone: string | "";
+  phone: string | '';
 }
 
 interface FormErrors {
@@ -42,17 +42,14 @@ interface FormErrors {
   phone?: string;
 }
 
-const RegisterScreen: React.FC<MyScreenProps["RegisterScreenProps"]> = ({
-  navigation,
-  route,
-}) => {
+const RegisterScreen: React.FC<MyScreenProps['RegisterScreenProps']> = ({ navigation, route }) => {
   const [formData, setFormData] = useState<FormData>({
-    fullname: "",
-    username: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    phone: "",
+    fullname: '',
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    phone: '',
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -61,7 +58,7 @@ const RegisterScreen: React.FC<MyScreenProps["RegisterScreenProps"]> = ({
 
   // Toast state
   const [toastVisible, setToastVisible] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
+  const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<ToastType>(ToastType.SUCCESS);
 
   // Show toast helper function
@@ -79,7 +76,7 @@ const RegisterScreen: React.FC<MyScreenProps["RegisterScreenProps"]> = ({
       setErrors({ ...errors, [field]: undefined });
     }
   };
-      
+
   // Validate form
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -132,29 +129,24 @@ const RegisterScreen: React.FC<MyScreenProps["RegisterScreenProps"]> = ({
       setIsLoading(true);
 
       try {
-        const respone = await axiosInstance.post(
-          `${process.env.EXPO_PUBLIC_API_REGISTER}`,
-          {
-            fullname: formData.fullname,
-            username: formData.username,
-            email: formData.email,
-            birth: "",
-            password: formData.password,
-            role: UserRole.USER,
-            phone: formData.phone,
-            avatar: "",
-          }
-        );
+        const respone = await axiosInstance.post(`${process.env.EXPO_PUBLIC_API_REGISTER}`, {
+          fullname: formData.fullname,
+          username: formData.username,
+          email: formData.email,
+          birth: '',
+          password: formData.password,
+          role: UserRole.USER,
+          phone: formData.phone,
+          avatar: '',
+        });
         if (respone.status === 201) {
           setIsLoading(false);
           //showToast(Strings.register.success_message, ToastType.SUCCESS);
-          navigation.replace("Login", { message_from_register: Strings.register.success_message });
-         
+          navigation.replace('Login', { message_from_register: Strings.register.success_message });
         }
       } catch (error: any) {
         setIsLoading(false);
-        const errorMessage =
-          error.response?.data?.message || "Registration failed";
+        const errorMessage = error.response?.data?.message || 'Registration failed';
         showToast(errorMessage, ToastType.ERROR);
       }
     }
@@ -163,109 +155,78 @@ const RegisterScreen: React.FC<MyScreenProps["RegisterScreenProps"]> = ({
   return (
     <View style={styles.container}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
           <View style={styles.formContainer}>
             <Text style={styles.title}>{Strings.register.title}</Text>
 
-            <Text style={styles.description}>
-              {Strings.register.descripton}
-            </Text>
+            <Text style={styles.description}>{Strings.register.descripton}</Text>
 
             <Image
-              source={require("../assets/images/course-bg-login.png")}
+              source={require('../assets/images/course-bg-login.png')}
               style={styles.logoImage}
             />
 
             {/* Full Name Input */}
             <View style={styles.inputContainer}>
               <View style={styles.inputWrapper}>
-                <Ionicons
-                  name="person"
-                  size={24}
-                  color="#3b82f6"
-                  style={styles.inputIcon}
-                />
+                <Ionicons name="person" size={24} color="#3b82f6" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder={Strings.register.placeHolderFullname}
                   value={formData.fullname}
-                  onChangeText={(value) => handleChange("fullname", value)}
+                  onChangeText={value => handleChange('fullname', value)}
                   autoCapitalize="words"
                   placeholderTextColor="#9ca3af"
                 />
               </View>
-              {errors.fullname && (
-                <Text style={styles.errorText}>{errors.fullname}</Text>
-              )}
+              {errors.fullname && <Text style={styles.errorText}>{errors.fullname}</Text>}
             </View>
 
             {/* Username Input */}
             <View style={styles.inputContainer}>
               <View style={styles.inputWrapper}>
-                <Ionicons
-                  name="at"
-                  size={24}
-                  color="#3b82f6"
-                  style={styles.inputIcon}
-                />
+                <Ionicons name="at" size={24} color="#3b82f6" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder={Strings.register.placeHolderUsername}
                   value={formData.username}
-                  onChangeText={(value) => handleChange("username", value)}
+                  onChangeText={value => handleChange('username', value)}
                   autoCapitalize="none"
                   placeholderTextColor="#9ca3af"
                 />
               </View>
-              {errors.username && (
-                <Text style={styles.errorText}>{errors.username}</Text>
-              )}
+              {errors.username && <Text style={styles.errorText}>{errors.username}</Text>}
             </View>
 
             {/* Email Input */}
             <View style={styles.inputContainer}>
               <View style={styles.inputWrapper}>
-                <Ionicons
-                  name="mail"
-                  size={24}
-                  color="#3b82f6"
-                  style={styles.inputIcon}
-                />
+                <Ionicons name="mail" size={24} color="#3b82f6" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder={Strings.register.placeHolderEmail}
                   value={formData.email}
-                  onChangeText={(value) => handleChange("email", value)}
+                  onChangeText={value => handleChange('email', value)}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   placeholderTextColor="#9ca3af"
                 />
               </View>
-              {errors.email && (
-                <Text style={styles.errorText}>{errors.email}</Text>
-              )}
+              {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
             </View>
 
             {/* Password Input */}
             <View style={styles.inputContainer}>
               <View style={styles.inputWrapper}>
-                <Ionicons
-                  name="lock-closed"
-                  size={24}
-                  color="#3b82f6"
-                  style={styles.inputIcon}
-                />
+                <Ionicons name="lock-closed" size={24} color="#3b82f6" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder={Strings.register.placeHolderPassword}
                   value={formData.password}
-                  onChangeText={(value) => handleChange("password", value)}
+                  onChangeText={value => handleChange('password', value)}
                   secureTextEntry={!passwordVisible}
                   placeholderTextColor="#9ca3af"
                 />
@@ -273,45 +234,30 @@ const RegisterScreen: React.FC<MyScreenProps["RegisterScreenProps"]> = ({
                   onPress={() => setPasswordVisible(!passwordVisible)}
                   style={styles.passwordIcon}
                 >
-                  <Ionicons
-                    name={passwordVisible ? "eye-off" : "eye"}
-                    size={22}
-                    color="#3b82f6"
-                  />
+                  <Ionicons name={passwordVisible ? 'eye-off' : 'eye'} size={22} color="#3b82f6" />
                 </TouchableOpacity>
               </View>
-              {errors.password && (
-                <Text style={styles.errorText}>{errors.password}</Text>
-              )}
+              {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
             </View>
 
             {/* Confirm Password Input */}
             <View style={styles.inputContainer}>
               <View style={styles.inputWrapper}>
-                <Ionicons
-                  name="lock-closed"
-                  size={24}
-                  color="#3b82f6"
-                  style={styles.inputIcon}
-                />
+                <Ionicons name="lock-closed" size={24} color="#3b82f6" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder={Strings.register.placeHolderConfirmPassword}
                   value={formData.confirmPassword}
-                  onChangeText={(value) =>
-                    handleChange("confirmPassword", value)
-                  }
+                  onChangeText={value => handleChange('confirmPassword', value)}
                   secureTextEntry={!confirmPasswordVisible}
                   placeholderTextColor="#9ca3af"
                 />
                 <TouchableOpacity
-                  onPress={() =>
-                    setConfirmPasswordVisible(!confirmPasswordVisible)
-                  }
+                  onPress={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
                   style={styles.passwordIcon}
                 >
                   <Ionicons
-                    name={confirmPasswordVisible ? "eye-off" : "eye"}
+                    name={confirmPasswordVisible ? 'eye-off' : 'eye'}
                     size={22}
                     color="#3b82f6"
                   />
@@ -324,27 +270,20 @@ const RegisterScreen: React.FC<MyScreenProps["RegisterScreenProps"]> = ({
 
             {/* Submit Button */}
             <TouchableOpacity
-              style={[
-                styles.submitButton,
-                isLoading && styles.submitButtonLoading,
-              ]}
+              style={[styles.submitButton, isLoading && styles.submitButtonLoading]}
               onPress={handleSubmit}
               disabled={isLoading}
             >
               {isLoading ? (
                 <View style={styles.loadingContainer}>
-                  <ActivityIndicator
-                    size="small"
-                    color="#fff"
-                    style={styles.loadingSpinner}
-                  />
+                  <ActivityIndicator size="small" color="#fff" style={styles.loadingSpinner} />
                   <Text style={styles.buttonText}>
-                    {Strings.register.registerProcess || "Creating account..."}
+                    {Strings.register.registerProcess || 'Creating account...'}
                   </Text>
                 </View>
               ) : (
                 <Text style={styles.buttonText}>
-                  {Strings.register.register || "Create Account"}
+                  {Strings.register.register || 'Create Account'}
                 </Text>
               )}
             </TouchableOpacity>
@@ -356,15 +295,10 @@ const RegisterScreen: React.FC<MyScreenProps["RegisterScreenProps"]> = ({
             {/* Login Link */}
             <View style={styles.loginLinkContainer}>
               <Text style={styles.loginText}>
-                {Strings.register.alreadyHaveAccount ||
-                  "Already have an account?"}{" "}
+                {Strings.register.alreadyHaveAccount || 'Already have an account?'}{' '}
               </Text>
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-              >
-                <Text style={styles.loginLink}>
-                  {Strings.register.signIn || "Sign In"}
-                </Text>
+              <TouchableOpacity onPress={() => navigation.goBack()}>
+                <Text style={styles.loginLink}>{Strings.register.signIn || 'Sign In'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -385,16 +319,16 @@ const RegisterScreen: React.FC<MyScreenProps["RegisterScreenProps"]> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    backgroundColor: "#3b82f6",
+    justifyContent: 'center',
+    backgroundColor: '#3b82f6',
   },
   keyboardView: {
     flex: 1,
-    backgroundColor: "white",
+    backgroundColor: 'white',
   },
   formContainer: {
-    backgroundColor: "white",
-    height: "100%",
+    backgroundColor: 'white',
+    height: '100%',
     padding: 20,
     marginTop: 32,
     borderTopLeftRadius: 48,
@@ -402,20 +336,20 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: "bold",
-    color: "#3b82f6",
+    fontWeight: 'bold',
+    color: '#3b82f6',
     marginBottom: 16,
-    textAlign: "center",
+    textAlign: 'center',
   },
   description: {
-    color: "#6b7280",
-    textAlign: "center",
+    color: '#6b7280',
+    textAlign: 'center',
     marginBottom: 24,
   },
   logoImage: {
     width: 150,
     height: 150,
-    alignSelf: "center",
+    alignSelf: 'center',
     borderRadius: 12,
     marginBottom: 24,
   },
@@ -423,16 +357,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: "#d1d5db",
+    borderColor: '#d1d5db',
     borderRadius: 8,
   },
   inputIcon: {
     paddingHorizontal: 5,
     borderRightWidth: 1,
-    borderRightColor: "#d1d5db",
+    borderRightColor: '#d1d5db',
   },
   input: {
     flex: 1,
@@ -444,18 +378,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   errorText: {
-    color: "#ef4444",
+    color: '#ef4444',
     fontSize: 12,
     marginTop: 4,
     marginLeft: 4,
   },
   submitButton: {
-    backgroundColor: "#3b82f6",
+    backgroundColor: '#3b82f6',
     paddingVertical: 16,
     borderRadius: 8,
-    alignItems: "center",
+    alignItems: 'center',
     marginTop: 8,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 1,
@@ -465,17 +399,17 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   submitButtonLoading: {
-    backgroundColor: "#60a5fa",
+    backgroundColor: '#60a5fa',
   },
   buttonText: {
-    color: "white",
-    fontWeight: "bold",
+    color: 'white',
+    fontWeight: 'bold',
     fontSize: 16,
   },
   loadingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   loadingSpinner: {
     marginRight: 10,
@@ -486,17 +420,17 @@ const styles = StyleSheet.create({
   loginLinkContainer: {
     marginTop: 24,
     marginBottom: 40,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   loginText: {
-    textAlign: "center",
-    color: "#4b5563",
+    textAlign: 'center',
+    color: '#4b5563',
   },
   loginLink: {
-    color: "#3b82f6",
-    fontWeight: "500",
+    color: '#3b82f6',
+    fontWeight: '500',
   },
 });
 

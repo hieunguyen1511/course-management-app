@@ -1,7 +1,16 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, TextInput, Alert } from 'react-native'
-import React, { useState, useEffect } from 'react'
-import { Ionicons } from '@expo/vector-icons'
-import { MyScreenProps } from '@/types/MyScreenProps'
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Platform,
+  TextInput,
+  Alert,
+} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { MyScreenProps } from '@/types/MyScreenProps';
 
 interface Course {
   id: string;
@@ -13,7 +22,7 @@ interface Course {
   comment: string;
 }
 
-const UserRating: React.FC<MyScreenProps["UserRatingScreenProps"]> = ({ navigation, route }) => {
+const UserRating: React.FC<MyScreenProps['UserRatingScreenProps']> = ({ navigation, route }) => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,22 +39,21 @@ const UserRating: React.FC<MyScreenProps["UserRatingScreenProps"]> = ({ navigati
           rating: 0,
           comment: '',
         },
-       
       ]);
       setLoading(false);
     }, 1000);
   }, []);
 
   const handleRating = (courseId: string, rating: number) => {
-    setCourses(prev => prev.map(course => 
-      course.id === courseId ? { ...course, rating } : course
-    ));
+    setCourses(prev =>
+      prev.map(course => (course.id === courseId ? { ...course, rating } : course))
+    );
   };
 
   const handleComment = (courseId: string, comment: string) => {
-    setCourses(prev => prev.map(course => 
-      course.id === courseId ? { ...course, comment } : course
-    ));
+    setCourses(prev =>
+      prev.map(course => (course.id === courseId ? { ...course, comment } : course))
+    );
   };
 
   const handleSubmit = (courseId: string) => {
@@ -60,30 +68,23 @@ const UserRating: React.FC<MyScreenProps["UserRatingScreenProps"]> = ({ navigati
     }
 
     // TODO: Implement API call to submit rating
-    Alert.alert(
-      'Thành công',
-      'Cảm ơn bạn đã đánh giá khóa học!',
-      [
-        {
-          text: 'OK',
-          onPress: () => {
-            setCourses(prev => prev.filter(c => c.id !== courseId));
-          },
+    Alert.alert('Thành công', 'Cảm ơn bạn đã đánh giá khóa học!', [
+      {
+        text: 'OK',
+        onPress: () => {
+          setCourses(prev => prev.filter(c => c.id !== courseId));
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const renderStars = (courseId: string, currentRating: number) => {
     return (
       <View style={styles.starsContainer}>
-        {[1, 2, 3, 4, 5].map((star) => (
-          <TouchableOpacity
-            key={star}
-            onPress={() => handleRating(courseId, star)}
-          >
+        {[1, 2, 3, 4, 5].map(star => (
+          <TouchableOpacity key={star} onPress={() => handleRating(courseId, star)}>
             <Ionicons
-              name={star <= currentRating ? "star" : "star-outline"}
+              name={star <= currentRating ? 'star' : 'star-outline'}
               size={24}
               color="#ffb100"
             />
@@ -122,7 +123,7 @@ const UserRating: React.FC<MyScreenProps["UserRatingScreenProps"]> = ({ navigati
 
       {/* Course List */}
       <ScrollView style={styles.content}>
-        {courses.map((course) => (
+        {courses.map(course => (
           <View key={course.id} style={styles.courseCard}>
             <View style={styles.courseInfo}>
               <Text style={styles.courseName} numberOfLines={2}>
@@ -141,7 +142,7 @@ const UserRating: React.FC<MyScreenProps["UserRatingScreenProps"]> = ({ navigati
               <TextInput
                 style={styles.commentInput}
                 value={course.comment}
-                onChangeText={(text) => handleComment(course.id, text)}
+                onChangeText={text => handleComment(course.id, text)}
                 placeholder="Nhập nhận xét của bạn về khóa học..."
                 placeholderTextColor="#999"
                 multiline
@@ -149,10 +150,7 @@ const UserRating: React.FC<MyScreenProps["UserRatingScreenProps"]> = ({ navigati
               />
             </View>
 
-            <TouchableOpacity
-              style={styles.submitButton}
-              onPress={() => handleSubmit(course.id)}
-            >
+            <TouchableOpacity style={styles.submitButton} onPress={() => handleSubmit(course.id)}>
               <Text style={styles.submitButtonText}>Gửi đánh giá</Text>
             </TouchableOpacity>
           </View>

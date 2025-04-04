@@ -15,7 +15,7 @@ export interface Enrollment {
   enrollment_lessons: EnrollmentLesson[];
 }
 
-export interface EnrollmentLesson {;
+export interface EnrollmentLesson {
   lesson_id: number;
   completed_at: Date;
 }

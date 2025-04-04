@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Animated, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
   TouchableOpacity,
   StatusBar,
-  Dimensions
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -92,7 +92,7 @@ const NotificationToast: React.FC<ToastProps> = ({
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    
+
     timeoutRef.current = setTimeout(() => {
       hideToast();
     }, duration);
@@ -141,22 +141,24 @@ const NotificationToast: React.FC<ToastProps> = ({
   }
 
   return (
-    <Animated.View 
+    <Animated.View
       style={[
-        styles.container, 
-        { 
+        styles.container,
+        {
           backgroundColor: config.backgroundColor,
           transform: [{ translateY: slideAnim }],
           opacity: opacityAnim,
           width: width - 32, // Account for margins
-        }
+        },
       ]}
     >
       <View style={styles.content}>
         <Ionicons name={config.icon as any} size={24} color="white" style={styles.icon} />
         <View style={styles.textContainer}>
           <Text style={styles.title}>{config.title}</Text>
-          <Text style={styles.message} numberOfLines={2}>{message}</Text>
+          <Text style={styles.message} numberOfLines={2}>
+            {message}
+          </Text>
         </View>
       </View>
       <TouchableOpacity onPress={hideToast} style={styles.closeButton}>

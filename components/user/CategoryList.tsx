@@ -1,7 +1,7 @@
-import Section from "./Section";
-import CategoryItem from "./CategoryItem";
-import React from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import Section from './Section';
+import CategoryItem from './CategoryItem';
+import React from 'react';
+import { ScrollView, StyleSheet } from 'react-native';
 interface Category {
   id: number;
   name: string;
@@ -17,7 +17,7 @@ const CategoryList: React.FC<{
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.categoriesContainer}
     >
-      {categories.map((category) => (
+      {categories.map(category => (
         <CategoryItem
           key={category.id}
           category={category}

@@ -1,7 +1,15 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Alert } from 'react-native'
-import React, { useState, useEffect } from 'react'
-import { Ionicons } from '@expo/vector-icons'
-import { MyScreenProps } from '@/types/MyScreenProps'
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Platform,
+  Alert,
+} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { MyScreenProps } from '@/types/MyScreenProps';
 
 interface Enrollment {
   id: string;
@@ -14,7 +22,10 @@ interface Enrollment {
   thumbnail: string;
 }
 
-const UserViewAllEnrollment: React.FC<MyScreenProps["UserViewAllEnrollmentScreenProps"]> = ({ navigation, route }) => {
+const UserViewAllEnrollment: React.FC<MyScreenProps['UserViewAllEnrollmentScreenProps']> = ({
+  navigation,
+  route,
+}) => {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -48,45 +59,37 @@ const UserViewAllEnrollment: React.FC<MyScreenProps["UserViewAllEnrollmentScreen
   }, []);
 
   const handleDelete = (enrollmentId: string) => {
-    Alert.alert(
-      'Xác nhận hủy đăng ký',
-      'Bạn có chắc chắn muốn hủy đăng ký khóa học này?',
-      [
-        {
-          text: 'Hủy',
-          style: 'cancel',
+    Alert.alert('Xác nhận hủy đăng ký', 'Bạn có chắc chắn muốn hủy đăng ký khóa học này?', [
+      {
+        text: 'Hủy',
+        style: 'cancel',
+      },
+      {
+        text: 'Xác nhận',
+        style: 'destructive',
+        onPress: () => {
+          // TODO: Implement API call to delete enrollment
+          setEnrollments(prev => prev.filter(e => e.id !== enrollmentId));
         },
-        {
-          text: 'Xác nhận',
-          style: 'destructive',
-          onPress: () => {
-            // TODO: Implement API call to delete enrollment
-            setEnrollments(prev => prev.filter(e => e.id !== enrollmentId));
-          },
-        },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleDeleteAll = () => {
-    Alert.alert(
-      'Xác nhận hủy tất cả',
-      'Bạn có chắc chắn muốn hủy đăng ký tất cả các khóa học?',
-      [
-        {
-          text: 'Hủy',
-          style: 'cancel',
+    Alert.alert('Xác nhận hủy tất cả', 'Bạn có chắc chắn muốn hủy đăng ký tất cả các khóa học?', [
+      {
+        text: 'Hủy',
+        style: 'cancel',
+      },
+      {
+        text: 'Xác nhận',
+        style: 'destructive',
+        onPress: () => {
+          // TODO: Implement API call to delete all enrollments
+          setEnrollments([]);
         },
-        {
-          text: 'Xác nhận',
-          style: 'destructive',
-          onPress: () => {
-            // TODO: Implement API call to delete all enrollments
-            setEnrollments([]);
-          },
-        },
-      ]
-    );
+      },
+    ]);
   };
 
   const getStatusColor = (status: Enrollment['status']) => {
@@ -131,16 +134,19 @@ const UserViewAllEnrollment: React.FC<MyScreenProps["UserViewAllEnrollmentScreen
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Khóa học của tôi</Text>
-        
       </View>
 
       {/* Enrollment List */}
       <ScrollView style={styles.content}>
-        {enrollments.map((enrollment) => (
+        {enrollments.map(enrollment => (
           <TouchableOpacity
             key={enrollment.id}
             style={styles.enrollmentCard}
-            onPress={() => navigation.navigate('UserDetailCourseScreen', { courseId: parseInt(enrollment.courseId) })}
+            onPress={() =>
+              navigation.navigate('UserDetailCourseScreen', {
+                courseId: parseInt(enrollment.courseId),
+              })
+            }
           >
             <View style={styles.enrollmentContent}>
               <View style={styles.courseInfo}>
@@ -152,7 +158,7 @@ const UserViewAllEnrollment: React.FC<MyScreenProps["UserViewAllEnrollmentScreen
                   Ngày đăng ký: {new Date(enrollment.enrollmentDate).toLocaleDateString('vi-VN')}
                 </Text>
               </View>
-              
+
               <View style={styles.statusContainer}>
                 <Text style={[styles.statusText, { color: getStatusColor(enrollment.status) }]}>
                   {getStatusText(enrollment.status)}

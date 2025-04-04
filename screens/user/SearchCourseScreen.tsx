@@ -1,7 +1,7 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Image } from 'react-native'
-import React, { useState, useEffect } from 'react'
-import { MyScreenProps } from '@/types/MyScreenProps'
-import { Ionicons } from '@expo/vector-icons'
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { MyScreenProps } from '@/types/MyScreenProps';
+import { Ionicons } from '@expo/vector-icons';
 
 interface Course {
   id: number;
@@ -12,14 +12,17 @@ interface Course {
   rating: number;
 }
 
-const SearchCourse: React.FC<MyScreenProps["SearchCourseScreenProps"]> = ({ navigation, route }) => {
+const SearchCourse: React.FC<MyScreenProps['SearchCourseScreenProps']> = ({
+  navigation,
+  route,
+}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Format price to VND
   const formatPrice = (price: number): string => {
-    if (price === 0) return "Miễn phí";
+    if (price === 0) return 'Miễn phí';
     return `${price.toLocaleString('vi-VN')}đ`;
   };
 
@@ -27,7 +30,7 @@ const SearchCourse: React.FC<MyScreenProps["SearchCourseScreenProps"]> = ({ navi
   const renderRatingStars = (rating: number) => {
     return (
       <View style={styles.ratingContainer}>
-        {[1, 2, 3, 4, 5].map((star) => (
+        {[1, 2, 3, 4, 5].map(star => (
           <Text key={star} style={styles.starIcon}>
             {rating >= star ? '★' : '☆'}
           </Text>
@@ -49,7 +52,7 @@ const SearchCourse: React.FC<MyScreenProps["SearchCourseScreenProps"]> = ({ navi
           category: 'Lập trình',
           price: 1499000,
           image: 'https://via.placeholder.com/100',
-          rating: 4.7
+          rating: 4.7,
         },
         {
           id: 2,
@@ -57,7 +60,7 @@ const SearchCourse: React.FC<MyScreenProps["SearchCourseScreenProps"]> = ({ navi
           category: 'Thiết kế',
           price: 999000,
           image: 'https://via.placeholder.com/100',
-          rating: 4.5
+          rating: 4.5,
         },
         {
           id: 3,
@@ -65,11 +68,12 @@ const SearchCourse: React.FC<MyScreenProps["SearchCourseScreenProps"]> = ({ navi
           category: 'Marketing',
           price: 799000,
           image: 'https://via.placeholder.com/100',
-          rating: 4.2
-        }
-      ].filter(course => 
-        course.title.toLowerCase().includes(query.toLowerCase()) ||
-        course.category.toLowerCase().includes(query.toLowerCase())
+          rating: 4.2,
+        },
+      ].filter(
+        course =>
+          course.title.toLowerCase().includes(query.toLowerCase()) ||
+          course.category.toLowerCase().includes(query.toLowerCase())
       );
       setSearchResults(mockResults);
       setLoading(false);
@@ -88,13 +92,15 @@ const SearchCourse: React.FC<MyScreenProps["SearchCourseScreenProps"]> = ({ navi
 
   // Render search result item
   const renderSearchResult = ({ item }: { item: Course }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.searchResultItem}
       onPress={() => navigation.navigate('DetailCourseScreen', { courseId: item.id })}
     >
       <Image source={{ uri: item.image }} style={styles.courseImage} />
       <View style={styles.courseInfo}>
-        <Text style={styles.courseTitle} numberOfLines={2}>{item.title}</Text>
+        <Text style={styles.courseTitle} numberOfLines={2}>
+          {item.title}
+        </Text>
         <Text style={styles.categoryText}>{item.category}</Text>
         <View style={styles.courseFooter}>
           <Text style={styles.priceText}>{formatPrice(item.price)}</Text>
@@ -108,10 +114,7 @@ const SearchCourse: React.FC<MyScreenProps["SearchCourseScreenProps"]> = ({ navi
     <View style={styles.container}>
       {/* Search Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <View style={styles.searchContainer}>
@@ -150,8 +153,8 @@ const SearchCourse: React.FC<MyScreenProps["SearchCourseScreenProps"]> = ({ navi
         </View>
       ) : null}
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -268,4 +271,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SearchCourse
+export default SearchCourse;

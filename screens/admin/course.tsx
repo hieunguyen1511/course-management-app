@@ -1,6 +1,6 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Image } from 'react-native'
-import React, { useState, useEffect } from 'react'
-import { Ionicons } from '@expo/vector-icons'
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 
 // Define types for course
 interface Course {
@@ -26,11 +26,56 @@ const CourseScreen = () => {
     // Mock data - replace with actual API call
     setTimeout(() => {
       setCourses([
-        { id: 1, title: 'React Native Fundamentals', instructor: 'John Doe', category: 'Programming', price: 49.99, enrollments: 125, rating: 4.7, image: 'https://via.placeholder.com/100' },
-        { id: 2, title: 'UI/UX Design Principles', instructor: 'Sarah Smith', category: 'Design', price: 39.99, enrollments: 98, rating: 4.5, image: 'https://via.placeholder.com/100' },
-        { id: 3, title: 'Digital Marketing Strategies', instructor: 'Michael Brown', category: 'Marketing', price: 29.99, enrollments: 67, rating: 4.2, image: 'https://via.placeholder.com/100' },
-        { id: 4, title: 'Business Management 101', instructor: 'Lisa Johnson', category: 'Business', price: 59.99, enrollments: 45, rating: 4.8, image: 'https://via.placeholder.com/100' },
-        { id: 5, title: 'Data Science & ML Basics', instructor: 'Robert Wilson', category: 'Data Science', price: 69.99, enrollments: 112, rating: 4.6, image: 'https://via.placeholder.com/100' },
+        {
+          id: 1,
+          title: 'React Native Fundamentals',
+          instructor: 'John Doe',
+          category: 'Programming',
+          price: 49.99,
+          enrollments: 125,
+          rating: 4.7,
+          image: 'https://via.placeholder.com/100',
+        },
+        {
+          id: 2,
+          title: 'UI/UX Design Principles',
+          instructor: 'Sarah Smith',
+          category: 'Design',
+          price: 39.99,
+          enrollments: 98,
+          rating: 4.5,
+          image: 'https://via.placeholder.com/100',
+        },
+        {
+          id: 3,
+          title: 'Digital Marketing Strategies',
+          instructor: 'Michael Brown',
+          category: 'Marketing',
+          price: 29.99,
+          enrollments: 67,
+          rating: 4.2,
+          image: 'https://via.placeholder.com/100',
+        },
+        {
+          id: 4,
+          title: 'Business Management 101',
+          instructor: 'Lisa Johnson',
+          category: 'Business',
+          price: 59.99,
+          enrollments: 45,
+          rating: 4.8,
+          image: 'https://via.placeholder.com/100',
+        },
+        {
+          id: 5,
+          title: 'Data Science & ML Basics',
+          instructor: 'Robert Wilson',
+          category: 'Data Science',
+          price: 69.99,
+          enrollments: 112,
+          rating: 4.6,
+          image: 'https://via.placeholder.com/100',
+        },
       ]);
       setLoading(false);
     }, 1000);
@@ -63,7 +108,7 @@ const CourseScreen = () => {
   const renderRatingStars = (rating: number) => {
     return (
       <View style={styles.ratingContainer}>
-        {[1, 2, 3, 4, 5].map((star) => (
+        {[1, 2, 3, 4, 5].map(star => (
           <Text key={star} style={styles.starIcon}>
             {rating >= star ? '★' : '☆'}
           </Text>
@@ -77,29 +122,29 @@ const CourseScreen = () => {
   const renderCourseItem = ({ item }: { item: Course }) => (
     <View style={styles.courseItem}>
       <Image source={{ uri: item.image }} style={styles.courseImage} />
-      
+
       <View style={styles.courseInfo}>
         <Text style={styles.courseTitle}>{item.title}</Text>
         <Text style={styles.instructorText}>By {item.instructor}</Text>
         <Text style={styles.categoryText}>Category: {item.category}</Text>
-        
+
         <View style={styles.courseStats}>
           <Text style={styles.priceText}>${item.price.toFixed(2)}</Text>
           <Text style={styles.enrollmentText}>{item.enrollments} students</Text>
           {renderRatingStars(item.rating)}
         </View>
       </View>
-      
+
       <View style={styles.actions}>
-        <TouchableOpacity 
-          style={[styles.iconButton, styles.editButton]} 
+        <TouchableOpacity
+          style={[styles.iconButton, styles.editButton]}
           onPress={() => handleEditCourse(item)}
         >
           <Ionicons name="create-outline" size={20} color="#4a6ee0" />
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.iconButton, styles.deleteButton]} 
+
+        <TouchableOpacity
+          style={[styles.iconButton, styles.deleteButton]}
           onPress={() => confirmDelete(item)}
         >
           <Ionicons name="trash-outline" size={20} color="#e04a4a" />
@@ -122,7 +167,7 @@ const CourseScreen = () => {
         <Text style={styles.headerTitle}>Courses</Text>
         <AddCourseButton />
       </View>
-      
+
       {/* Courses list */}
       {loading ? (
         <Text style={styles.loadingText}>Loading courses...</Text>
@@ -130,12 +175,12 @@ const CourseScreen = () => {
         <FlatList
           data={courses}
           renderItem={renderCourseItem}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
         />
       )}
-      
+
       {/* Delete confirmation modal */}
       <Modal
         animationType="fade"
@@ -147,20 +192,20 @@ const CourseScreen = () => {
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Confirm Delete</Text>
             <Text style={styles.modalMessage}>
-              Are you sure you want to delete the course "{selectedCourse?.title}"?
-              This action cannot be undone.
+              Are you sure you want to delete the course "{selectedCourse?.title}"? This action
+              cannot be undone.
             </Text>
-            
+
             <View style={styles.modalButtons}>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.cancelButton]} 
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setDeleteModalVisible(false)}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.deleteConfirmButton]} 
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.deleteConfirmButton]}
                 onPress={handleDeleteCourse}
               >
                 <Text style={styles.deleteButtonText}>Delete</Text>
@@ -170,8 +215,8 @@ const CourseScreen = () => {
         </View>
       </Modal>
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -356,7 +401,7 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     color: 'white',
     fontWeight: '500',
-  }
+  },
 });
 
-export default CourseScreen
+export default CourseScreen;

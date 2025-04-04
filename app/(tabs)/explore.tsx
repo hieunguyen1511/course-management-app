@@ -8,20 +8,19 @@ import {
   Image,
   FlatList,
   ActivityIndicator,
-} from "react-native";
-import React, { useState, useEffect } from "react";
-import { Ionicons } from "@expo/vector-icons";
+} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { RootStackParamList } from "@/types/RootStackParamList";
-import { MyScreenProps } from "@/types/MyScreenProps";
-import axiosInstance from "@/api/axiosInstance";
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/types/RootStackParamList';
+import { MyScreenProps } from '@/types/MyScreenProps';
+import axiosInstance from '@/api/axiosInstance';
 
 interface Category {
   id: number;
   name: string;
 }
-
 
 interface Course {
   id: number;
@@ -40,9 +39,7 @@ interface Course {
   };
 }
 
-
 const Stack = createNativeStackNavigator<RootStackParamList>();
-
 
 async function getAllPopularCourses() {
   try {
@@ -56,7 +53,7 @@ async function getAllPopularCourses() {
       });
     }
   } catch (error) {
-    console.error("Error fetching courses:", error);
+    console.error('Error fetching courses:', error);
     return [];
   }
 }
@@ -72,20 +69,18 @@ async function getAllCategories() {
         return 0;
       });
     } else {
-      throw new Error("Failed to fetch categories");
+      throw new Error('Failed to fetch categories');
     }
   } catch (error) {
-    console.error("Error fetching categories:", error);
+    console.error('Error fetching categories:', error);
     return [];
   }
 }
 
-
 // components
-import SearchHeader from "@/components/user/SearchHeader";
-import CategoryList from "@/components/user/CategoryList";
-import CourseList from "@/components/user/CourseList";
-
+import SearchHeader from '@/components/user/SearchHeader';
+import CategoryList from '@/components/user/CategoryList';
+import CourseList from '@/components/user/CourseList';
 
 const useExploreData = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -107,8 +102,8 @@ const useExploreData = () => {
       if (categoriesData) setCategories(categoriesData);
       if (coursesData) setPopularCourses(coursesData);
     } catch (err) {
-      setError("Có lỗi xảy ra khi tải dữ liệu");
-      console.error("Error fetching explore data:", err);
+      setError('Có lỗi xảy ra khi tải dữ liệu');
+      console.error('Error fetching explore data:', err);
     } finally {
       setLoading(false);
     }
@@ -127,37 +122,33 @@ const useExploreData = () => {
   };
 };
 
-const Explore: React.FC<MyScreenProps["ExploreScreenProps"]> = ({
-  navigation,
-  route,
-}) => {
-  const { categories, popularCourses, loading, error, refetch } =
-    useExploreData();
+const Explore: React.FC<MyScreenProps['ExploreScreenProps']> = ({ navigation, route }) => {
+  const { categories, popularCourses, loading, error, refetch } = useExploreData();
 
   const handleSearchPress = () => {
-    navigation.navigate("SearchCourseScreen", {
-      message: "Tìm kiếm khóa học",
+    navigation.navigate('SearchCourseScreen', {
+      message: 'Tìm kiếm khóa học',
     });
   };
 
   const handleCategoryPress = (category: Category) => {
-    navigation.navigate("UserViewAllCourseScreen", {
-      message: "Khóa học theo danh mục",
+    navigation.navigate('UserViewAllCourseScreen', {
+      message: 'Khóa học theo danh mục',
       category_id: category.id,
     });
   };
 
   const handleViewAllPopularPress = () => {
-    navigation.navigate("UserViewAllCourseScreen", {
-      message: "Khóa học phổ biến",
+    navigation.navigate('UserViewAllCourseScreen', {
+      message: 'Khóa học phổ biến',
       is_popular: true,
     });
   };
 
   const handleCoursePress = (course: Course) => {
-    navigation.navigate("DetailCourseScreen", {
+    navigation.navigate('DetailCourseScreen', {
       courseId: course.id,
-      message: "",
+      message: '',
     });
   };
 
@@ -185,10 +176,7 @@ const Explore: React.FC<MyScreenProps["ExploreScreenProps"]> = ({
       <SearchHeader onSearchPress={handleSearchPress} />
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        <CategoryList
-          categories={categories}
-          onCategoryPress={handleCategoryPress}
-        />
+        <CategoryList categories={categories} onCategoryPress={handleCategoryPress} />
 
         <CourseList
           title="Khóa học phổ biến"
@@ -213,16 +201,16 @@ const Explore: React.FC<MyScreenProps["ExploreScreenProps"]> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: '#f8f9fa',
   },
   centered: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  
+
   section: {
-    backgroundColor: "white",
+    backgroundColor: 'white',
     padding: 20,
     marginBottom: 12,
   },
@@ -230,99 +218,98 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 15,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: 'bold',
+    color: '#333',
     marginBottom: 15,
   },
   viewAllText: {
-    color: "#4a6ee0",
-    fontWeight: "600",
+    color: '#4a6ee0',
+    fontWeight: '600',
   },
-  
- 
+
   courseCard: {
     width: 170,
-    backgroundColor: "white",
+    backgroundColor: 'white',
     borderRadius: 8,
     marginHorizontal: 5,
     marginBottom: 10,
-    overflow: "hidden",
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: "#f0f0f0",
+    borderColor: '#f0f0f0',
     elevation: 2,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
   courseImage: {
-    width: "100%",
+    width: '100%',
     height: 100,
-    resizeMode: "cover",
+    resizeMode: 'cover',
   },
   courseCardContent: {
     padding: 10,
   },
   courseCardTitle: {
     fontSize: 14,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: 'bold',
+    color: '#333',
     marginBottom: 4,
     height: 40,
   },
   categoryText: {
     fontSize: 12,
-    color: "#4a6ee0",
+    color: '#4a6ee0',
     marginBottom: 5,
-    fontWeight: "500",
+    fontWeight: '500',
   },
   courseCardFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: 5,
   },
   priceText: {
     fontSize: 14,
-    fontWeight: "bold",
-    color: "#2c9e69",
+    fontWeight: 'bold',
+    color: '#2c9e69',
   },
   ratingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   starIcon: {
-    color: "#ffb100",
+    color: '#ffb100',
     fontSize: 12,
     marginRight: 1,
   },
   ratingText: {
     fontSize: 12,
-    color: "#666",
+    color: '#666',
     marginLeft: 2,
   },
   errorText: {
-    color: "#dc2626",
+    color: '#dc2626',
     fontSize: 16,
     marginBottom: 16,
   },
   retryButton: {
-    backgroundColor: "#4a6ee0",
+    backgroundColor: '#4a6ee0',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
   retryText: {
-    color: "white",
+    color: 'white',
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: '500',
   },
 });
 

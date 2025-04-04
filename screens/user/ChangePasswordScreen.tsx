@@ -1,30 +1,33 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform } from 'react-native'
-import React, { useState } from 'react'
-import { Ionicons } from '@expo/vector-icons'
-import { MyScreenProps } from '@/types/MyScreenProps'
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { MyScreenProps } from '@/types/MyScreenProps';
 
-const ChangePassword: React.FC<MyScreenProps["ChangePasswordScreenProps"]> = ({ navigation, route }) => {
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
-  const [showNewPassword, setShowNewPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+const ChangePassword: React.FC<MyScreenProps['ChangePasswordScreenProps']> = ({
+  navigation,
+  route,
+}) => {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChangePassword = () => {
     if (newPassword !== confirmPassword) {
       // TODO: Show error message
-      console.log('Passwords do not match')
-      return
+      console.log('Passwords do not match');
+      return;
     }
 
     // TODO: Implement password change functionality
     console.log('Change password:', {
       currentPassword,
       newPassword,
-      confirmPassword
-    })
-  }
+      confirmPassword,
+    });
+  };
 
   return (
     <View style={styles.container}>
@@ -55,11 +58,7 @@ const ChangePassword: React.FC<MyScreenProps["ChangePasswordScreenProps"]> = ({ 
                 style={styles.eyeIcon}
                 onPress={() => setShowCurrentPassword(!showCurrentPassword)}
               >
-                <Ionicons
-                  name={showCurrentPassword ? "eye-off" : "eye"}
-                  size={24}
-                  color="#666"
-                />
+                <Ionicons name={showCurrentPassword ? 'eye-off' : 'eye'} size={24} color="#666" />
               </TouchableOpacity>
             </View>
           </View>
@@ -80,11 +79,7 @@ const ChangePassword: React.FC<MyScreenProps["ChangePasswordScreenProps"]> = ({ 
                 style={styles.eyeIcon}
                 onPress={() => setShowNewPassword(!showNewPassword)}
               >
-                <Ionicons
-                  name={showNewPassword ? "eye-off" : "eye"}
-                  size={24}
-                  color="#666"
-                />
+                <Ionicons name={showNewPassword ? 'eye-off' : 'eye'} size={24} color="#666" />
               </TouchableOpacity>
             </View>
           </View>
@@ -105,11 +100,7 @@ const ChangePassword: React.FC<MyScreenProps["ChangePasswordScreenProps"]> = ({ 
                 style={styles.eyeIcon}
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
               >
-                <Ionicons
-                  name={showConfirmPassword ? "eye-off" : "eye"}
-                  size={24}
-                  color="#666"
-                />
+                <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={24} color="#666" />
               </TouchableOpacity>
             </View>
           </View>
@@ -121,8 +112,8 @@ const ChangePassword: React.FC<MyScreenProps["ChangePasswordScreenProps"]> = ({ 
         </TouchableOpacity>
       </View>
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -194,6 +185,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-})
+});
 
-export default ChangePassword
+export default ChangePassword;

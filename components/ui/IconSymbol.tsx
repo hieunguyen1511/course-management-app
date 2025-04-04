@@ -15,7 +15,7 @@ const MAPPING = {
   'chevron.right': 'chevron-right',
   'library-books': 'library-books',
   'account-circle': 'account-circle',
-  'search': 'search',
+  search: 'search',
 } as Partial<
   Record<
     import('expo-symbols').SymbolViewProps['name'],
