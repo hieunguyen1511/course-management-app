@@ -1,22 +1,13 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  TextInput,
-} from 'react-native';
-import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { MyScreenProps } from '@/types/MyScreenProps';
-import { NavigationIndependentTree } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/types/RootStackParamList';
-import UserViewLesson from './UserViewLessonScreen';
-import { Enrollment, Section } from '@/types/apiModels';
-import axios from 'axios';
+import { Enrollment, Lesson } from '@/types/apiModels';
 import axiosInstance from '@/api/axiosInstance';
+import dayjs from 'dayjs';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface User {
   id: number;
@@ -168,8 +159,7 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
           eID.toString()
         ) || ''
       );
-      setEnrollment(response?.data?.enrollment);
-      setLoading(false);
+      return response?.data?.enrollment;
     } catch (error) {
       console.error('Error fetching enrollment by ID:', error);
       throw error;
@@ -184,184 +174,36 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
           cID.toString()
         ) || ''
       );
-      setComments(response?.data?.comments);
+      return response?.data?.comments;
     } catch (error) {
       console.error('Error fetching comments by course ID:', error);
       throw error;
     }
   };
 
-  // useEffect(() => {
-  //   // Simulate API call to fetch course details
-  //   setTimeout(() => {
-  //     const mockCourse: CourseDetail = {
-  //       id: courseId,
-  //       title: 'Lập trình React Native cơ bản',
-  //       category: 'Lập trình',
-  //       image: 'https://via.placeholder.com/100',
-  //       rating: 4.7,
-  //       progress: 65,
-  //       totalLessons: 12,
-  //       completedLessons: 8,
-  //       chapters: [
-  //         {
-  //           id: 1,
-  //           title: 'Chương 1: Giới thiệu về React Native',
-  //           totalLessons: 3,
-  //           completedLessons: 3,
-  //           lessons: [
-  //             {
-  //               id: 1,
-  //               title: '1.1 Giới thiệu về React Native',
-  //               duration: '15:00',
-  //               isCompleted: true,
-  //               isLocked: false,
-  //             },
-  //             {
-  //               id: 2,
-  //               title: '1.2 Cài đặt môi trường phát triển',
-  //               duration: '20:00',
-  //               isCompleted: true,
-  //               isLocked: false,
-  //             },
-  //             {
-  //               id: 3,
-  //               title: '1.3 Tạo ứng dụng đầu tiên',
-  //               duration: '25:00',
-  //               isCompleted: true,
-  //               isLocked: false,
-  //             },
-  //           ],
-  //         },
-  //         {
-  //           id: 2,
-  //           title: 'Chương 2: Các thành phần cơ bản',
-  //           totalLessons: 4,
-  //           completedLessons: 2,
-  //           lessons: [
-  //             {
-  //               id: 4,
-  //               title: '2.1 View và Text',
-  //               duration: '18:00',
-  //               isCompleted: true,
-  //               isLocked: false,
-  //             },
-  //             {
-  //               id: 5,
-  //               title: '2.2 Image và Button',
-  //               duration: '20:00',
-  //               isCompleted: true,
-  //               isLocked: false,
-  //             },
-  //             {
-  //               id: 6,
-  //               title: '2.3 TextInput và Form',
-  //               duration: '25:00',
-  //               isCompleted: false,
-  //               isLocked: false,
-  //             },
-  //             {
-  //               id: 7,
-  //               title: '2.4 ScrollView và FlatList',
-  //               duration: '30:00',
-  //               isCompleted: false,
-  //               isLocked: true,
-  //             },
-  //           ],
-  //         },
-  //         {
-  //           id: 3,
-  //           title: 'Chương 3: Navigation và State Management',
-  //           totalLessons: 5,
-  //           completedLessons: 0,
-  //           lessons: [
-  //             {
-  //               id: 8,
-  //               title: '3.1 React Navigation cơ bản',
-  //               duration: '25:00',
-  //               isCompleted: false,
-  //               isLocked: true,
-  //             },
-  //             {
-  //               id: 9,
-  //               title: '3.2 Stack Navigation',
-  //               duration: '30:00',
-  //               isCompleted: false,
-  //               isLocked: true,
-  //             },
-  //             {
-  //               id: 10,
-  //               title: '3.3 Tab Navigation',
-  //               duration: '25:00',
-  //               isCompleted: false,
-  //               isLocked: true,
-  //             },
-  //             {
-  //               id: 11,
-  //               title: '3.4 State Management với Context',
-  //               duration: '35:00',
-  //               isCompleted: false,
-  //               isLocked: true,
-  //             },
-  //             {
-  //               id: 12,
-  //               title: '3.5 Redux trong React Native',
-  //               duration: '40:00',
-  //               isCompleted: false,
-  //               isLocked: true,
-  //             },
-  //           ],
-  //         },
-  //       ],
-  //       comments: [
-  //         {
-  //           id: 1,
-  //           userId: 1,
-  //           userName: 'Nguyễn Văn A',
-  //           userAvatar: 'https://via.placeholder.com/40',
-  //           content: 'Khóa học rất hay và dễ hiểu!',
-  //           timestamp: '2 giờ trước',
-  //           replies: [
-  //             {
-  //               id: 2,
-  //               userId: 2,
-  //               userName: 'Trần Thị B',
-  //               userAvatar: 'https://via.placeholder.com/40',
-  //               content: 'Đồng ý với bạn!',
-  //               timestamp: '1 giờ trước',
-  //               replies: [],
-  //             },
-  //           ],
-  //         },
-  //         {
-  //           id: 3,
-  //           userId: 3,
-  //           userName: 'Lê Văn C',
-  //           userAvatar: 'https://via.placeholder.com/40',
-  //           content: 'Có ai đang học chương 2 không?',
-  //           timestamp: '3 giờ trước',
-  //           replies: [],
-  //         },
-  //       ],
-  //     };
-  //     setCourse(mockCourse);
-  //     setLoading(false);
-  //   }, 1000);
-  // }, [courseId]);
+  const fetchAllData = async () => {
+    setLoading(true);
+    const [enrollment, comments] = await Promise.all([
+      fetchEnrollmentByID(enrollmentId),
+      fetchCommentsByCourseID(courseId),
+    ]);
 
-  useEffect(() => {
-    fetchEnrollmentByID(enrollmentId);
-  }, [enrollmentId]);
+    setEnrollment(enrollment);
+    setComments(comments);
+    setLoading(false);
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchAllData();
+    }, [enrollmentId, courseId])
+  );
 
   const handleLessonPress = (lesson: Lesson) => {
-    if (lesson.isLocked) {
-      // Show message that lesson is locked
-      return;
-    }
     // Navigate to lesson content
     navigation.navigate('UserViewLessonScreen', {
       lessonId: lesson.id,
-      courseId: enrollment?.course_id || 0,
+      enrollmentId: enrollmentId,
     });
   };
 
@@ -409,7 +251,9 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
         });
 
         setNewComment('');
-        setReplyingTo(null);
+        setLoading(false);
+    const newComments = await fetchCommentsByCourseID(courseId);
+    setComments(newComments);
         showToast("Bình luận đã được gửi", ToastType.SUCCESS);
       } else {
         showToast("Không thể gửi bình luận", ToastType.ERROR);
@@ -605,20 +449,29 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
           <View
             style={[
               styles.progressBar,
-              { width: `${(enrollment.complete_lesson / (enrollment.total_lesson ?? 1)) * 100}%` },
+              {
+                width: `${
+                  (enrollment?.enrollment_lessons?.filter(l => l.completed_at).length /
+                    (enrollment?.course?.sections?.reduce(
+                      (acc, section) => acc + section.lessons.length,
+                      0
+                    ) ?? 1)) *
+                  100
+                }%`,
+              },
             ]}
           />
         </View>
         <View style={styles.progressTextContainer}>
           <Text style={styles.progressText}>
-            {`${
+            {`${Math.round(
               (enrollment?.enrollment_lessons?.filter(l => l.completed_at).length /
                 (enrollment?.course?.sections?.reduce(
                   (acc, section) => acc + section.lessons.length,
                   0
                 ) ?? 1)) *
-              100
-            }% Hoàn thành`}
+                100
+            )}% Hoàn thành`}
           </Text>
           <Text style={styles.lessonCount}>
             {enrollment?.enrollment_lessons?.filter(l => l.completed_at).length}/
@@ -1025,16 +878,5 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-
-// function UserDetailCourseLayout() {
-//   return (
-//     <NavigationIndependentTree>
-//       <Stack.Navigator initialRouteName="UserDetailCourse" screenOptions={{ headerShown: false }}>
-//         <Stack.Screen name="UserDetailCourse" component={UserDetailCourse} />
-//         <Stack.Screen name="UserViewLesson" component={UserViewLesson} />
-//       </Stack.Navigator>
-//     </NavigationIndependentTree>
-//   )
-// }
 
 export default UserDetailCourseScreen;

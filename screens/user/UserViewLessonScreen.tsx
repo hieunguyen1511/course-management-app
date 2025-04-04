@@ -1,102 +1,78 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native'
-import React, { useState, useEffect } from 'react'
-import { MyScreenProps } from '@/types/MyScreenProps'
-import { Ionicons } from '@expo/vector-icons'
-import { WebView } from 'react-native-webview'
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { MyScreenProps } from '@/types/MyScreenProps';
+import { Ionicons } from '@expo/vector-icons';
+import { WebView } from 'react-native-webview';
+import axiosInstance from '@/api/axiosInstance';
 
-interface QuizQuestion {
+export interface Lesson {
   id: number;
-  question: string;
-  options: string[];
-  correctAnswer: number;
-  explanation: string;
-}
-
-interface Lesson {
-  id: number;
+  section_id: number;
   title: string;
-  type: 'video' | 'quiz';
   content: string;
-  videoUrl?: string;
-  questions?: QuizQuestion[];
+  is_quizz: boolean;
   duration: string;
+  video_url: string;
+  createdAt: string;
+  updatedAt: string;
+  questions: Question[];
 }
 
-const UserViewLesson: React.FC<MyScreenProps["UserViewLessonScreenProps"]> = ({ navigation, route }) => {
-  const { lessonId, courseId } = route.params;
+export interface Question {
+  id: number;
+  lesson_id: number;
+  content: string;
+  note: string;
+  createdAt: string;
+  updatedAt: string;
+  answers: Answer[];
+}
+
+export interface Answer {
+  id: number;
+  question_id: number;
+  content: string;
+  is_correct: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const UserViewLesson: React.FC<MyScreenProps['UserViewLessonScreenProps']> = ({
+  navigation,
+  route,
+}) => {
+  const { lessonId, enrollmentId } = route.params;
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
 
+  const fetchLesson = async () => {
+    setLoading(true);
+    const response = await axiosInstance.get(
+      process.env.EXPO_PUBLIC_API_GET_LESSON_BY_ID!.replace(':lesson_id', lessonId.toString())
+    );
+
+    setLesson(response.data.lesson);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    // API call to fetch lesson details
-    setTimeout(() => {
-      const mockLesson: Lesson = {
-        id: lessonId,
-        title: '1.1 Giới thiệu về React Native',
-        type: 'video', // 'video' or 'quiz'
-        content: 'React Native là một framework phát triển ứng dụng di động được tạo bởi Facebook...',
-        duration: '15:00',
-        // Video URL
-        videoUrl: 'https://www.youtube.com/watch?v=gvkqT_Uoahw',
-        // Quiz questions
-        questions: [
-          {
-            id: 1,
-            question: 'React Native được phát triển bởi công ty nào?',
-            options: [
-              'Google',
-              'Facebook',
-              'Microsoft',
-              'Apple'
-            ],
-            correctAnswer: 1,
-            explanation: 'React Native được phát triển bởi Facebook vào năm 2015, cho phép phát triển ứng dụng di động đa nền tảng sử dụng JavaScript và React.'
-          },
-          {
-            id: 2,
-            question: 'React Native có thể phát triển ứng dụng cho những nền tảng nào?',
-            options: [
-              'Chỉ iOS',
-              'Chỉ Android',
-              'iOS và Android',
-              'Tất cả các nền tảng di động'
-            ],
-            correctAnswer: 2,
-            explanation: 'React Native cho phép phát triển ứng dụng cho cả iOS và Android từ một codebase duy nhất.'
-          },
-          {
-            id: 3,
-            question: 'Ngôn ngữ lập trình chính được sử dụng trong React Native là gì?',
-            options: [
-              'Java',
-              'Swift',
-              'JavaScript/TypeScript',
-              'Python'
-            ],
-            correctAnswer: 2,
-            explanation: 'React Native sử dụng JavaScript hoặc TypeScript làm ngôn ngữ lập trình chính, kết hợp với React để xây dựng giao diện người dùng.'
-          }
-        ]
-      };
-      setLesson(mockLesson);
-      setLoading(false);
-    }, 1000);
+    fetchLesson();
   }, [lessonId]);
 
   const getYouTubeEmbedUrl = (url: string) => {
     // Extract video ID from YouTube URL
     const videoId = url.split('v=')[1]?.split('&')[0];
     if (!videoId) return url;
-    
+
     // Return embed URL for WebView playback
     return `https://www.youtube.com/embed/${videoId}`;
   };
 
   const handleAnswerSelect = (questionIndex: number, answerIndex: number) => {
     if (showResults) return;
-    
+
     setSelectedAnswers(prev => {
       const newAnswers = [...prev];
       newAnswers[questionIndex] = answerIndex;
@@ -110,39 +86,53 @@ const UserViewLesson: React.FC<MyScreenProps["UserViewLessonScreenProps"]> = ({ 
     }
   };
 
-  const handleCompleteLesson = () => {
+  const handleCompleteLesson = async () => {
+    setLoading(true);
+
+    await axiosInstance.post(process.env.EXPO_PUBLIC_API_COMPLETE_LESSON || '', {
+      lesson_id: lessonId,
+      enrollment_id: enrollmentId,
+    });
     // Navigate back to course detail
     navigation.goBack();
+    setLoading(false);
   };
 
-  const renderQuizQuestion = (question: QuizQuestion, index: number) => (
+  const renderQuizQuestion = (question: Question, index: number) => (
     <View key={question.id} style={styles.questionContainer}>
-      <Text style={styles.questionText}>{index + 1}. {question.question}</Text>
-      {question.options.map((option, optionIndex) => (
+      <Text style={styles.questionText}>
+        {index + 1}. {question.content}
+      </Text>
+      {question.answers.map((answer, answerIndex) => (
         <TouchableOpacity
-          key={optionIndex}
+          key={answerIndex}
           style={[
             styles.optionButton,
-            selectedAnswers[index] === optionIndex && styles.selectedOption,
-            showResults && optionIndex === question.correctAnswer && styles.correctOption,
-            showResults && selectedAnswers[index] === optionIndex && optionIndex !== question.correctAnswer && styles.wrongOption
+            selectedAnswers[index] === answerIndex && styles.selectedOption,
+            showResults && answer.is_correct && styles.correctOption,
+            showResults &&
+              selectedAnswers[index] === answerIndex &&
+              !answer.is_correct &&
+              styles.wrongOption,
           ]}
-          onPress={() => handleAnswerSelect(index, optionIndex)}
+          onPress={() => handleAnswerSelect(index, answerIndex)}
           disabled={showResults}
         >
-          <Text style={[
-            styles.optionText,
-            selectedAnswers[index] === optionIndex && styles.selectedOptionText,
-            showResults && optionIndex === question.correctAnswer && styles.correctOptionText
-          ]}>
-            {option}
+          <Text
+            style={[
+              styles.optionText,
+              selectedAnswers[index] === answerIndex && styles.selectedOptionText,
+              showResults && answer.is_correct && styles.correctOptionText,
+            ]}
+          >
+            {answer.content}
           </Text>
         </TouchableOpacity>
       ))}
       {showResults && (
         <View style={styles.explanationContainer}>
           <Text style={styles.explanationTitle}>Giải thích:</Text>
-          <Text style={styles.explanationText}>{question.explanation}</Text>
+          <Text style={styles.explanationText}>{question.note}</Text>
         </View>
       )}
     </View>
@@ -168,10 +158,7 @@ const UserViewLesson: React.FC<MyScreenProps["UserViewLessonScreenProps"]> = ({ 
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{lesson.title}</Text>
@@ -180,10 +167,10 @@ const UserViewLesson: React.FC<MyScreenProps["UserViewLessonScreenProps"]> = ({ 
       {/* Content */}
       <ScrollView style={styles.content}>
         {/* Video Player Section - Only shown for video type lessons */}
-        {lesson.type === 'video' && lesson.videoUrl && (
+        {!lesson.is_quizz && lesson.video_url && (
           <View style={styles.videoContainer}>
             <WebView
-              source={{ uri: getYouTubeEmbedUrl(lesson.videoUrl) }}
+              source={{ uri: getYouTubeEmbedUrl(lesson.video_url) }}
               style={styles.video}
               javaScriptEnabled={true}
               domStorageEnabled={true}
@@ -199,14 +186,14 @@ const UserViewLesson: React.FC<MyScreenProps["UserViewLessonScreenProps"]> = ({ 
         <Text style={styles.contentText}>{lesson.content}</Text>
 
         {/* Quiz Section - Only shown for quiz type lessons */}
-        {lesson.type === 'quiz' && lesson.questions && (
+        {lesson.is_quizz && lesson.questions && (
           <View style={styles.quizContainer}>
             {lesson.questions.map((question, index) => renderQuizQuestion(question, index))}
             {!showResults && (
               <TouchableOpacity
                 style={[
                   styles.showResultsButton,
-                  selectedAnswers.length !== lesson.questions.length && styles.disabledButton
+                  selectedAnswers.length !== lesson.questions.length && styles.disabledButton,
                 ]}
                 onPress={handleShowResults}
                 disabled={selectedAnswers.length !== lesson.questions.length}
@@ -220,25 +207,16 @@ const UserViewLesson: React.FC<MyScreenProps["UserViewLessonScreenProps"]> = ({ 
 
       {/* Navigation Footer */}
       <View style={styles.footer}>
-        <TouchableOpacity 
-          style={styles.navButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.navButton} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color="#666" />
           <Text style={styles.navButtonText}>Bài trước</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.completeButton}
-          onPress={handleCompleteLesson}
-        >
+        <TouchableOpacity style={styles.completeButton} onPress={handleCompleteLesson}>
           <Text style={styles.completeButtonText}>Hoàn thành</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.navButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.navButton} onPress={() => navigation.goBack()}>
           <Text style={styles.navButtonText}>Bài tiếp</Text>
           <Ionicons name="chevron-forward" size={24} color="#666" />
         </TouchableOpacity>

@@ -1,13 +1,5 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  FlatList,
-} from 'react-native';
-import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/types/RootStackParamList';
@@ -17,6 +9,8 @@ import { Ionicons } from '@expo/vector-icons'
 
 import { MyScreenProps } from '@/types/MyScreenProps';
 import axiosInstance from '@/api/axiosInstance';
+import { useFocusEffect } from '@react-navigation/native';
+import dayjs from 'dayjs';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 // Define course interface
 interface Course {
@@ -55,7 +49,7 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
         `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_IN_PROGRESS}`
       );
 
-      setInProgressEnrollments(respone.data.enrollments);
+      return respone.data.enrollments;
     } catch (error) {
       console.error('Error fetching courses:', error);
     }
@@ -67,20 +61,28 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
         `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_COMPLETED}`
       );
 
-      setCompletedEnrollments(respone.data.enrollments);
+      return respone.data.enrollments;
     } catch (error) {
       console.error('Error fetching courses:', error);
     }
   };
-  // Fetch user courses
-  useEffect(() => {
-    fetchInProgressEnrollments();
-    // Simulated API call - replace with actual API in production
 
-    fetchCompletedCourses();
-
+  const fetchAllData = async () => {
+    setLoading(true);
+    const [inProgressEnrollments, completedEnrollments] = await Promise.all([
+      fetchInProgressEnrollments(),
+      fetchCompletedCourses(),
+    ]);
+    setInProgressEnrollments(inProgressEnrollments);
+    setCompletedEnrollments(completedEnrollments);
     setLoading(false);
-  }, []);
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchAllData();
+    }, [])
+  );
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchUserCourses();
@@ -129,18 +131,21 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
         <Text style={styles.categoryText}>{item?.course?.category?.name}</Text>
 
         <View style={styles.progressContainer}>
-          <ProgressBar progress={item.progress} />
+          <ProgressBar progress={(item.total_lesson_completed / item.total_lesson) * 100} />
           <View style={styles.progressTextContainer}>
             <Text style={styles.progressText}>
-              {Math.round((item.complete_lesson / (item.total_lesson ?? 1)) * 100)}% Hoàn thành
+              {Math.round((item.total_lesson_completed / (item.total_lesson ?? 1)) * 100)}% Hoàn
+              thành
             </Text>
             <Text style={styles.lessonCount}>
-              {item.complete_lesson}/{item.total_lesson} bài học
+              {item.total_lesson_completed}/{item.total_lesson} bài học
             </Text>
           </View>
         </View>
 
-        <Text style={styles.lastAccessedText}>Truy cập lần cuối: {item.lastAccessed}</Text>
+        <Text style={styles.lastAccessedText}>
+          Truy cập lần cuối: {dayjs(item.last_access).format('DD/MM/YYYY hh:mm')}
+        </Text>
       </View>
 
       <TouchableOpacity
@@ -209,7 +214,7 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
       <View style={styles.errorContainer}>
         <Ionicons name="alert-circle-outline" size={50} color="#ff6b6b" />
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.retryButton}
           onPress={fetchUserCourses}
         >
@@ -483,17 +488,5 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
 });
-
-// function Course() {
-//   return (
-//     <NavigationIndependentTree>
-//       <Stack.Navigator initialRouteName='UserCourse' screenOptions={{ headerShown: false }}>
-//         <Stack.Screen name="UserCourse" component={CourseScreen} />
-//         <Stack.Screen name="UserDetailCourse" component={UserDetailCourse} />
-//         <Stack.Screen name="UserRating" component={UserRating} />
-//       </Stack.Navigator>
-//     </NavigationIndependentTree>
-//   )
-// }
 
 export default Course;
