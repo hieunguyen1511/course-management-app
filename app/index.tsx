@@ -166,7 +166,7 @@ import UserDetailCourseScreen from '@/screens/user/UserDetailCourseScreen';
 import UserViewLessonScreen from '@/screens/user/UserViewLessonScreen';
 import DetailCourseScreen from '@/screens/user/DetailCourseScreen';
 import SearchCourseScreen from '@/screens/user/SearchCourseScreen';
-import test4 from '@/screens/test4';
+import Test4 from '@/screens/test4';
 
 function IndexLayout() {
   return (
@@ -190,7 +190,7 @@ function IndexLayout() {
         <Stack.Screen name="DetailCourseScreen" component={DetailCourseScreen} />
         <Stack.Screen name="SearchCourseScreen" component={SearchCourseScreen} />
         {/* Test Screen */}
-        <Stack.Screen name="Test4" component={test4} />
+        <Stack.Screen name="Test4" component={Test4} />
       </Stack.Navigator>
     </NavigationIndependentTree>
   );

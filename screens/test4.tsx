@@ -51,7 +51,7 @@ const uploadToCloudinary = async (imageUri: string) => {
   }
 };
 
-const test4 = () => {
+const Test4 = () => {
   const [localImageUrl, setLocalImageUrl] = useState('');
   const [uploadedImageUrl, setUploadedImageUrl] = useState('');
 
@@ -150,4 +150,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default test4;
+export default Test4;

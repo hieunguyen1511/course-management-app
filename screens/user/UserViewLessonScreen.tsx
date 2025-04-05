@@ -4,38 +4,7 @@ import { MyScreenProps } from '@/types/MyScreenProps';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import axiosInstance from '@/api/axiosInstance';
-
-export interface Lesson {
-  id: number;
-  section_id: number;
-  title: string;
-  content: string;
-  is_quizz: boolean;
-  duration: string;
-  video_url: string;
-  createdAt: string;
-  updatedAt: string;
-  questions: Question[];
-}
-
-export interface Question {
-  id: number;
-  lesson_id: number;
-  content: string;
-  note: string;
-  createdAt: string;
-  updatedAt: string;
-  answers: Answer[];
-}
-
-export interface Answer {
-  id: number;
-  question_id: number;
-  content: string;
-  is_correct: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+import { Lesson, Question } from '@/types/apiModels';
 
 const UserViewLesson: React.FC<MyScreenProps['UserViewLessonScreenProps']> = ({
   navigation,
@@ -87,15 +56,12 @@ const UserViewLesson: React.FC<MyScreenProps['UserViewLessonScreenProps']> = ({
   };
 
   const handleCompleteLesson = async () => {
-    setLoading(true);
-
     await axiosInstance.post(process.env.EXPO_PUBLIC_API_COMPLETE_LESSON || '', {
       lesson_id: lessonId,
       enrollment_id: enrollmentId,
     });
     // Navigate back to course detail
     navigation.goBack();
-    setLoading(false);
   };
 
   const renderQuizQuestion = (question: Question, index: number) => (

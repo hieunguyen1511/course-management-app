@@ -64,6 +64,26 @@ export interface Lesson {
   video_url: string;
   createdAt: string;
   updatedAt: string;
+  questions: Question[];
   //
   lesson_status: string;
+}
+
+export interface Question {
+  id: number;
+  lesson_id: number;
+  content: string;
+  note: string;
+  createdAt: string;
+  updatedAt: string;
+  answers: Answer[];
+}
+
+export interface Answer {
+  id: number;
+  question_id: number;
+  content: string;
+  is_correct: boolean;
+  createdAt: string;
+  updatedAt: string;
 }

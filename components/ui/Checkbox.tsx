@@ -1,6 +1,5 @@
 import { TouchableOpacity, View, Text } from 'react-native';
 import React from 'react';
-import { Check } from 'lucide-react-native';
 
 interface CheckboxProps {
   checked: boolean;
@@ -32,7 +31,7 @@ const Checkbox = ({
         ${disabled ? 'border-gray-200' : ''}
       `}
       >
-        {checked && <Check size={14} color="white" strokeWidth={3} />}
+        {checked && <Text className="text-white text-sm">✓</Text>}
       </View>
 
       {label && <Text className={`ml-2 text-md text-gray-700 ${labelClassName}`}>{label}</Text>}

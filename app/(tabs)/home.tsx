@@ -259,6 +259,7 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
                 navigation.navigate('UserDetailCourseScreen', {
                   courseId: item.course_id,
                   message: '',
+                  enrollmentId: item.id,
                 })
               }
               renderProgressBar={renderProgressBar}

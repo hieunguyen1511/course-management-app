@@ -19,6 +19,7 @@ import axiosInstance from '@/api/axiosInstance';
 import { useFocusEffect } from '@react-navigation/native';
 import dayjs from 'dayjs';
 import { Enrollment } from '@/types/apiModels';
+import { formatDateOrRelative } from '@/utils/datetime';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 // Define course interface
 interface Course {
@@ -151,7 +152,7 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
 
         {item.last_access && (
           <Text style={styles.lastAccessedText}>
-            Truy cập lần cuối: {dayjs(item.last_access).format('DD/MM/YYYY hh:mm')}
+            Truy cập lần cuối: {formatDateOrRelative(item.last_access)}
           </Text>
         )}
       </View>

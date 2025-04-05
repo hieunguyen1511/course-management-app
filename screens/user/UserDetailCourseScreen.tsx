@@ -2,21 +2,22 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  RefreshControl,
   FlatList,
+  Image,
 } from 'react-native';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { MyScreenProps } from '@/types/MyScreenProps';
-import { Enrollment, Lesson } from '@/types/apiModels';
+import { Enrollment, Lesson, Section } from '@/types/apiModels';
 import axiosInstance from '@/api/axiosInstance';
 import { useFocusEffect } from '@react-navigation/native';
-import { showToast, ToastType } from '@/components/NotificationToast';
+import { ToastType } from '@/components/NotificationToast';
 import dayjs from 'dayjs';
+import NotificationToast from '@/components/NotificationToast';
+import { formatDateOrRelative, formatDateTimeRelative } from '@/utils/datetime';
 
 interface User {
   id: number;
@@ -38,123 +39,31 @@ interface Comment {
   replies?: Comment[];
 }
 
-// interface Lesson {
-//   id: number;
-//   section_id: number;
-//   title: string;
-//   duration?: string;
-//   isCompleted?: boolean;
-//   isLocked?: boolean;
-//   createdAt: string;
-//   updatedAt: string;
-//   order?: number;
-// }
-
-interface Section {
-  id: number;
-  course_id: number;
-  name: string;
-  description: string;
-  createdAt: string;
-  updatedAt: string;
-  lessons: Lesson[];
-}
-
-// api function
-async function getSectionByCourseId_withLesson(course_id: number) {
-  try {
-    let url = `${process.env.EXPO_PUBLIC_API_GET_SECTION_BY_COURSE_ID_WITH_LESSON}`;
-    url = url.replace(':course_id', course_id.toString());
-    const response = await axiosInstance.get(url);
-    const mapdata = response.data.sections.map((item: Section) => {
-      return {
-        ...item,
-        id: item.id,
-        course_id: item.course_id,
-        name: item.name,
-        description: item.description,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
-        lessons: item.lessons,
-      };
-    });
-    return mapdata;
-  } catch (error) {
-    console.log(error);
-    return null;
-  }
-}
-
-async function getCommentByCourseWithUser(course_id: number) {
-  try {
-    let url = `${process.env.EXPO_PUBLIC_API_GET_COMMENT_BY_COURSE_ID_WITH_USER}`;
-    url = url.replace(':course_id', course_id.toString());
-    const response = await axiosInstance.get(url);
-    const mapdata = response.data.comments.map((item: Comment) => {
-      return {
-        ...item,
-        id: item.id,
-        user_id: item.user_id,
-        course_id: item.course_id,
-        content: item.content,
-        parent_id: item.parent_id,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
-        user: item.user,
-        replies: item.replies,
-      };
-    });
-    return mapdata;
-  } catch (error) {
-    console.log(error);
-    return null;
-  }
-}
-
-async function getEnrollmentByIdWithCourse(enrollment_id: number) {
-  try {
-    let url = `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_ID_WITH_COURSE}`;
-    url = url.replace(':id', enrollment_id.toString());
-    const response = await axiosInstance.get(url);
-    const data = {
-      id: response.data.enrollment.id,
-      course_id: response.data.enrollment.course_id,
-      user_id: response.data.enrollment.user_id,
-      total_lesson: response.data.enrollment.total_lesson,
-      complete_lesson: response.data.enrollment.complete_lesson,
-      price: response.data.enrollment.price,
-      rating: response.data.enrollment.rating,
-      review: response.data.enrollment.review,
-      createdAt: response.data.enrollment.createdAt,
-      updatedAt: response.data.enrollment.updatedAt,
-      course: response.data.enrollment.course,
-    };
-    return data;
-  } catch (error) {
-    console.log(error);
-    return null;
-  }
-}
-
 const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProps']> = ({
   navigation,
   route,
 }) => {
   const { enrollmentId, courseId } = route.params || { courseId: 1, enrollmentId: 1 };
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
-  const [sections, setSections] = useState<Section[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'content' | 'discussion'>('content');
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
-
-  const [refreshing, setRefreshing] = useState(false);
+  const [replyingToComment, setReplyingToComment] = useState<string>('');
 
   // Toast state
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<ToastType>(ToastType.SUCCESS);
+
+  const flatListRef = useRef<FlatList<Comment>>(null); // Create a ref for the FlatList
+
+  const showToast = (message: string, type: ToastType) => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+  };
 
   const fetchEnrollmentByID = async (eID: number) => {
     try {
@@ -199,7 +108,6 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
       fetchEnrollmentByID(enrollmentId),
       fetchCommentsByCourseID(courseId),
     ]);
-
     setEnrollment(enrollment);
     setComments(comments);
     setLoading(false);
@@ -211,12 +119,6 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
     }, [enrollmentId, courseId])
   );
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchAllData();
-    setRefreshing(false);
-  }, [fetchAllData]);
-
   const handleLessonPress = (lesson: Lesson) => {
     // Navigate to lesson content
     navigation.navigate('UserViewLessonScreen', {
@@ -225,18 +127,13 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
     });
   };
 
-  const handleCommentSubmit = useCallback(async () => {
-    if (!newComment.trim()) {
-      showToast('Vui lòng nhập nội dung bình luận', ToastType.INFO);
-      return;
-    }
-
+  const submitComment = async (content: string, parentId: number | null) => {
     try {
       const url = `${process.env.EXPO_PUBLIC_API_POST_COMMENT}`;
       const response = await axiosInstance.post(url, {
         course_id: courseId,
-        content: newComment,
-        parent_id: replyingTo,
+        content: content,
+        parent_id: parentId,
       });
 
       if (response.status === 201 && response.data?.comment) {
@@ -252,84 +149,55 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
       console.error('Error posting comment:', error);
       showToast('Có lỗi xảy ra khi gửi bình luận', ToastType.ERROR);
     }
+  };
+
+  const handleCommentSubmit = useCallback(async () => {
+    if (!newComment.trim()) {
+      showToast('Vui lòng nhập nội dung bình luận', ToastType.INFO);
+      return;
+    }
+
+    submitComment(newComment, null);
+    flatListRef.current?.scrollToEnd({ animated: true });
   }, [courseId, newComment, replyingTo, showToast]);
 
-  // const renderChapter = useCallback(
-  //   ({ item }: { item: Section }) => {
-  //     return (
-  //       <View key={item.id} style={styles.chapterContainer}>
-  //         <View style={styles.chapterHeader}>
-  //           <View style={styles.chapterTitleContainer}>
-  //             <Text style={styles.chapterTitle}>{item.name}</Text>
-  //             <Text style={styles.chapterProgress}>
-  //               {item.lessons.filter(lesson => !lesson.isLocked).length}/{item.lessons.length} bài
-  //               học
-  //             </Text>
-  //           </View>
-  //           <View style={styles.chapterProgressBarContainer}>
-  //             <View
-  //               style={[
-  //                 styles.chapterProgressBar,
-  //                 {
-  //                   width: `${
-  //                     (item.lessons.filter(lesson => !lesson.isLocked).length /
-  //                       item.lessons.length) *
-  //                     100
-  //                   }%`,
-  //                 },
-  //               ]}
-  //             />
-  //           </View>
-  //         </View>
+  const getAvatarOrDefault = (avatar: string | null | undefined) => {
+    return avatar || 'https://via.placeholder.com/150';
+  };
 
-  //         <FlatList
-  //           data={item.lessons}
-  //           keyExtractor={lesson => lesson.id.toString()}
-  //           renderItem={({ item: lesson }) => (
-  //             <TouchableOpacity
-  //               key={lesson.id}
-  //               style={[styles.lessonItem, lesson.isLocked && styles.lockedLesson]}
-  //               onPress={() => handleLessonPress(lesson)}
-  //               disabled={lesson.isLocked}
-  //             >
-  //               <View style={styles.lessonContent}>
-  //                 <View style={styles.lessonIconContainer}>
-  //                   {!lesson.isLocked ? (
-  //                     <Ionicons name="play-circle" size={24} color="#4a6ee0" />
-  //                   ) : (
-  //                     <Ionicons name="lock-closed" size={24} color="#999" />
-  //                   )}
-  //                 </View>
-  //                 <View style={styles.lessonInfo}>
-  //                   <Text style={[styles.lessonTitle, lesson.isLocked && styles.lockedText]}>
-  //                     {lesson.title}
-  //                   </Text>
-  //                   <Text style={styles.lessonDuration}>{lesson.duration}</Text>
-  //                 </View>
-  //               </View>
-  //               {!lesson.isLocked && <Ionicons name="chevron-forward" size={20} color="#666" />}
-  //             </TouchableOpacity>
-  //           )}
-  //         />
-  //       </View>
-  //     );
-  //   },
-  //   [handleLessonPress]
-  // );
+  const handleChangeReply = (commentId: number) => {
+    setReplyingTo(commentId);
+    setReplyingToComment('');
+  };
+
+  const handleReplySubmit = (replyingToCommentId: number) => {
+    if (!replyingToComment.trim()) {
+      showToast('Vui lòng nhập nội dung bình luận', ToastType.INFO);
+      return;
+    }
+
+    submitComment(replyingToComment, replyingToCommentId);
+
+    setReplyingToComment('');
+  };
 
   const renderComment = useCallback(
     ({ item: comment }: { item: Comment }) => (
       <View key={comment.id} style={[styles.commentContainer]}>
         <View style={styles.commentHeader}>
           <View style={styles.commentInfo}>
+            <View style={styles.avatarContainer}>
+              <Image
+                source={{ uri: getAvatarOrDefault(comment.user.avatar) }}
+                style={styles.avatar}
+              />
+            </View>
             <Text style={styles.userName}>{comment.user?.fullname || 'Người dùng'}</Text>
-            <Text style={styles.timestamp}>
-              {dayjs(comment.createdAt).format('DD/MM/YYYY HH:mm')}
-            </Text>
+            <Text style={styles.timestamp}>{formatDateOrRelative(comment.createdAt)}</Text>
           </View>
         </View>
         <Text style={styles.commentContent}>{comment.content}</Text>
-        <TouchableOpacity style={styles.replyButton} onPress={() => setReplyingTo(comment.id)}>
+        <TouchableOpacity style={styles.replyButton} onPress={() => handleChangeReply(comment.id)}>
           <Text style={styles.replyButtonText}>Trả lời</Text>
         </TouchableOpacity>
         {comment.replies && comment.replies.length > 0 && (
@@ -340,10 +208,14 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
               <View style={[styles.commentContainer, styles.replyContainer]}>
                 <View style={styles.commentHeader}>
                   <View style={styles.commentInfo}>
+                    <View style={styles.avatarContainer}>
+                      <Image
+                        source={{ uri: getAvatarOrDefault(reply.user.avatar) }}
+                        style={styles.avatar}
+                      />
+                    </View>
                     <Text style={styles.userName}>{reply.user?.fullname || 'Người dùng'}</Text>
-                    <Text style={styles.timestamp}>
-                      {dayjs(reply.createdAt).format('DD/MM/YYYY HH:mm')}
-                    </Text>
+                    <Text style={styles.timestamp}>{formatDateOrRelative(reply.createdAt)}</Text>
                   </View>
                 </View>
                 <Text style={styles.commentContent}>{reply.content}</Text>
@@ -351,9 +223,106 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
             )}
           />
         )}
+        {replyingTo === comment.id && (
+          <View style={styles.replyInputContainer}>
+            <TextInput
+              style={styles.replyInput}
+              placeholder="Viết phản hồi..."
+              value={replyingToComment}
+              onChangeText={setReplyingToComment}
+            />
+            <TouchableOpacity onPress={() => handleReplySubmit(comment.id)}>
+              <Text style={styles.submitButtonText}>Gửi</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     ),
-    []
+    [replyingTo, newComment, replyingToComment]
+  );
+
+  // Render function for each section
+  const renderSection = ({ item: section }: { item: Section }) => (
+    <View key={section.id} style={styles.chapterContainer}>
+      <View style={styles.chapterHeader}>
+        <View style={styles.chapterTitleContainer}>
+          <Text style={styles.chapterTitle}>{section.name}</Text>
+          <Text style={styles.chapterProgress}>
+            {section.lessons.filter(l =>
+              enrollment?.enrollment_lessons.find(el => el.completed_at && el.lesson_id === l.id)
+            ).length ?? 0}
+            /{section.lessons.length ?? 0} bài học
+          </Text>
+        </View>
+        <View style={styles.chapterProgressBarContainer}>
+          <View
+            style={[
+              ((section.lessons.filter(l =>
+                enrollment?.enrollment_lessons.find(el => el.completed_at && el.lesson_id === l.id)
+              ).length ?? 0) /
+                (section.lessons.length > 1 ? section.lessons.length : 1)) *
+                100 ===
+              100
+                ? styles.completedProgress
+                : styles.chapterProgressBar,
+              {
+                width: `${
+                  ((section.lessons.filter(l =>
+                    enrollment?.enrollment_lessons.find(
+                      el => el.completed_at && el.lesson_id === l.id
+                    )
+                  ).length ?? 0) /
+                    (section.lessons.length > 1 ? section.lessons.length : 1)) *
+                  100
+                }%`,
+              },
+            ]}
+          />
+        </View>
+      </View>
+
+      {section.lessons.map(lesson => {
+        lesson.lesson_status = getLessonStatus(lesson.id);
+        return (
+          <TouchableOpacity
+            key={lesson.id}
+            style={[styles.lessonItem, lesson.lesson_status === 'locked' && styles.lockedLesson]}
+            onPress={() => handleLessonPress(lesson)}
+            disabled={lesson.lesson_status === 'locked'}
+          >
+            <View style={styles.lessonContent}>
+              <View style={styles.lessonIconContainer}>
+                {lesson.lesson_status === 'completed' ? (
+                  <Ionicons name="checkmark-circle" size={24} color="#2c9e69" />
+                ) : lesson.lesson_status === 'locked' ? (
+                  <Ionicons name="lock-closed" size={24} color="#999" />
+                ) : (
+                  <Ionicons name="play-circle" size={24} color="#4a6ee0" />
+                )}
+              </View>
+              <View style={styles.lessonInfo}>
+                <Text
+                  style={[
+                    styles.lessonTitle,
+                    lesson.lesson_status === 'locked' && styles.lockedText,
+                  ]}
+                >
+                  {lesson.title}
+                </Text>
+                <Text style={styles.lessonDuration}>{lesson.duration}</Text>
+              </View>
+            </View>
+            {lesson.lesson_status !== 'locked' && (
+              <Ionicons
+                name={lesson.lesson_status === 'completed' ? 'checkmark-circle' : 'chevron-forward'}
+                size={20}
+                color={lesson.lesson_status === 'completed' ? '#2c9e69' : '#666'}
+              />
+            )}
+          </TouchableOpacity>
+        );
+      })}
+    </View>
   );
 
   if (loading) {
@@ -397,220 +366,133 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
   };
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>{enrollment.course.name}</Text>
-          <Text style={styles.headerSubtitle}>{enrollment.course.category.name}</Text>
-        </View>
-      </View>
-
-      {/* Progress Bar */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBarContainer}>
-          <View
-            style={[
-              (enrollment?.enrollment_lessons?.filter(l => l.completed_at).length /
-                (enrollment?.course?.sections?.reduce(
-                  (acc, section) => acc + section.lessons.length,
-                  0
-                ) ?? 1)) *
-                100 ===
-              100
-                ? styles.completedProgress
-                : styles.progressBar,
-              {
-                width: `${
-                  (enrollment?.enrollment_lessons?.filter(l => l.completed_at).length /
-                    (enrollment?.course?.sections?.reduce(
-                      (acc, section) => acc + section.lessons.length,
-                      0
-                    ) ?? 1)) *
-                  100
-                }%`,
-              },
-            ]}
-          />
-        </View>
-        <View style={styles.progressTextContainer}>
-          <Text style={styles.progressText}>
-            {`${Math.round(
-              ((enrollment?.enrollment_lessons?.filter(l => l.completed_at).length ?? 0) /
-                (enrollment?.course?.sections?.length > 0
-                  ? enrollment?.course?.sections?.reduce(
-                      (acc, section) => acc + section.lessons.length,
-                      0
-                    )
-                  : 1)) *
-                100
-            )}% Hoàn thành`}
-          </Text>
-          <Text style={styles.lessonCount}>
-            {enrollment?.enrollment_lessons?.filter(l => l.completed_at).length}/
-            {enrollment?.course?.sections?.reduce(
-              (acc, section) => acc + section.lessons.length,
-              0
-            )}
-            bài học
-          </Text>
-        </View>
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'content' && styles.activeTab]}
-          onPress={() => setActiveTab('content')}
-        >
-          <Text style={[styles.tabText, activeTab === 'content' && styles.activeTabText]}>
-            Nội dung
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'discussion' && styles.activeTab]}
-          onPress={() => setActiveTab('discussion')}
-        >
-          <Text style={[styles.tabText, activeTab === 'discussion' && styles.activeTabText]}>
-            Thảo luận
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Content */}
-      {activeTab === 'content' ? (
-        <ScrollView style={styles.contentContainer}>
-          {enrollment.course.sections.map((section, idx) => (
-            <View key={section.id} style={styles.chapterContainer}>
-              <View style={styles.chapterHeader}>
-                <View style={styles.chapterTitleContainer}>
-                  <Text style={styles.chapterTitle}>{section.name}</Text>
-                  <Text style={styles.chapterProgress}>
-                    {section.lessons.filter(l =>
-                      enrollment.enrollment_lessons.find(
-                        el => el.completed_at && el.lesson_id === l.id
-                      )
-                    ).length ?? 0}
-                    /{section.lessons.length ?? 0} bài học
-                  </Text>
-                </View>
-                <View style={styles.chapterProgressBarContainer}>
-                  <View
-                    style={[
-                      ((section.lessons.filter(l =>
-                        enrollment.enrollment_lessons.find(
-                          el => el.completed_at && el.lesson_id === l.id
-                        )
-                      ).length ?? 0) /
-                        (section.lessons.length ?? 1)) *
-                        100 ===
-                      100
-                        ? styles.completedProgress
-                        : styles.chapterProgressBar,
-                      {
-                        width: `${
-                          ((section.lessons.filter(l =>
-                            enrollment.enrollment_lessons.find(
-                              el => el.completed_at && el.lesson_id === l.id
-                            )
-                          ).length ?? 0) /
-                            (section.lessons.length ?? 1)) *
-                          100
-                        }%`,
-                      },
-                    ]}
-                  />
-                </View>
-              </View>
-
-              {section.lessons.map(lesson => {
-                lesson.lesson_status = getLessonStatus(lesson.id);
-                return (
-                  <TouchableOpacity
-                    key={lesson.id}
-                    style={[
-                      styles.lessonItem,
-                      lesson.lesson_status === 'locked' && styles.lockedLesson,
-                    ]}
-                    onPress={() => handleLessonPress(lesson)}
-                    disabled={lesson.lesson_status === 'locked'}
-                  >
-                    <View style={styles.lessonContent}>
-                      <View style={styles.lessonIconContainer}>
-                        {lesson.lesson_status === 'completed' ? (
-                          <Ionicons name="checkmark-circle" size={24} color="#2c9e69" />
-                        ) : lesson.lesson_status === 'locked' ? (
-                          <Ionicons name="lock-closed" size={24} color="#999" />
-                        ) : (
-                          <Ionicons name="play-circle" size={24} color="#4a6ee0" />
-                        )}
-                      </View>
-                      <View style={styles.lessonInfo}>
-                        <Text
-                          style={[
-                            styles.lessonTitle,
-                            lesson.lesson_status === 'locked' && styles.lockedText,
-                          ]}
-                        >
-                          {lesson.title}
-                        </Text>
-                        <Text style={styles.lessonDuration}>{lesson.duration}</Text>
-                      </View>
-                    </View>
-                    {lesson.lesson_status !== 'locked' && (
-                      <Ionicons
-                        name={
-                          lesson.lesson_status === 'completed'
-                            ? 'checkmark-circle'
-                            : 'chevron-forward'
-                        }
-                        size={20}
-                        color={lesson.lesson_status === 'completed' ? '#2c9e69' : '#666'}
-                      />
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          ))}
-        </ScrollView>
-      ) : (
-        <View style={styles.discussionContainer}>
-          {/* Comment Input */}
-          <View style={styles.commentInputContainer}>
-            <TextInput
-              style={styles.commentInput}
-              placeholder="Viết bình luận..."
-              value={newComment}
-              onChangeText={setNewComment}
-              multiline
-            />
-            <TouchableOpacity style={styles.submitButton} onPress={handleCommentSubmit}>
-              <Text style={styles.submitButtonText}>Gửi</Text>
-            </TouchableOpacity>
+    <>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>{enrollment.course.name}</Text>
+            <Text style={styles.headerSubtitle}>{enrollment.course.category.name}</Text>
           </View>
-
-          {/* Comments List */}
-          <FlatList
-            style={styles.commentsList}
-            data={comments}
-            keyExtractor={comment => comment.id.toString()}
-            renderItem={renderComment}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                colors={['#4a6ee0']}
-                tintColor="#4a6ee0"
-              />
-            }
-          />
         </View>
-      )}
-    </View>
+
+        {/* Progress Bar */}
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBarContainer}>
+            <View
+              style={[
+                (enrollment?.enrollment_lessons?.filter(l => l.completed_at).length /
+                  (enrollment?.course?.sections?.reduce(
+                    (acc, section) => acc + section.lessons.length,
+                    0
+                  ) ?? 1)) *
+                  100 ===
+                100
+                  ? styles.completedProgress
+                  : styles.progressBar,
+                {
+                  width: `${
+                    (enrollment?.enrollment_lessons?.filter(l => l.completed_at).length /
+                      (enrollment?.course?.sections?.reduce(
+                        (acc, section) => acc + section.lessons.length,
+                        0
+                      ) ?? 1)) *
+                    100
+                  }%`,
+                },
+              ]}
+            />
+          </View>
+          <View style={styles.progressTextContainer}>
+            <Text style={styles.progressText}>
+              {`${Math.round(
+                ((enrollment?.enrollment_lessons?.filter(l => l.completed_at).length ?? 0) /
+                  (enrollment?.course?.sections?.length > 0
+                    ? enrollment?.course?.sections?.reduce(
+                        (acc, section) => acc + section.lessons.length,
+                        0
+                      )
+                    : 1)) *
+                  100
+              )}% Hoàn thành`}
+            </Text>
+            <Text style={styles.lessonCount}>
+              {enrollment?.enrollment_lessons?.filter(l => l.completed_at).length}/
+              {enrollment?.course?.sections?.reduce(
+                (acc, section) => acc + section.lessons.length,
+                0
+              )}
+              bài học
+            </Text>
+          </View>
+        </View>
+
+        {/* Tabs */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'content' && styles.activeTab]}
+            onPress={() => setActiveTab('content')}
+          >
+            <Text style={[styles.tabText, activeTab === 'content' && styles.activeTabText]}>
+              Nội dung
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'discussion' && styles.activeTab]}
+            onPress={() => setActiveTab('discussion')}
+          >
+            <Text style={[styles.tabText, activeTab === 'discussion' && styles.activeTabText]}>
+              Thảo luận
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Content */}
+        {activeTab === 'content' ? (
+          <FlatList
+            style={styles.contentContainer}
+            data={enrollment.course.sections}
+            keyExtractor={section => section.id.toString()}
+            renderItem={renderSection}
+          />
+        ) : (
+          <View style={styles.discussionContainer}>
+            {/* Comment Input */}
+            <View style={styles.commentInputContainer}>
+              <TextInput
+                style={styles.commentInput}
+                placeholder="Viết bình luận..."
+                value={newComment}
+                onChangeText={setNewComment}
+                multiline
+              />
+              <TouchableOpacity style={styles.submitButton} onPress={handleCommentSubmit}>
+                <Text style={styles.submitButtonText}>Gửi</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Comments List */}
+            <FlatList
+              ref={flatListRef}
+              style={styles.commentsList}
+              data={comments}
+              keyExtractor={comment => comment.id.toString()}
+              renderItem={renderComment}
+            />
+          </View>
+        )}
+      </View>
+      <NotificationToast
+        visible={toastVisible}
+        message={toastMessage}
+        type={toastType}
+        duration={2000}
+        onDismiss={() => setToastVisible(false)}
+      />
+    </>
   );
 };
 
@@ -871,6 +753,27 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  avatarContainer: {
+    marginRight: 8,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  replyInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  replyInput: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 8,
   },
 });
 
