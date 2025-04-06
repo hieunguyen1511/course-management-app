@@ -31,7 +31,13 @@ export type RootStackParamList = {
   DetailCourseScreen: { courseId: number; message?: string };
   SearchCourseScreen: { message?: string };
   UserViewAllEnrollmentScreen: { message?: string };
-  UserRatingScreen: { message?: string };
+  UserRatingScreen: {
+    message?: string;
+    enrollmentId?: number;
+    is_rated?: boolean;
+    courseName?: string;
+    categoryName?: string;
+  };
   UserDetailCourseScreen: {
     enrollmentId: number;
     courseId: number;

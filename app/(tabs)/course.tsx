@@ -212,10 +212,26 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
 
       <TouchableOpacity
         style={styles.reviewButton}
-        onPress={() => navigation.navigate('UserRatingScreen', { message: '' })}
+        onPress={() =>
+          item.rating !== null
+            ? navigation.navigate('UserRatingScreen', {
+                message: '',
+                enrollmentId: item.id,
+                is_rated: true,
+                courseName: item.course.name,
+                categoryName: item.course.category.name,
+              })
+            : navigation.navigate('UserRatingScreen', {
+                message: '',
+                enrollmentId: item.id,
+                is_rated: false,
+                courseName: item.course.name,
+                categoryName: item.course.category.name,
+              })
+        }
       >
-        <Ionicons name={item.hasReviewed ? 'star' : 'star-outline'} size={16} color="#4a6ee0" />
-        <Text style={styles.reviewText}>{item.hasReviewed ? 'Xem đánh giá' : 'Đánh giá'}</Text>
+        <Ionicons name={item.rating !== null ? 'star' : 'star-outline'} size={16} color="#fdd700" />
+        <Text style={styles.reviewText}>{item.rating > 0 ? 'Xem đánh giá' : 'Đánh giá'}</Text>
       </TouchableOpacity>
     </TouchableOpacity>
   );
