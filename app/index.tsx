@@ -1,10 +1,9 @@
 import { View, Text, Button } from 'react-native';
 import React from 'react';
-import { Redirect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 
-import { NavigationContainer, NavigationIndependentTree } from '@react-navigation/native';
-import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useNavigation } from 'expo-router';
+import { NavigationIndependentTree } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { RootStackParamList } from '@/types/RootStackParamList';
 import { MyScreenProps } from '@/types/MyScreenProps';
@@ -13,9 +12,9 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import axiosInstance from '@/api/axiosInstance';
 import * as SecureStore from 'expo-secure-store';
-const Stack = createNativeStackNavigator<RootStackParamList>();
+import tokenStorageManager from '@/storage/tokenStorage/tokenStorageManager';
 
-import { setAccessToken } from '@/api/axiosInstance';
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 async function getUserInformation() {
   try {
@@ -35,7 +34,7 @@ async function getUserInformation() {
 
 async function refreshToken() {
   try {
-    const refresh_token = await SecureStore.getItemAsync('refresh_token');
+    const refresh_token = await tokenStorageManager.getRefreshToken();
     if (refresh_token) {
       console.log('Refresh token', refresh_token);
       return refresh_token;
@@ -54,40 +53,40 @@ async function processLogin(navigation: any, homeRouter: any) {
   const user = await getUserInformation();
   const jsonUser = JSON.parse(user);
 
-  axiosInstance
-    .post(`${process.env.EXPO_PUBLIC_API_REFRESH_TOKEN}`, {
-      refresh_token: refresh_token,
-    })
-    .then(res => {
-      console.log('Refresh token response', res.data);
-      if (res.data.access_token) {
-        setAccessToken(res.data.access_token);
-        if (jsonUser.role === 1) {
-          navigation.replace('UserTabLayout', {
-            message: 'Hello from Login',
-          });
-          // homeRouter.push({
-          //   pathname: "/(tabs)/home",
-          //   params: { tmessage: "Hello from Login" },
-          // });
-        }
-        if (jsonUser.role === 0) {
-          navigation.replace('AdminLayout', {
-            message: 'Hello from Login',
-          });
-          // homeRouter.push({
-          //   pathname: "/admin",
-          //   params: { tmessage: "Hello from Login" },
-          // });
-        }
-      } else {
-        navigation.replace('Login', { message: 'Please login' });
+  try {
+    const refreshTokenResponse = await axiosInstance.post(
+      `${process.env.EXPO_PUBLIC_API_REFRESH_TOKEN}`,
+      {
+        refresh_token: refresh_token,
       }
-    })
-    .catch(err => {
-      console.log('Error refreshing token', err);
-      navigation.replace('Login', { message: 'Please login' });
-    });
+    );
+
+    console.log('Refresh token response', refreshTokenResponse.data);
+    if (refreshTokenResponse.data.access_token) {
+      tokenStorageManager.setAccessToken(refreshTokenResponse.data.access_token);
+      if (jsonUser.role === 1) {
+        navigation.replace('UserTabLayout', {
+          message: 'Hello from Login',
+        });
+        // homeRouter.push({
+        //   pathname: "/(tabs)/home",
+        //   params: { tmessage: "Hello from Login" },
+        // });
+      }
+      if (jsonUser.role === 0) {
+        navigation.replace('AdminLayout', {
+          message: 'Hello from Login',
+        });
+        // homeRouter.push({
+        //   pathname: "/admin",
+        //   params: { tmessage: "Hello from Login" },
+        // });
+      }
+    }
+  } catch (err) {
+    console.log('Error refreshing token', err);
+    navigation.replace('Login', { message: 'Please login' });
+  }
 }
 
 const IndexScreen: React.FC<MyScreenProps['IndexScreenProps']> = ({ navigation, route }) => {
@@ -149,8 +148,8 @@ const IndexScreen: React.FC<MyScreenProps['IndexScreenProps']> = ({ navigation, 
 };
 
 // auth
-import Login from '@/screens/login';
-import Register from '@/screens/register';
+import Login from './login';
+import Register from './register';
 
 // Tab Layout
 import UserTabLayout from './(tabs)/_layout';

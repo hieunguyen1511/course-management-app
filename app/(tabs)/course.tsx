@@ -244,8 +244,8 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {activeTab === 'progress' ? (
           <>
-            {inProgressEnrollments.length > 0 ? (
-              inProgressEnrollments.map(enrollment => (
+            {inProgressEnrollments?.length > 0 ? (
+              inProgressEnrollments?.map(enrollment => (
                 <View key={enrollment.id.toString()}>
                   {renderInProgressCourse({ item: enrollment })}
                 </View>
@@ -262,8 +262,8 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
           </>
         ) : (
           <>
-            {completedEnrollments.length > 0 ? (
-              completedEnrollments.map(enrollment => (
+            {completedEnrollments?.length > 0 ? (
+              completedEnrollments?.map(enrollment => (
                 <View key={enrollment.id.toString()}>
                   {renderCompletedCourse({ item: enrollment })}
                 </View>

@@ -19,10 +19,10 @@ import '../global.css';
 import Checkbox from '@/components/ui/Checkbox';
 import HorizontalRule from '@/components/ui/HorizontalRule';
 import * as SecureStore from 'expo-secure-store';
-import { setAccessToken } from '@/api/axiosInstance';
 
 import NotificationToast from '@/components/NotificationToast';
 import { ToastType } from '@/components/NotificationToast';
+import tokenStorageManager from '@/storage/tokenStorage/tokenStorageManager';
 
 async function saveUserInformation(user: any) {
   try {
@@ -35,7 +35,7 @@ async function saveUserInformation(user: any) {
 
 async function saveRefreshToken(refresh_token: string) {
   try {
-    await SecureStore.setItemAsync('refresh_token', refresh_token);
+    await tokenStorageManager.setRefreshToken(refresh_token);
   } catch (e) {
     console.log('Error saving token', e);
   }
@@ -61,17 +61,12 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
   };
 
   useEffect(() => {
-    if (route.params?.message) {
-      console.log('Login message:', route.params.message);
-    }
-
-    if (route.params?.message_from_register) {
-      console.log('Login message from register:', route.params.message_from_register);
+    if (route?.params?.message_from_register) {
       setTimeout(() => {
-        showToast(route.params.message_from_register || '', ToastType.SUCCESS);
+        showToast(route?.params?.message_from_register || '', ToastType.SUCCESS);
       }, 300);
     }
-  }, [route.params]);
+  }, [route?.params]);
 
   const handleLogin = async () => {
     try {
@@ -90,11 +85,10 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
 
         if (res.status === 200) {
           console.log('Login successful');
-          console.log('Access token', res.data.access_token);
-          await setAccessToken(res.data.access_token);
+          tokenStorageManager.setAccessToken(res.data.access_token);
+          await tokenStorageManager.setRefreshToken(res.data.refresh_token, !isRemmebermeChecked);
 
           if (isRemmebermeChecked) {
-            await saveRefreshToken(res.data.refresh_token);
             await saveUserInformation(res.data.user);
           }
 
@@ -148,6 +142,9 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
               />
               <TextInput
                 style={styles.input}
+                autoComplete="username"
+                textContentType="username"
+                importantForAutofill="yes"
                 placeholder={Strings.login.placeHolderUsername}
                 value={username}
                 onChangeText={setUsername}
@@ -167,6 +164,9 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
                 style={[styles.inputIcon, styles.inputIconBorder]}
               />
               <TextInput
+                autoComplete="password"
+                importantForAutofill="yes"
+                textContentType="password"
                 style={styles.input}
                 placeholder={Strings.login.placeHolderPassword}
                 value={password}

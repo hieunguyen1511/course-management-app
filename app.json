@@ -43,7 +43,11 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-secure-store",
+      ["expo-secure-store", {
+          "configureAndroidBackup": true,
+          "faceIDPermission": "Allow CourseApp to access your Face ID biometric data."
+        }
+      ],
       "expo-image-picker"
     ],
     "experiments": {

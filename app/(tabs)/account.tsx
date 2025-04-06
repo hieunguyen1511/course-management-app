@@ -9,15 +9,11 @@ import {
 } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { NavigationIndependentTree } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MyScreenProps } from '@/types/MyScreenProps';
-import { RootStackParamList } from '@/types/RootStackParamList';
 import * as ImagePicker from 'expo-image-picker';
 
-import EditProfile from '@/screens/user/EditProfileScreen';
-import ChangePassword from '@/screens/user/ChangePasswordScreen';
-import UserViewAllEnrollment from '@/screens/user/UserViewAllEnrollmentScreen';
+import tokenStorageManager from '@/storage/tokenStorage/tokenStorageManager';
+import * as SecureStore from 'expo-secure-store';
 
 // Define user interface
 interface User {
@@ -61,9 +57,12 @@ const Account: React.FC<MyScreenProps['AccountScreenProps']> = ({ navigation, ro
     }
   };
 
-  const handleLogout = () => {
-    // Handle logout functionality
-    console.log('Đang đăng xuất...');
+  const handleLogout = async () => {
+    await SecureStore.deleteItemAsync('user');
+    await tokenStorageManager.deleteRefreshToken();
+    navigation.replace('Login', {
+      message: 'Đăng xuất thành công',
+    });
     // In a real app, you would clear tokens, user data, etc.
   };
 
