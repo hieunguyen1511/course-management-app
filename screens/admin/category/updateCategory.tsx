@@ -5,12 +5,14 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
+import React from "react";
 import { MyScreenProps } from "@/types/MyScreenProps";
 import { useState, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from '@/api/axiosInstance';
-import MessageAlert from "@/components/MessageAlert";
 import { Strings } from "@/constants/Strings";
 
 interface UpdateCategoryParams {
@@ -25,7 +27,6 @@ const UpdateCategoryScreen = ({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     const fetchCategoryById = async () => {
@@ -40,7 +41,7 @@ const UpdateCategoryScreen = ({
         }
       } catch (error) {
         console.error('Error fetching category:', error);
-        setMessage({ text: Strings.categories.loadError, type: 'error' });
+        Alert.alert("Lỗi", Strings.categories.loadError, [{ text: "OK" }]);
       } finally {
         setLoading(false);
       }
@@ -51,7 +52,7 @@ const UpdateCategoryScreen = ({
 
   const handleSave = async () => {
     if (!name.trim()) {
-      setMessage({ text: Strings.categories.nameRequired, type: 'error' });
+      Alert.alert("Lỗi", Strings.categories.nameRequired, [{ text: "OK" }]);
       return;
     }
 
@@ -69,14 +70,31 @@ const UpdateCategoryScreen = ({
         navigation.navigate('Category', { message: Strings.categories.updateSuccess });
       }
     } catch (error) {
-      console.error('Error updating category:', error);
-      setMessage({ text: Strings.categories.updateError, type: 'error' });
+      Alert.alert("Lỗi", `Error updating category: ${error}`, [{ text: "OK" }]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleReset = async () => {
+    Alert.alert(
+      'Xác nhận khôi phục',
+      'Bạn có chắc chắn muốn khôi phục về trạng thái ban đầu?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        { 
+          text: 'Khôi phục', 
+          style: 'destructive',
+          onPress: () => {
+            resetButton();
+          }
+        }
+      ]
+    );
+  };
+
+  const resetButton = async () => {
+    setLoading(true);
     try {
       const response = await axiosInstance.get(
         `${process.env.EXPO_PUBLIC_API_GET_CATEGORY_BY_ID}`.replace(":id", String(categoryId))
@@ -87,17 +105,11 @@ const UpdateCategoryScreen = ({
         setDescription(category.description);
       }
     } catch (error) {
-      console.error('Error resetting category:', error);
-      setMessage({ text: Strings.categories.resetError, type: 'error' });
+      Alert.alert("Lỗi", Strings.categories.resetError, [{ text: "OK" }]);
     }
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>{Strings.categories.loading}</Text>
-      </View>
-    );
+    finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -105,20 +117,18 @@ const UpdateCategoryScreen = ({
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton} 
+          disabled={loading}
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="arrow-back" size={24} color="#4a6ee0" />
+          <Ionicons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.title}>{Strings.categories.update}</Text>
+        <Text style={styles.title}>{Strings.categories.update}
+          {'    '}
+        </Text>
+        {loading && (
+          <ActivityIndicator size="large" color="#4a6ee0" />
+        )}
       </View>
-
-      {message && (
-        <MessageAlert
-          message={message.text}
-          type={message.type}
-          onHide={() => setMessage(null)}
-        />
-      )}
 
       <View style={styles.formContainer}>
         <Text style={styles.label}>{Strings.categories.idLabel}</Text>
@@ -143,12 +153,16 @@ const UpdateCategoryScreen = ({
           placeholder={Strings.categories.descriptionLabel}
         />
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button} onPress={handleSave}>
+          <TouchableOpacity style={styles.button} 
+            onPress={handleSave} 
+            disabled={loading}
+          >
             <Text style={styles.buttonText}>{Strings.categories.saveButton}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.button, styles.resetButton]}
             onPress={handleReset}
+            disabled={loading}
           >
             <Text style={styles.buttonText}>{Strings.categories.resetButton}</Text>
           </TouchableOpacity>
@@ -162,16 +176,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: "#fff",
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#666',
   },
   header: {
     flexDirection: "row",

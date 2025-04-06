@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Portal } from 'react-native-paper';
 
 interface MessageAlertProps {
   message: string;
@@ -35,25 +36,27 @@ const MessageAlert: React.FC<MessageAlertProps> = ({ message, type, onHide }) =>
   }, []);
 
   return (
-    <Animated.View 
-      style={[
-        styles.container,
-        type === 'success' ? styles.successContainer : styles.errorContainer,
-        { opacity: fadeAnim }
-      ]}
-    >
-      <View style={styles.content}>
-        <Ionicons 
-          name={type === 'success' ? 'checkmark-circle' : 'alert-circle'} 
-          size={24} 
-          color="white" 
-        />
-        <Text style={[styles.message, { pointerEvents: 'auto' }]}>{message}</Text>
-      </View>
-      <TouchableOpacity onPress={onHide} style={styles.closeButton}>
-        <Ionicons name="close" size={20} color="white" />
-      </TouchableOpacity>
-    </Animated.View>
+    <Portal> {/* 🟢 Đảm bảo nó luôn hiển thị trên cùng */}
+      <Animated.View 
+        style={[
+          styles.container,
+          type === 'success' ? styles.successContainer : styles.errorContainer,
+          { opacity: fadeAnim }
+        ]}
+      >
+        <View style={styles.content}>
+          <Ionicons 
+            name={type === 'success' ? 'checkmark-circle' : 'alert-circle'} 
+            size={24} 
+            color="white" 
+          />
+          <Text style={[styles.message]}>{message}</Text>
+        </View>
+        <TouchableOpacity onPress={onHide} style={styles.closeButton}>
+          <Ionicons name="close" size={20} color="white" />
+        </TouchableOpacity>
+      </Animated.View>
+    </Portal>
   );
 };
 
@@ -68,11 +71,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    elevation: 10,
+    zIndex: 1000, 
   },
   successContainer: {
     backgroundColor: '#4CAF50',

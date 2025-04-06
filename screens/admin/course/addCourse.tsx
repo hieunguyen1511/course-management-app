@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Switch, Image, Alert, Platform } from 'react-native'
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Switch, Image, Alert, Platform, ActivityIndicator } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
@@ -6,56 +6,46 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import axiosInstance from '@/api/axiosInstance';
 import { Category } from '@/types/category';
-import { Course } from '@/types/course';
 import * as FileSystem from 'expo-file-system';
-import { Asset } from 'expo-asset';
+import { Strings } from '@/constants/Strings';
+import { MyScreenProps } from '@/types/MyScreenProps';
 
-const AddCourse = () => {
+const AddCourseScreen = ({
+  navigation,
+}: MyScreenProps["AddCourseScreenProps"]) => {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState(0);
   const [description, setDescription] = useState('');
-  const [status, setStatus] = useState(0);
+  const status = 1;
+  const total_rating = 0;
   const [price, setPrice] = useState(0);
   const [discount, setDiscount] = useState(0);
   const [image, setImage] = useState<string | null>(null);
   const [hasDiscount, setHasDiscount] = useState(false);
+  const [isFree, setIsFree] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const handleDiscountChange = (text: string) => {
-    if (text === '')
-    {
-      setDiscount(0);
-      return;
-    }
-    // Chỉ cho phép nhập số
-    const numericValue = text.replace(/[^0-9]/g, '');
-
-    if (numericValue[0] == '0') {
-      
-      setDiscount(parseInt(numericValue[1]));
-      return;
-    }
-    
-    // Chuyển đổi sang số và kiểm tra giá trị
-    const value = parseInt(numericValue);
-    if (value >= 0 && value <= 100) {
-      setDiscount(value);
-    } else if (value > 100) {
-      setDiscount(100);
-    }
-  };
 
   const fetchCategories = async () => {
     try {
       const response = await axiosInstance.get(`${process.env.EXPO_PUBLIC_API_GET_ALL_CATEGORIES}`);
       if (response.status === 200) {
         setCategories(response.data.categories);
+        if (response.data.categories && response.data.categories.length > 0) {
+          setCategoryId(response.data.categories[0].id);
+        }
       } else {
         console.log(`Failed to fetch. Status: ${response.status}`);
+        Alert.alert("Lỗi", `Failed to fetch. Status: ${response.status}`, [{ text: "OK" }]);
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
+      Alert.alert("Lỗi", `Error fetching categories: ${error}`, [{ text: "OK" }]);
+    }
+    finally {
+      setLoading(false);
     }
   };
 
@@ -63,176 +53,230 @@ const AddCourse = () => {
     fetchCategories();
   }, []); // Chỉ gọi một lần khi component mount
 
+  
+  // ********Show danh sách ảnh local
+  // const listStoredImages = async () => {
+  //   try {
+  //     const courseDir = `${FileSystem.documentDirectory}courses/`;
+  //     const files = await FileSystem.readDirectoryAsync(courseDir);
+  //     console.log("Stored images:", files);
+  //     return files; // Trả về danh sách file
+  //   } catch (error) {
+  //     console.error("Error listing stored images:", error);
+  //     return [];
+  //   }
+  // };
+  
+  // ********Xóa tất cả ảnh local
+  // const deleteAllImages = async () => {
+  //   try {
+  //     const courseDir = `${FileSystem.documentDirectory}courses/`;
+  //     const files = await FileSystem.readDirectoryAsync(courseDir);
+      
+  //     for (const file of files) {
+  //       await FileSystem.deleteAsync(courseDir + file);
+  //       console.log(`Deleted: ${file}`);
+  //     }
+      
+  //     console.log("All images deleted successfully!");
+  //   } catch (error) {
+  //     console.error("Error deleting all images:", error);
+  //   }
+  // };
+  // deleteAllImages();
+  // listStoredImages();
+
+  // ********Save image local
+  // const saveImage = async (imageUri: string): Promise<string | null> => {
+  //   try {
+  //     await FileSystem.makeDirectoryAsync(COURSE_FOLDER, { intermediates: true });
+
+  //     // Lưu ảnh với tên tạm
+  //     const tempFileName = `course_${Date.now()}.jpg`;
+  //     const newPath = COURSE_FOLDER + tempFileName;
+
+  //     await FileSystem.moveAsync({
+  //       from: imageUri,
+  //       to: newPath,
+  //     });
+
+  //     console.log("Saved image to:", newPath);
+  //     return newPath;
+  //   } catch (error) {
+  //     console.error("Error saving image:", error);
+  //     return null;
+  //   }
+  // };
+
+  const uploadToCloudinary = async (imageUri: string) => {
+    try {
+      const upload_preset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_COURSE_PRESET;
+      const cloud_name = process.env.EXPO_PUBLIC_CLOUDINARY_COURSE_CLOUD_NAME;
+      const upload_url = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_COURSE_API_URL;
+      
+      if (!upload_preset || !cloud_name || !upload_url) {
+        throw new Error('Cloudinary configuration is missing');
+      }
+      
+      const formData = new FormData();
+      
+      const uriParts = imageUri.split('.');
+      const fileType = uriParts[uriParts.length - 1];
+      
+      formData.append('file', {
+        uri: imageUri,
+        type: `image/${fileType}`,
+        name: `photo.${fileType}`
+      } as any);
+      
+      formData.append('upload_preset', upload_preset);
+      formData.append('cloud_name', cloud_name);
+  
+      const response = await fetch(
+        `${upload_url}`,
+        {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+  
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+  
+      const result = await response.json();
+      return result.secure_url;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      Alert.alert("Lỗi", `Error uploading image: ${error}`, [{ text: "OK" }]);
+      return null;
+    }
+  };
+
+  const uploadImage = async (uri: string) => {
+    const imageUrl = await uploadToCloudinary(uri);
+    if (!imageUrl) {
+      Alert.alert("Lỗi", Strings.courses.uploadError, [{ text: "OK" }]);
+      return;
+    }
+    return imageUrl;
+  };
+
   const pickImage = async (useCamera = false) => {
     try {
-      console.log('Starting image picker...');
-      
-      // Request permission
-      console.log('Requesting permissions...');
       const { status } = useCamera 
         ? await ImagePicker.requestCameraPermissionsAsync()
         : await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
-      console.log('Permission status:', status);
-      
+
       if (status !== 'granted') {
-        console.log('Permission not granted');
-        Alert.alert(
-          'Cần quyền truy cập',
-          useCamera 
-            ? 'Vui lòng cấp quyền truy cập camera để có thể chụp ảnh khóa học.'
-            : 'Vui lòng cấp quyền truy cập thư viện ảnh để có thể chọn ảnh khóa học.',
-          [{ text: 'OK' }]
-        );
+        Alert.alert("Cần quyền truy cập", "Vui lòng cấp quyền truy cập để tiếp tục.", [{ text: "OK" }]);
         return;
       }
 
-      console.log('Launching image picker...');
       const result = useCamera
-        ? await ImagePicker.launchCameraAsync({
-            allowsEditing: true,
-            aspect: [16, 9],
-            quality: 1,
-          })
-        : await ImagePicker.launchImageLibraryAsync({
-            allowsEditing: true,
-            aspect: [16, 9],
-            quality: 1,
-          });
-
-      console.log('Image picker result:', result);
+        ? await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [16, 9], quality: 1 })
+        : await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, aspect: [16, 9], quality: 1 });
 
       if (!result.canceled) {
-        console.log('Image selected:', result.assets[0].uri);
         setImage(result.assets[0].uri);
-      } else {
-        console.log('Image picker cancelled');
       }
     } catch (error) {
-      console.error('Error in pickImage:', error);
-      Alert.alert(
-        'Lỗi',
-        'Có lỗi xảy ra khi chọn ảnh. Vui lòng thử lại.',
-        [{ text: 'OK' }]
-      );
+      console.error("Error in pickImage:", error);
+      Alert.alert("Lỗi", Strings.courses.pickImageError, [{ text: "OK" }]);
     }
   };
 
   const handleCreateCourse = async () => {
     try {
-      // Kiểm tra các trường bắt buộc
       if (!name.trim()) {
-        Alert.alert('Lỗi', 'Vui lòng nhập tên khóa học');
-        console.log('Vui lòng nhập tên khóa học');
+        Alert.alert("Lỗi", Strings.courses.nameRequired, [{ text: "OK" }]);
         return;
       }
 
-      let imagePath = image;
-      if (image) {
-        try {
-          // Tạo tên file duy nhất với timestamp
-          const fileName = `course_${Date.now()}.jpg`;
-          const destination = `${FileSystem.documentDirectory}assets/images/courses/${fileName}`;
-          
-          console.log('Source image path:', image);
-          console.log('Destination path:', destination);
-          
-          // Kiểm tra và tạo thư mục nếu chưa tồn tại
-          const dirInfo = await FileSystem.getInfoAsync(`${FileSystem.documentDirectory}assets/images/courses`);
-          if (!dirInfo.exists) {
-            console.log('Creating directory...');
-            await FileSystem.makeDirectoryAsync(`${FileSystem.documentDirectory}assets/images/courses`, { intermediates: true });
-          }
-          
-          // Copy ảnh vào thư mục assets
-          console.log('Copying image...');
-          await FileSystem.copyAsync({
-            from: image,
-            to: destination
-          });
-          
-          console.log('Image copied successfully');
-          // Lưu đường dẫn tương đối để hiển thị
-          imagePath = `assets/images/courses/${fileName}`;
-        } catch (error) {
-          console.error('Error handling image:', error);
-          Alert.alert(
-            'Lỗi',
-            'Có lỗi xảy ra khi xử lý ảnh. Vui lòng thử lại.',
-            [{ text: 'OK' }]
-          );
-          return;
-        }
+      if (!categoryId) {
+        Alert.alert("Lỗi", Strings.courses.categoryRequired, [{ text: "OK" }]);
+        return;
       }
 
-      // Chuẩn bị dữ liệu
-      const courseData = {
+      setLoading(true);
+      // 1️⃣ Gửi request tạo khóa học (chưa có ảnh)
+      const response = await axiosInstance.post(`${process.env.EXPO_PUBLIC_API_CREATE_COURSE}`, {
         category_id: categoryId,
         name: name.trim(),
         description: description.trim(),
         status: status,
-        price: price,
-        discount: discount,
-        image: imagePath
-      };
+        total_rating: total_rating,
+        image: '',
+        price: isFree ? 0 : price,
+        discount: hasDiscount ? discount : 0,
+      });
 
-      console.log('Sending course data:', courseData);
 
-      // Gọi API tạo khóa học
-      const response = await axiosInstance.post(
-        `${process.env.EXPO_PUBLIC_API_CREATE_COURSE}`,
-        courseData
-      );
+      if (response.status === 201) {
 
-      if (response.status === 200) {
-        Alert.alert(
-          'Thành công',
-          'Khóa học đã được tạo thành công',
-          [
+        if (image) {
+          const savedPath = await uploadImage(image);
+          if (savedPath) {
+            const responseUp = await axiosInstance.put(`${process.env.EXPO_PUBLIC_API_UPDATE_COURSE}`.replace(":id", String(response.data.course.id)),
             {
-              text: 'OK',
-              onPress: () => router.back()
+              category_id: categoryId,
+              name: name.trim(),
+              description: description.trim(),
+              status: status,
+              total_rating: total_rating,
+              image: savedPath,
+              price: isFree ? 0 : price,
+              discount: hasDiscount ? discount : 0,
+            });
+            if (responseUp.status === 200) {
+              console.log("Thành công lưu ảnh")
             }
-          ]
-        );
+            else {
+              console.error("Thất bại lưu ảnh");
+            }
+          }
+        }
+        Alert.alert("Thành công", `${Strings.courses.addSuccess} ${response.data.course.id}`, [{ text: "OK", onPress: () => router.back() }]);
       }
-    } catch (error) {
-      console.error('Error creating course:', error);
-      Alert.alert(
-        'Lỗi',
-        'Có lỗi xảy ra khi tạo khóa học. Vui lòng thử lại.',
-        [{ text: 'OK' }]
-      );
+    } catch (error: any) {
+      console.error("Error creating course:", error);
+      Alert.alert("Lỗi", error.response?.data?.message || "Có lỗi xảy ra.", [{ text: "OK" }]);
+    }
+    finally {
+      setLoading(false);
     }
   };
-
-  const setIsFree = (isFree: boolean) => {
-    if (isFree) {
-      setPrice(0);
-      setDiscount(0);
-    }
-    else {
-      setPrice(1000);
-    }
-  }
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton} 
+          disabled={loading}
           onPress={() => router.back()}
         >
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Thêm Khóa Học Mới</Text>
+        <Text style={styles.headerTitle}>{Strings.courses.addNew}
+          {'    '}
+        </Text>
+        {loading && (
+          <ActivityIndicator size="large" color="#4a6ee0" />
+        )}
       </View>
 
       <View style={styles.formContainer}>
-        {/* Course Image */}
+
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Ảnh Khóa Học</Text>
-          <TouchableOpacity style={styles.imagePreview} onPress={() => pickImage(false)}>
+          <TouchableOpacity 
+            style={styles.imagePreview} 
+            onPress={() => pickImage(false)}
+            disabled={loading}
+          >
             {image ? (
               <Image source={{ uri: image }} style={styles.courseImage} />
             ) : (
@@ -244,7 +288,7 @@ const AddCourse = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Course Name */}
+
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Tên Khóa Học</Text>
           <TextInput
@@ -255,7 +299,7 @@ const AddCourse = () => {
           />
         </View>
 
-        {/* Category */}
+
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Danh Mục</Text>
           <View style={styles.pickerContainer}>
@@ -263,6 +307,7 @@ const AddCourse = () => {
               selectedValue={categoryId}
               onValueChange={(itemValue: number) => setCategoryId(itemValue)}
               style={styles.picker}
+              enabled={!loading}
             >
               {categories.map((cat) => (
                 <Picker.Item key={cat.id} label={cat.name} value={cat.id} />
@@ -271,7 +316,7 @@ const AddCourse = () => {
           </View>
         </View>
 
-        {/* Description */}
+
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Mô Tả</Text>
           <TextInput
@@ -284,47 +329,49 @@ const AddCourse = () => {
           />
         </View>
 
-        {/* Price Section */}
+
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Giá Khóa Học</Text>
           <View style={styles.priceContainer}>
             <View style={styles.radioGroup}>
               <TouchableOpacity 
                 style={styles.radioButton}
+                disabled={loading}
                 onPress={() => setIsFree(true)}
               >
                 <View style={styles.radioCircle}>
-                  {price === 0 && <View style={styles.selectedRb} />}
+                  {isFree && <View style={styles.selectedRb} />}
                 </View>
                 <Text style={styles.radioLabel}>Miễn phí</Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
                 style={styles.radioButton}
+                disabled={loading}
                 onPress={() => setIsFree(false)}
               >
                 <View style={styles.radioCircle}>
-                  {price !== 0 && <View style={styles.selectedRb} />}
+                  {!isFree && <View style={styles.selectedRb} />}
                 </View>
                 <Text style={styles.radioLabel}>Có phí</Text>
               </TouchableOpacity>
             </View>
 
-            {price !== 0 && (
+            {!isFree && (
               <View style={styles.priceInputContainer}>
                 <TextInput
                   style={styles.input}
                   value={price.toString()}
                   onChangeText={(text) => {
-                    const numericValue = text.replace(/[^0-9]/g, '');
+                    const numericValue = text.replace(/[^0-9]/g, ''); 
+                    // Nếu rỗng, set 0
                     if (numericValue === '') {
                       setPrice(0);
-                    } else {
-                      if (numericValue[0] == '0')
-                        setPrice(parseInt(numericValue[1]));
-                      else
-                        setPrice(parseInt(numericValue));
+                      return;
                     }
+                    // Chuyển thành số
+                    let value = parseInt(numericValue, 10);
+                    setPrice(value);
                   }}
                   placeholder="Nhập giá"
                   keyboardType="numeric"
@@ -335,7 +382,7 @@ const AddCourse = () => {
           </View>
         </View>
 
-        {/* Discount Section */}
+
         <View style={styles.inputGroup}>
           <View style={styles.discountHeader}>
             <Text style={styles.label}>Giảm Giá</Text>
@@ -344,6 +391,7 @@ const AddCourse = () => {
               onValueChange={setHasDiscount}
               trackColor={{ false: '#767577', true: '#81b0ff' }}
               thumbColor={discount !== 0 ? '#007AFF' : '#f4f3f4'}
+              disabled={loading}
             />
           </View>
           
@@ -352,7 +400,24 @@ const AddCourse = () => {
               <TextInput
                 style={styles.input}
                 value={discount.toString()}
-                onChangeText={handleDiscountChange}
+                onChangeText={(text) => {
+                  const numericValue = text.replace(/[^0-9]/g, ''); 
+                  // Nếu rỗng, set 0
+                  if (numericValue === '') {
+                    setDiscount(0);
+                    return;
+                  }
+  
+                  // Chuyển thành số
+                  let value = parseInt(numericValue, 10);
+  
+                  // Nếu giá trị ngoài khoảng 0 - 100, điều chỉnh lại
+                  if (value > 100) {
+                    value = 100;
+                  }
+  
+                  setDiscount(value);
+                }}
                 placeholder="Nhập % giảm giá (0-100)"
                 keyboardType="numeric"
                 maxLength={3}
@@ -362,9 +427,10 @@ const AddCourse = () => {
           )}
         </View>
 
-        {/* Submit Button */}
+
         <TouchableOpacity 
           style={styles.submitButton}
+          disabled={loading}
           onPress={handleCreateCourse}
         >
           <Text style={styles.submitButtonText}>Tạo Khóa Học</Text>
@@ -517,4 +583,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AddCourse
+export default AddCourseScreen

@@ -17,13 +17,30 @@ export type RootStackParamList = {
     Category: { message?: string };
     AddCategory: { message?: string };
     UpdateCategory: { categoryId: number, message?: string };
+    
     Course: { message?: string };
     AddCourse: { message?: string };
     ViewCourse: { courseId: number, message?: string };
-    EditCourse: { courseId: number, message?: string };
-    AddSection: { message?: string };
-    EditSection: { section: Section, message?: string };
-    AddLesson: { message?: string };
-    EditLesson: { lesson: Lesson, message?: string };
+    UpdateCourse: { courseId: number, message?: string };
+
+    AddSection: { 
+        courseId: number, 
+        newId: number,
+        onSectionAdded?: (newSection: Section) => void, 
+        message?: string };
+    UpdateSection: { 
+        courseId: number, 
+        sectionData: Section
+        onSectionUpdated?: (updatedSection: Section) => void, 
+        message?: string };
+    AddLesson: { 
+        sectionData: Section,
+        onLessonAdded?: (newLesson: Lesson) => void,
+        message?: string };
+    UpdateLesson: { 
+        sectionData: Section,
+        lessonData: Lesson,
+        onLessonUpdated?: (updatedLesson: Lesson) => void,
+        message?: string };
     AdminLayout: { message?: string };
 }

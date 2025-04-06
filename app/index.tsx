@@ -170,11 +170,6 @@ function IndexLayout() {
           options={{ headerShown: false }}
         />
         <Stack.Screen
-          name="AdminLayout"
-          component={AdminLayout}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
           name="Login"
           component={Login}
           options={{ headerShown: false }}
@@ -203,6 +198,7 @@ function IndexLayout() {
           name="Test2"
           component={Test2}
           options={{ headerShown: false }}
+          
         />
       </Stack.Navigator>
     </NavigationIndependentTree>

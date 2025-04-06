@@ -17,9 +17,10 @@ export type MyScreenProps = {
     CourseScreenProps: NativeStackScreenProps<RootStackParamList, 'Course'>;
     AddCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'AddCourse'>;
     ViewCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'ViewCourse'>;
-    EditCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'EditCourse'>;
+    UpdateCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'UpdateCourse'>;
+    
     AddSectionScreenProps: NativeStackScreenProps<RootStackParamList, 'AddSection'>;
-    EditSectionScreenProps: NativeStackScreenProps<RootStackParamList, 'EditSection'>;
+    UpdateSectionScreenProps: NativeStackScreenProps<RootStackParamList, 'UpdateSection'>;
     AddLessonScreenProps: NativeStackScreenProps<RootStackParamList, 'AddLesson'>;
-    EditLessonScreenProps: NativeStackScreenProps<RootStackParamList, 'EditLesson'>;
+    UpdateLessonScreenProps: NativeStackScreenProps<RootStackParamList, 'UpdateLesson'>;
 }

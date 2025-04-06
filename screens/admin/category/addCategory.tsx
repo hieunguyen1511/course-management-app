@@ -5,12 +5,18 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
+import React from "react";
+
+
+import LoadingSpinner from "@/components/Loading";
+
 import { MyScreenProps } from "@/types/MyScreenProps";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "@/api/axiosInstance";
-import MessageAlert from "@/components/MessageAlert";
 import { Strings } from "@/constants/Strings";
 
 const AddCategoryScreen = ({
@@ -19,11 +25,10 @@ const AddCategoryScreen = ({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   const handleSave = async () => {
     if (!name.trim()) {
-      setMessage({ text: Strings.categories.nameRequired, type: 'error' });
+      Alert.alert("Lỗi", Strings.categories.nameRequired, [{ text: "OK" }]);
       return;
     }
 
@@ -41,8 +46,7 @@ const AddCategoryScreen = ({
         navigation.navigate('Category', { message: `${Strings.categories.addSuccess} ${response.data.category.id}` });
       }
     } catch (error) {
-      console.error('Error creating category:', error);
-      setMessage({ text: Strings.categories.addError, type: 'error' });
+      Alert.alert("Lỗi", `Error creating category: ${error}`, [{ text: "OK" }]);
     } finally {
       setLoading(false);
     }
@@ -52,7 +56,6 @@ const AddCategoryScreen = ({
     setName("");
     setDescription("");
   };
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -61,18 +64,15 @@ const AddCategoryScreen = ({
           style={styles.backButton} 
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="arrow-back" size={24} color={loading ? '#4a6ee0' : ''} />
+          <Ionicons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.title}>{Strings.categories.addNew}</Text>
+        <Text style={styles.title}>{Strings.categories.addNew}
+          {'    '}
+        </Text>
+        {loading && (
+          <ActivityIndicator size="large" color="#4a6ee0" />
+        )}
       </View>
-
-      {message && (
-        <MessageAlert
-          message={message.text}
-          type={message.type}
-          onHide={() => setMessage(null)}
-        />
-      )}
 
       <View style={styles.formContainer}>
         <Text style={styles.label}>{Strings.categories.nameLabel}</Text>
@@ -93,17 +93,16 @@ const AddCategoryScreen = ({
         />
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
-            style={[styles.button, loading && styles.disabledButton]} 
+            style={styles.button} 
             onPress={handleSave}
             disabled={loading}
           >
-            <Text style={styles.buttonText}>
-              {loading ? Strings.categories.processing : Strings.categories.saveButton}
-            </Text>
+          <Text style={styles.buttonText}>{Strings.categories.saveButton}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.button, styles.resetButton]}
             onPress={handleReset}
+            disabled={loading}
           >
             <Text style={styles.buttonText}>{Strings.categories.resetButton}</Text>
           </TouchableOpacity>
@@ -111,6 +110,7 @@ const AddCategoryScreen = ({
       </View>
     </SafeAreaView>
   );
+  
 };
 
 const styles = StyleSheet.create({
@@ -184,9 +184,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
-  },
-  disabledButton: {
-    backgroundColor: '#a8a8a8',
   },
 });
 
