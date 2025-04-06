@@ -41,7 +41,7 @@ export type RootStackParamList = {
   UserViewLessonScreen: { enrollmentId: number; lessonId: number; message?: string };
   ChangePasswordScreen: { message?: string };
   EditProfileScreen: { message?: string };
-
+  PaymentCheckoutScreen: { courseId: number; message?: string };
   //AccountScreen: { message?: string };
 };
 

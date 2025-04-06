@@ -6,9 +6,13 @@
   <component name="ChangeListManager">
     <list default="true" id="1c0e45a2-39aa-44e4-80ca-afdfcbce0cdb" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/user/UserDetailCourseScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/screens/user/UserDetailCourseScreen.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screens/user/UserViewLessonScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/screens/user/UserViewLessonScreen.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/types/apiModels.ts" beforeDir="false" afterPath="$PROJECT_DIR$/types/apiModels.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.json" beforeDir="false" afterPath="$PROJECT_DIR$/app.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/index.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/screens/user/DetailCourseScreen.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/screens/user/DetailCourseScreen.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/types/MyScreenProps.ts" beforeDir="false" afterPath="$PROJECT_DIR$/types/MyScreenProps.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/types/RootStackParamList.ts" beforeDir="false" afterPath="$PROJECT_DIR$/types/RootStackParamList.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -34,7 +38,7 @@
     &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;linh-branch&quot;,
     &quot;last_opened_file_path&quot;: &quot;/Users/thai/LINH/repo/course-management-app&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,

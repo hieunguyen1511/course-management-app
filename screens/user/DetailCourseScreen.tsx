@@ -16,6 +16,7 @@ import CourseHeader from '@/components/user/CourseHeader';
 import CourseContent from '@/components/user/CourseContent';
 import CourseReviews from '@/components/user/CourseReviews';
 import CourseActionButton from '@/components/user/CourseActionButton';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface Course {
   id: number;
@@ -177,7 +178,7 @@ const DetailCourseScreen: React.FC<MyScreenProps['DetailCourseScreenProps']> = (
   navigation,
   route,
 }) => {
-  const { courseId } = route.params || 1;
+  const { courseId, message } = route.params || 1;
   const [course, setCourse] = useState<Course | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
@@ -211,11 +212,13 @@ const DetailCourseScreen: React.FC<MyScreenProps['DetailCourseScreenProps']> = (
     } finally {
       setLoading(false);
     }
-  }, [courseId]);
+  }, [courseId, message]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [fetchData])
+  );
 
   const checkUserInfo = async (): Promise<boolean> => {
     try {
@@ -265,12 +268,11 @@ const DetailCourseScreen: React.FC<MyScreenProps['DetailCourseScreenProps']> = (
           console.error('Error enrolling in course:', response.data);
           return;
         }
-        //console.log("Enrollment response:", response.data);
-
-        // console.log("Total lesson:", totalLesson);
-        // console.log("Price:", price);
       } else {
-        console.log('Chua xu ly thanh toan cho khoa hoc khong mien phi');
+        navigation.navigate('PaymentCheckoutScreen', {
+          courseId: courseId,
+          message: 'Đăng ký khóa học',
+        });
       }
     } catch (error) {
       console.error('Error enrolling in course:', error);

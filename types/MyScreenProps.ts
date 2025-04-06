@@ -29,4 +29,5 @@ export type MyScreenProps = {
     'UserViewAllEnrollmentScreen'
   >;
   UserRatingScreenProps: NativeStackScreenProps<RootStackParamList, 'UserRatingScreen'>;
+  PaymentCheckoutScreenProps: NativeStackScreenProps<RootStackParamList, 'PaymentCheckoutScreen'>;
 };

@@ -167,32 +167,39 @@ import UserViewLessonScreen from '@/screens/user/UserViewLessonScreen';
 import DetailCourseScreen from '@/screens/user/DetailCourseScreen';
 import SearchCourseScreen from '@/screens/user/SearchCourseScreen';
 import Test4 from '@/screens/test4';
-
+import { StripeProvider } from '@stripe/stripe-react-native';
+import PaymentCheckoutScreen from '@/screens/user/PaymentCheckoutScreen';
 function IndexLayout() {
   return (
-    <NavigationIndependentTree>
-      <Stack.Navigator initialRouteName="Index" screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Index" component={IndexScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
-        <Stack.Screen name="Register" component={Register} options={{ headerShown: false }} />
-        {/* Tab Layout */}
-        <Stack.Screen name="UserTabLayout">{() => <UserTabLayout />}</Stack.Screen>
-        <Stack.Screen name="AdminLayout" component={AdminLayout} />
+    <StripeProvider publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLIC_KEY || ''}>
+      <NavigationIndependentTree>
+        <Stack.Navigator initialRouteName="Index" screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Index" component={IndexScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
+          <Stack.Screen name="Register" component={Register} options={{ headerShown: false }} />
+          {/* Tab Layout */}
+          <Stack.Screen name="UserTabLayout">{() => <UserTabLayout />}</Stack.Screen>
+          <Stack.Screen name="AdminLayout" component={AdminLayout} />
 
-        {/* User Screen */}
-        <Stack.Screen name="ChangePasswordScreen" component={ChangePasswordScreen} />
-        <Stack.Screen name="EditProfileScreen" component={EditProfileScreen} />
-        <Stack.Screen name="UserViewAllEnrollmentScreen" component={UserViewAllEnrollmentScreen} />
-        <Stack.Screen name="UserRatingScreen" component={UserRatingScreen} />
-        <Stack.Screen name="UserViewAllCourseScreen" component={UserViewAllCourseScreen} />
-        <Stack.Screen name="UserDetailCourseScreen" component={UserDetailCourseScreen} />
-        <Stack.Screen name="UserViewLessonScreen" component={UserViewLessonScreen} />
-        <Stack.Screen name="DetailCourseScreen" component={DetailCourseScreen} />
-        <Stack.Screen name="SearchCourseScreen" component={SearchCourseScreen} />
-        {/* Test Screen */}
-        <Stack.Screen name="Test4" component={Test4} />
-      </Stack.Navigator>
-    </NavigationIndependentTree>
+          {/* User Screen */}
+          <Stack.Screen name="ChangePasswordScreen" component={ChangePasswordScreen} />
+          <Stack.Screen name="EditProfileScreen" component={EditProfileScreen} />
+          <Stack.Screen
+            name="UserViewAllEnrollmentScreen"
+            component={UserViewAllEnrollmentScreen}
+          />
+          <Stack.Screen name="UserRatingScreen" component={UserRatingScreen} />
+          <Stack.Screen name="UserViewAllCourseScreen" component={UserViewAllCourseScreen} />
+          <Stack.Screen name="UserDetailCourseScreen" component={UserDetailCourseScreen} />
+          <Stack.Screen name="UserViewLessonScreen" component={UserViewLessonScreen} />
+          <Stack.Screen name="DetailCourseScreen" component={DetailCourseScreen} />
+          <Stack.Screen name="SearchCourseScreen" component={SearchCourseScreen} />
+          {/* Test Screen */}
+          <Stack.Screen name="Test4" component={Test4} />
+          <Stack.Screen name="PaymentCheckoutScreen" component={PaymentCheckoutScreen} />
+        </Stack.Navigator>
+      </NavigationIndependentTree>
+    </StripeProvider>
   );
 }
 const index = () => {
