@@ -42,6 +42,7 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
 
   const fetchInProgressEnrollments = async () => {
     try {
+      console.log('Fetching in-progress enrollments...');
       const respone = await axiosInstance.get(
         `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_IN_PROGRESS}`
       );
@@ -54,6 +55,7 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
 
   const fetchCompletedCourses = async () => {
     try {
+      console.log('Fetching completed courses...');
       const respone = await axiosInstance.get(
         `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_COMPLETED}`
       );
@@ -185,7 +187,12 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
   const renderCompletedCourse = ({ item }: { item: any }) => (
     <TouchableOpacity
       style={styles.courseCard}
-      onPress={() => navigation.navigate('UserRatingScreen', { message: '' })}
+      onPress={() =>
+        navigation.navigate('UserDetailCourseScreen', {
+          enrollmentId: item.id,
+          courseId: item.course_id,
+        })
+      }
     >
       <Image source={{ uri: item.image }} style={styles.courseImage} />
 
@@ -203,7 +210,10 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
         </View>
       </View>
 
-      <TouchableOpacity style={styles.reviewButton}>
+      <TouchableOpacity
+        style={styles.reviewButton}
+        onPress={() => navigation.navigate('UserRatingScreen', { message: '' })}
+      >
         <Ionicons name={item.hasReviewed ? 'star' : 'star-outline'} size={16} color="#4a6ee0" />
         <Text style={styles.reviewText}>{item.hasReviewed ? 'Xem đánh giá' : 'Đánh giá'}</Text>
       </TouchableOpacity>
@@ -244,8 +254,8 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {activeTab === 'progress' ? (
           <>
-            {inProgressEnrollments?.length > 0 ? (
-              inProgressEnrollments?.map(enrollment => (
+            {inProgressEnrollments.length > 0 ? (
+              inProgressEnrollments.map(enrollment => (
                 <View key={enrollment.id.toString()}>
                   {renderInProgressCourse({ item: enrollment })}
                 </View>
@@ -262,8 +272,8 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
           </>
         ) : (
           <>
-            {completedEnrollments?.length > 0 ? (
-              completedEnrollments?.map(enrollment => (
+            {completedEnrollments.length > 0 ? (
+              completedEnrollments.map(enrollment => (
                 <View key={enrollment.id.toString()}>
                   {renderCompletedCourse({ item: enrollment })}
                 </View>

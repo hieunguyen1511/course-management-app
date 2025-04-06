@@ -15,6 +15,7 @@ const UserViewLesson: React.FC<MyScreenProps['UserViewLessonScreenProps']> = ({
   const [loading, setLoading] = useState(true);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const [disableCompleteButton, setDisableCompleteButton] = useState(true);
 
   const fetchLesson = async () => {
     setLoading(true);
@@ -52,6 +53,7 @@ const UserViewLesson: React.FC<MyScreenProps['UserViewLessonScreenProps']> = ({
   const handleShowResults = () => {
     if (selectedAnswers.length === lesson?.questions?.length) {
       setShowResults(true);
+      setDisableCompleteButton(false);
     }
   };
 
@@ -132,21 +134,18 @@ const UserViewLesson: React.FC<MyScreenProps['UserViewLessonScreenProps']> = ({
 
       {/* Content */}
       <ScrollView style={styles.content}>
-        {/* Video Player Section - Only shown for video type lessons */}
-        {!lesson.is_quizz && lesson.video_url && (
-          <View style={styles.videoContainer}>
-            <WebView
-              source={{ uri: getYouTubeEmbedUrl(lesson.video_url) }}
-              style={styles.video}
-              javaScriptEnabled={true}
-              domStorageEnabled={true}
-              allowsFullscreenVideo={true}
-              mediaPlaybackRequiresUserAction={false}
-              allowsInlineMediaPlayback={true}
-              scalesPageToFit={true}
-            />
-          </View>
-        )}
+        <View style={styles.videoContainer}>
+          <WebView
+            source={{ uri: getYouTubeEmbedUrl(lesson.video_url) }}
+            style={styles.video}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+            allowsFullscreenVideo={true}
+            mediaPlaybackRequiresUserAction={false}
+            allowsInlineMediaPlayback={true}
+            scalesPageToFit={true}
+          />
+        </View>
 
         {/* Lesson Content */}
         <Text style={styles.contentText}>{lesson.content}</Text>
@@ -173,19 +172,23 @@ const UserViewLesson: React.FC<MyScreenProps['UserViewLessonScreenProps']> = ({
 
       {/* Navigation Footer */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.navButton} onPress={() => navigation.goBack()}>
+        {/* <TouchableOpacity style={styles.navButton} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color="#666" />
           <Text style={styles.navButtonText}>Bài trước</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
-        <TouchableOpacity style={styles.completeButton} onPress={handleCompleteLesson}>
+        <TouchableOpacity
+          disabled={lesson.is_quizz ? disableCompleteButton : false}
+          style={styles.completeButton}
+          onPress={handleCompleteLesson}
+        >
           <Text style={styles.completeButtonText}>Hoàn thành</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.navButton} onPress={() => navigation.goBack()}>
+        {/* <TouchableOpacity style={styles.navButton} onPress={() => navigation.goBack()}>
           <Text style={styles.navButtonText}>Bài tiếp</Text>
           <Ionicons name="chevron-forward" size={24} color="#666" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     </View>
   );
@@ -302,7 +305,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   footer: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: 'white',
@@ -325,11 +327,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
+    width: '80%',
   },
   completeButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   loadingContainer: {
     flex: 1,

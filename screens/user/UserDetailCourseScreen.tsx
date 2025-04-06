@@ -380,7 +380,7 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
         </View>
 
         {/* Progress Bar */}
-        <View style={styles.progressContainer}>
+        {/* <View style={styles.progressContainer}>
           <View style={styles.progressBarContainer}>
             <View
               style={[
@@ -428,7 +428,7 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
               bài học
             </Text>
           </View>
-        </View>
+        </View> */}
 
         {/* Tabs */}
         <View style={styles.tabContainer}>
@@ -715,7 +715,9 @@ const styles = StyleSheet.create({
   },
   replyContainer: {
     marginLeft: 40,
-    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    backgroundColor: 'rgb(223, 249, 255)',
+    marginTop: 8,
   },
   commentHeader: {
     marginBottom: 8,
