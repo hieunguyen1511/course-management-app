@@ -13,7 +13,7 @@ export const Strings = {
     loginSuccess: 'Đăng nhập thành công',
     loginFailed: 'Đăng nhập thất bại',
     signInByGoogle: 'Đăng nhập bằng Google',
-    rememberMe: 'Lưu tài khoản',
+    rememberMe: 'Duy trì đăng nhập',
     placeHolderUsername: 'Nhập tên đăng nhập',
     placeHolderPassword: 'Nhập mật khẩu',
   },
