@@ -1,64 +1,48 @@
 import {
   View,
   Text,
-  ScrollView,
   Image,
   StyleSheet,
   TouchableOpacity,
   Platform,
-} from "react-native";
-import React, { useState, useEffect } from "react";
-import {
-  NavigationContainer,
-  NavigationIndependentTree,
-} from "@react-navigation/native";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { Ionicons } from "@expo/vector-icons";
+  ActivityIndicator,
+  SafeAreaView,
+  FlatList,
+  RefreshControl,
+  ListRenderItem,
+  Dimensions,
+} from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
 
-import Test1 from "../../screens/test1";
-
-import { useRouter, useLocalSearchParams, Redirect } from "expo-router";
-import * as SecureStore from "expo-secure-store";
-import axiosInstance from "@/api/axiosInstance";
-import { Strings } from "@/constants/Strings";
-import { useNavigation } from "expo-router";
-import { RootStackParamList } from "../../types/RootStackParamList";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
-
-import UserViewAllCourse from "@/screens/user/viewallcourse";
-import DetailCourse from "@/screens/user/detailCourse";
-const Stack = createNativeStackNavigator<RootStackParamList>();
+import { useLocalSearchParams } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
+import axiosInstance from '@/api/axiosInstance';
+import { Strings } from '@/constants/Strings';
+import { RootStackParamList } from '../../types/RootStackParamList';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 // Types for our courses data
 interface Course {
   id: number;
-  category_id: number;
   name: string;
   description: string;
   status: number;
   price: number;
   discount: number;
-  image: string;
+  category_id: number;
   total_rating: number;
+  enrollment_count: number;
+  image: string;
   category: {
     id: number;
     name: string;
   };
 }
 
-interface User {
-  id: number;
-  username: string;
-  fullName: string;
-  email: string;
-  role: string;
-  avatar: string;
-}
 interface UserEnrollments {
   id: number;
   user_id: number;
   course_id: number;
-  //nextLesson: string;
   total_lesson: number;
   complete_lesson: number;
   progress: number;
@@ -66,6 +50,7 @@ interface UserEnrollments {
   createdAt: string;
   updatedAt: string;
   course: {
+    id: number;
     name: string;
     description: string;
     status: number;
@@ -74,665 +59,393 @@ interface UserEnrollments {
   };
 }
 
-interface CourseInProgress extends Course {
-  progress: number; // percentage completed
-  nextLesson: string;
-  lastAccessed: string;
+interface User {
+  id: number;
+  username: string;
+  fullname: string;
+  email: string;
+  role: string;
+  avatar: string;
 }
 
-async function getUserInformation() {
+// Components
+import Section from '@/components/user/Section';
+import Header from '@/components/user/Header';
+import CourseCard from '@/components/user/CourseCard';
+import InProgressCourseCard from '@/components/user/InProgressCourseCard';
+
+// Helper functions
+const getUserInformation = async (): Promise<User | null> => {
   try {
-    const user = await SecureStore.getItemAsync("user");
-    if (user) {
-      console.log("User", user);
-      return user;
-    } else {
-      console.log("No user");
-      return JSON.stringify({});
-    }
-  } catch (e) {
-    console.log("Error getting user", e);
-    return JSON.stringify({});
+    const user = await SecureStore.getItemAsync('user');
+    return user ? JSON.parse(user) : null;
+  } catch (error) {
+    console.error('Error getting user:', error);
+    return null;
   }
-}
+};
 
-// async function getUserEnrollments() {
-//   try {
-//     const user = await getUserInformation();
-//     const jsonUser = JSON.parse(user);
-//     axiosInstance
-//       .get(
-//         `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_USER_ID}`.replace(
-//           ":user_id",
-//           jsonUser.id
-//         )
-//       )
-//       .then((res) => {
-//         console.log("User enrollments", res.data);
-//         return res.data;
-//       });
-//   } catch (e) {
-//     console.log("Error getting user enrollments", e);
-//     return JSON.stringify({});
-//   }
-// }
+const getCoursesByReferenceCategory = async (categoryId: number | string): Promise<Course[]> => {
+  try {
+    const url = `${process.env.EXPO_PUBLIC_API_GET_COURSES_BY_REFERENCES_CATEOGORY_ID}`.replace(
+      ':category_id',
+      categoryId.toString()
+    );
 
-type HomeScreenProps = NativeStackScreenProps<RootStackParamList, "Home">;
+    const response = await axiosInstance.get(url);
 
-const HomeScreen: React.FC<HomeScreenProps> = ({ navigation, route }) => {
+    if (response.status === 200 && response.data?.course) {
+      return response.data.course
+        .slice(0, 10)
+        .sort((a: Course, b: Course) => b.total_rating - a.total_rating);
+    }
+    return [];
+  } catch (error) {
+    console.error('Error fetching courses by reference category:', error);
+    return [];
+  }
+};
+
+type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Home'>;
+
+const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
   const { tmessage } = useLocalSearchParams();
-  console.log("searchParams:", tmessage);
-  const [message, setMessage] = useState("");
-  const [userName, setUserName] = useState("User");
-  const [inProgressCourses, setInProgressCourses] = useState<UserEnrollments[]>(
+  const [message, setMessage] = useState('');
+  const [userName, setUserName] = useState('User');
+  const [inProgressCourses, setInProgressCourses] = useState<UserEnrollments>();
+  const [suggestedCourses, setSuggestedCourses] = useState<Course[]>([]);
+  const [popularCourses, setPopularCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [referenceCategoryId, setReferenceCategoryId] = useState<number | string>('NaN');
+
+  // Helper functions
+  const renderRatingStars = useCallback(
+    (rating: number) => (
+      <View style={styles.ratingContainer}>
+        {[1, 2, 3, 4, 5].map(star => (
+          <Text key={star} style={styles.starIcon}>
+            {rating >= star ? '★' : '☆'}
+          </Text>
+        ))}
+        <Text style={styles.ratingText}>{rating ? rating.toFixed(1) : 0}</Text>
+      </View>
+    ),
     []
   );
 
-  const [suggestedCourses, setSuggestedCourses] = useState<Course[]>([]);
-  const [relatedCourses, setRelatedCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(true);
+  const renderProgressBar = useCallback(
+    ({ progress }: { progress: number }) => (
+      <View style={styles.progressBarContainer}>
+        <View style={[styles.progressBar, { width: `${progress}%` }]} />
+      </View>
+    ),
+    []
+  );
 
-  const expoNavigation = useNavigation();
+  // Fetch user enrollments
+  const fetchUserEnrollments = useCallback(async (userId: number) => {
+    if (!userId) return;
 
-  const fectchUserInfo = async () => {
-    const user = await getUserInformation();
-    const jsonUser = JSON.parse(user);
-    setUserName(jsonUser.fullname);
-    console.log("User information", jsonUser);
-  };
-
-  const fetchUserEnrollments = async () => {
     try {
-      const user = await getUserInformation();
-      const jsonUser = JSON.parse(user);
-
-      const respone = await axiosInstance.get(
+      const response = await axiosInstance.get(
         `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_USER_ID}`.replace(
-          ":user_id",
-          jsonUser.id
+          ':user_id',
+          userId.toString()
         )
       );
-      console.log("User enrollments", respone.data);
-      //const jsonResponse = JSON.parse(JSON.stringify(respone.data));
 
-      const mapData = respone.data.enrollments.map((item: UserEnrollments) => ({
-        id: item.id,
-        user_id: item.user_id,
-        course_id: item.course_id,
-        course: {
-          name: item.course?.name || "N/A", // Kiểm tra có course không
-          description: item.course?.description || "N/A", // Kiểm tra có course không
-        },
-        //courseTitle: item.course?.title || "N/A", // Kiểm tra có course không
-        //nextLesson: item.nextLesson || "Chưa có",
-        total_lesson: item.total_lesson || 0,
-        complete_lesson: item.complete_lesson || 0,
-        progress:
-          Math.round((item.complete_lesson / item.total_lesson) * 100) || 0, // Tính phần trăm tiến độ
-        //image: item.course?.image || "", // Kiểm tra ảnh khóa học
-        updatedAt: new Intl.DateTimeFormat("vi-VN", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }).format(new Date(item.updatedAt)), //item.updatedAt,
-      }));
-      setInProgressCourses(mapData);
+      if (response.data?.enrollments?.length > 0) {
+        const sortedEnrollments = response.data.enrollments.sort(
+          (a: UserEnrollments, b: UserEnrollments) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        );
+
+        const firstEnrollment = sortedEnrollments[0];
+        if (firstEnrollment) {
+          setReferenceCategoryId(firstEnrollment.course.category_id);
+
+          const mappedData: UserEnrollments = {
+            id: firstEnrollment.id,
+            user_id: firstEnrollment.user_id,
+            course_id: firstEnrollment.course_id,
+            course: {
+              id: firstEnrollment.course?.id || 0,
+              name: firstEnrollment.course?.name || 'N/A',
+              description: firstEnrollment.course?.description || 'N/A',
+              status: firstEnrollment.course?.status || 0,
+              price: firstEnrollment.course?.price || 0,
+              discount: firstEnrollment.course?.discount || 0,
+            },
+            total_lesson: firstEnrollment.total_lesson || 0,
+            complete_lesson: firstEnrollment.complete_lesson || 0,
+            progress: Math.round(
+              ((firstEnrollment.complete_lesson || 0) / (firstEnrollment.total_lesson || 1)) * 100
+            ),
+            image: firstEnrollment.course?.image || '',
+            createdAt: firstEnrollment.createdAt || '',
+            updatedAt: new Intl.DateTimeFormat('vi-VN', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            }).format(new Date(firstEnrollment.updatedAt)),
+          };
+          setInProgressCourses(mappedData);
+        }
+      }
     } catch (error) {
-      console.error("Error fetching user enrollments:", error);
+      console.error('Error fetching user enrollments:', error);
     }
-  };
+  }, []);
 
-  const fetchCourse = async () => {
+  // Main data fetching function
+  const fetchData = useCallback(async () => {
+    setLoading(true);
     try {
-      const respone = await axiosInstance.get(
-        `${process.env.EXPO_PUBLIC_API_GET_ALL_COURSES}`
-      );
+      const userInfo = await getUserInformation();
+      if (userInfo) {
+        setUserName(userInfo.fullname || 'User');
+
+        if (userInfo.id) {
+          await fetchUserEnrollments(userInfo.id);
+        }
+      }
+
+      // Fetch courses in parallel
+      const [suggestedCoursesData, popularCoursesData] = await Promise.all([
+        getCoursesByReferenceCategory(referenceCategoryId),
+        getCoursesByReferenceCategory('NaN'),
+      ]);
+
+      if (suggestedCoursesData?.length > 0) {
+        setSuggestedCourses(suggestedCoursesData);
+      }
+      if (popularCoursesData?.length > 0) {
+        setPopularCourses(popularCoursesData);
+      }
     } catch (error) {
-      console.error("Error fetching courses:", error);
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [fetchUserEnrollments, referenceCategoryId]);
+
   useEffect(() => {
     if (route.params?.message) {
       setMessage(route.params.message);
     }
+    fetchData();
+  }, [fetchData, route.params?.message]);
 
-    fectchUserInfo();
-    //fetchUserEnrollments();
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
 
-    // Fetch user courses in progress - Mock data
-    // setInProgressCourses([
-    //   {
-    //     id: 1,
-    //     title: 'React Native Fundamentals',
-    //     instructor: 'John Doe',
-    //     category: 'Programming',
-    //     price: 49.99,
-    //     image: 'https://via.placeholder.com/100',
-    //     rating: 4.7,
-    //     progress: 65,
-    //     nextLesson: 'Navigation in React Native',
-    //     lastAccessed: '2 days ago'
-    //   },
-    //   {
-    //     id: 2,
-    //     title: 'UI/UX Design Principles',
-    //     instructor: 'Sarah Smith',
-    //     category: 'Design',
-    //     price: 39.99,
-    //     image: 'https://via.placeholder.com/100',
-    //     rating: 4.5,
-    //     progress: 32,
-    //     nextLesson: 'Color Theory Basics',
-    //     lastAccessed: 'Yesterday'
-    //   }
-    // ]);
+    await fetchData();
+    setRefreshing(false);
+  }, [fetchData]);
 
-    // Fetch suggested courses - Mock data
-    setSuggestedCourses([
-      {
-        id: 1,
-        category_id: 1,
-        name: "React Native for Beginners",
-        description: "Learn the basics of React Native",
-        status: 1,
-        price: 29.99,
-        discount: 0,
-        image: "https://via.placeholder.com/100",
-        total_rating: 4.5,
-        category: {
-          id: 1,
-          name: "Programming",
-        },
-      },
-      {
-        id: 2,
-        category_id: 2,
-        name: "Advanced React Native",
-        description: "Deep dive into React Native components",
-        status: 1,
-        price: 49.99,
-        discount: 10,
-        image: "https://via.placeholder.com/100",
-        total_rating: 4.8,
-        category: {
-          id: 1,
-          name: "Programming",
-        },
-      },
-      {
-        id: 3,
-        category_id: 3,
-        name: "UI Design for Mobile Apps",
-        description: "Master UI design principles for mobile apps",
-        status: 1,
-        price: 39.99,
-        discount: 5,
-        image: "https://via.placeholder.com/100",
-        total_rating: 4.6,
-        category: {
-          id: 2,
-          name: "Design",
-        },
-      },
-    ]);
-
-    // Fetch related courses - Mock data
-    setRelatedCourses([
-      {
-        id: 4,
-        category_id: 1,
-        name: "JavaScript Basics",
-        description: "Learn the fundamentals of JavaScript",
-        status: 1,
-        price: 19.99,
-        discount: 0,
-        image: "https://via.placeholder.com/100",
-        total_rating: 4.2,
-        category: {
-          id: 1,
-          name: "Programming",
-        },
-      },
-      {
-        id: 5,
-        category_id: 2,
-        name: "Graphic Design Fundamentals",
-        description: "Learn the basics of graphic design",
-        status: 1,
-        price: 24.99,
-        discount: 0,
-        image: "https://via.placeholder.com/100",
-        total_rating: 4.3,
-        category: {
-          id: 2,
-          name: "Design",
-        },
-      },
-    ]);
-
-    setLoading(false);
-  }, [route.params?.message]);
-
-  // Render stars for ratings
-  const renderRatingStars = (rating: number) => {
-    return (
-      <View style={styles.ratingContainer}>
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Text key={star} style={styles.starIcon}>
-            {rating >= star ? "★" : "☆"}
-          </Text>
-        ))}
-        <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
-      </View>
-    );
-  };
-
-  const ProgressBar = ({ progress }: { progress: number }) => (
-    <View style={styles.progressBarContainer}>
-      <View style={[styles.progressBar, { width: `${progress}%` }]} />
-    </View>
+  const renderInProgressSection = useCallback(
+    () => (
+      <Section title={Strings.user_home.continue_learning} showViewAll={false}>
+        <FlatList
+          data={inProgressCourses ? [inProgressCourses] : []}
+          keyExtractor={item => item.id.toString()}
+          renderItem={({ item }) => (
+            <InProgressCourseCard
+              item={item}
+              onPress={() =>
+                navigation.navigate('UserDetailCourseScreen', {
+                  courseId: item.course_id,
+                  message: '',
+                  enrollmentId: item.id,
+                })
+              }
+              renderProgressBar={renderProgressBar}
+            />
+          )}
+          ListEmptyComponent={() => (
+            <Text style={styles.noCourses}>{Strings.user_home.no_enrolled_courses}</Text>
+          )}
+        />
+      </Section>
+    ),
+    [inProgressCourses, navigation, renderProgressBar]
   );
 
-  // Course card for suggested and related courses
-  const CourseCard = ({ course }: { course: Course }) => (
-    <TouchableOpacity style={styles.courseCard} 
-      onPress={() => {
-        console.log("Navigate to course detail:", course.id);
-        navigation.navigate("DetailCourse", {
-          courseId: course.id,
-          message: "",
-        });
-      }}
-    >
-      <Image
-        source={require("../../assets/images/course.jpg")}
-        style={styles.courseImage}
-      />
-      <View style={styles.courseCardContent}>
-        <Text style={styles.courseCardTitle} numberOfLines={2}>
-          {course.name}
-        </Text>
-        <Text style={{ color: "#cf3f3f" }}>{course.category.name}</Text>
-        <Text style={styles.instructorName}>{course.description}</Text>
-        <View style={styles.courseCardFooter}>
-          {course.discount > 0 ? (
-            <Text style={styles.priceText}>
-              {course.price.toFixed(2)}{" "}
-              <Text
-                style={{ textDecorationLine: "line-through", color: "#999" }}
-              >
-                {course.discount.toFixed(2)}
-              </Text>
-            </Text>
-          ) : (
-            <Text style={styles.priceText}>{course.price.toFixed(2)}</Text>
+  const renderSuggestedCoursesSection = useCallback(
+    () => (
+      <Section
+        title={Strings.user_home.suggest_courses}
+        onViewAllPress={() =>
+          navigation.navigate('UserViewAllCourseScreen', {
+            message: 'Hello from Home Suggest Course',
+            is_suggested: true,
+            category_id: parseInt(referenceCategoryId.toString()),
+          })
+        }
+      >
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={suggestedCourses}
+          keyExtractor={item => item.id.toString()}
+          renderItem={({ item }) => (
+            <CourseCard
+              course={item}
+              onPress={() =>
+                navigation.navigate('DetailCourseScreen', {
+                  courseId: item.id,
+                  message: '',
+                })
+              }
+              renderRatingStars={renderRatingStars}
+            />
           )}
+          contentContainerStyle={styles.horizontalList}
+        />
+      </Section>
+    ),
+    [suggestedCourses, navigation, renderRatingStars, referenceCategoryId]
+  );
 
-          {renderRatingStars(course.total_rating)}
-        </View>
-      </View>
-    </TouchableOpacity>
+  const renderPopularCoursesSection = useCallback(
+    () => (
+      <Section
+        title={Strings.user_home.popular_courses}
+        onViewAllPress={() =>
+          navigation.navigate('UserViewAllCourseScreen', {
+            message: 'Hello from Home Popular Course',
+            is_popular: true,
+          })
+        }
+      >
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={popularCourses}
+          keyExtractor={item => item.id.toString()}
+          renderItem={({ item }) => (
+            <CourseCard
+              course={item}
+              onPress={() =>
+                navigation.navigate('DetailCourseScreen', {
+                  courseId: item.id,
+                  message: '',
+                })
+              }
+              renderRatingStars={renderRatingStars}
+            />
+          )}
+          contentContainerStyle={styles.horizontalList}
+        />
+      </Section>
+    ),
+    [popularCourses, navigation, renderRatingStars]
   );
 
   if (loading) {
     return (
       <View style={styles.centered}>
-        <Text>{Strings.user_home.loading_your_courses}</Text>
+        <ActivityIndicator size="large" color="#4a6ee0" />
+        <Text style={{ marginTop: 10 }}>{Strings.user_home.loading_your_courses}</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header with greeting */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.welcomeText}>
-            {Strings.user_home.welcome_back}
-          </Text>
-          <Text style={styles.userName}>{userName}</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.profileButton}
-          onPress={() => {
-            console.log("Profile button pressed");
-            expoNavigation.navigate("account" as never);
-          }}
-        >
-          <Ionicons name="person-circle-outline" size={40} color="#4a6ee0" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Continue Learning Section */}
-      <View style={styles.section}>
-        {inProgressCourses.length > 0 ? (
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>
-              {Strings.user_home.continue_learning}
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.sectionHeader}></View>
+    <SafeAreaView style={styles.safeArea}>
+      <FlatList
+        style={styles.container}
+        ListHeaderComponent={
+          <Header
+            userName={userName}
+            onProfilePress={() => navigation.navigate('Account', { message: '' })}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#4a6ee0']} />
+        }
+        data={[{ id: 'main' }]}
+        renderItem={() => (
+          <>
+            {renderInProgressSection()}
+            {renderSuggestedCoursesSection()}
+            {renderPopularCoursesSection()}
+          </>
         )}
-
-        {inProgressCourses.map((course) => (
-          <TouchableOpacity key={course.id} style={styles.continueCard}>
-            <Image
-              source={require("../../assets/images/course.jpg")}
-              style={styles.continueImage}
-            />
-
-            <View style={styles.continueContent}>
-              <Text style={styles.continueTitle} numberOfLines={1}>
-                {course.course.name}
-              </Text>
-              <Text style={styles.continueLesson} numberOfLines={1}>
-                {/* Next: {course.nextLesson} */}
-                {course.course.description}
-              </Text>
-
-              <View style={styles.progressContainer}>
-                <ProgressBar progress={course.progress} />
-                <Text style={styles.progressText}>
-                  {course.progress}% {Strings.user_home.complete}
-                </Text>
-              </View>
-
-              <Text style={styles.lastAccessed}>
-                {Strings.user_home.last_accessed}
-                {": "} {course.updatedAt}
-              </Text>
-            </View>
-
-            <TouchableOpacity style={styles.playButton}>
-              <Ionicons name="play-circle" size={36} color="#4a6ee0" />
-            </TouchableOpacity>
-          </TouchableOpacity>
-        ))}
-
-        {inProgressCourses.length === 0 && (
-          <Text style={styles.noCourses}>
-            {Strings.user_home.no_enrolled_courses}
-          </Text>
-        )}
-      </View>
-
-      {/* Suggested Courses Section */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
-            {Strings.user_home.suggest_courses}
-          </Text>
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate("UserViewAllCourse", { message: "" })
-            }
-          >
-            <Text style={styles.viewAllText}>{Strings.user_home.view_all}</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.horizontalList}
-        >
-          {suggestedCourses.map((course) => (
-            <CourseCard key={course.id} course={course} />
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Related Courses Section */}
-      <View style={[styles.section, styles.lastSection]}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
-            {Strings.user_home.popular_courses}
-          </Text>
-          <TouchableOpacity>
-            <Text style={styles.viewAllText}>{Strings.user_home.view_all}</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.horizontalList}
-        >
-          {relatedCourses.map((course) => (
-            <CourseCard key={course.id} course={course} />
-          ))}
-        </ScrollView>
-      </View>
-    </ScrollView>
-  );
-};
-
-const Routes = () => {
-  return (
-    <NavigationIndependentTree>
-      <Stack.Navigator initialRouteName="Home">
-        <Stack.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{ headerShown: false }}
-        />
-        {/* <Stack.Screen name="Test1" component={Test1} /> */}
-      </Stack.Navigator>
-    </NavigationIndependentTree>
+        keyExtractor={item => item.id}
+      />
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+    paddingTop: Platform.OS === 'android' ? 25 : 0,
+  },
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: '#f8f9fa',
   },
   centered: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100%',
+    paddingTop: 100,
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === "ios" ? 50 : 20,
-    paddingBottom: 20,
-    backgroundColor: "white",
-  },
-  welcomeText: {
-    fontSize: 16,
-    color: "#666",
-  },
-  userName: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  profileButton: {
-    padding: 5,
-  },
-  section: {
-    padding: 20,
-    backgroundColor: "white",
-    marginBottom: 12,
-  },
+
   lastSection: {
     marginBottom: 30,
   },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 15,
-  },
-  viewAllText: {
-    color: "#4a6ee0",
-    fontWeight: "600",
-  },
-  continueCard: {
-    flexDirection: "row",
-    backgroundColor: "#fdfcfc",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
-    elevation: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  continueImage: {
-    width: 80,
-    height: 80,
-    justifyContent: "center",
-    borderRadius: 8,
-    marginRight: 12,
-  },
-  continueContent: {
-    flex: 1,
-    justifyContent: "space-between",
-  },
-  continueTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 4,
-  },
-  continueLesson: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 8,
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   progressContainer: {
     marginBottom: 6,
   },
   progressBarContainer: {
     height: 6,
-    backgroundColor: "#e0e0e0",
+    backgroundColor: '#e0e0e0',
     borderRadius: 3,
-    overflow: "hidden",
+    overflow: 'hidden',
     marginBottom: 4,
   },
   progressBar: {
-    height: "100%",
-    backgroundColor: "#4a6ee0",
-  },
-  progressText: {
-    fontSize: 12,
-    color: "#666",
-  },
-  lastAccessed: {
-    fontSize: 12,
-    color: "#999",
-  },
-  playButton: {
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 5,
+    height: '100%',
+    backgroundColor: '#4a6ee0',
   },
   noCourses: {
-    textAlign: "center",
-    color: "#666",
+    textAlign: 'center',
+    color: '#666',
     padding: 20,
   },
   horizontalList: {
     marginLeft: -5,
   },
-  courseCard: {
-    width: 180,
-    backgroundColor: "white",
-    borderRadius: 8,
-    marginHorizontal: 5,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#f0f0f0",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  courseImage: {
-    width: "100%",
-    height: 100,
-    resizeMode: "cover",
-  },
-  courseCardContent: {
-    padding: 10,
-  },
-  courseCardTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 4,
-    height: 40,
-  },
-  instructorName: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 5,
-  },
-  courseCardFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 5,
-  },
-  priceText: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#2c9e69",
-  },
-  ratingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
+
   starIcon: {
-    color: "#ffb100",
+    color: '#ffb100',
     fontSize: 12,
     marginRight: 1,
   },
   ratingText: {
     fontSize: 12,
-    color: "#666",
+    color: '#666',
     marginLeft: 2,
+  },
+  sectionList: {
+    paddingHorizontal: 20,
+  },
+  horizontalListContent: {
+    paddingHorizontal: 15,
   },
 });
 
-function HomeRoutes() {
-  return (
-    <NavigationIndependentTree>
-      <Stack.Navigator initialRouteName="Home">
-        <Stack.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{ headerShown: false }}
-        />
-        {/* <Stack.Screen name="Test1" component={Test1} /> */}
-        <Stack.Screen
-          name="UserViewAllCourse"
-          component={UserViewAllCourse}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="DetailCourse"
-          component={DetailCourse}
-          options={{ headerShown: false }}
-        />
-      </Stack.Navigator>
-    </NavigationIndependentTree>
-  );
-}
-
-export default HomeRoutes;
+export default Home;

@@ -1,6 +1,5 @@
-import { TouchableOpacity, View, Text } from "react-native";
-import React from "react";
-import { Check } from "lucide-react-native";
+import { TouchableOpacity, View, Text } from 'react-native';
+import React from 'react';
 
 interface CheckboxProps {
   checked: boolean;
@@ -16,30 +15,26 @@ const Checkbox = ({
   onCheck,
   label,
   disabled = false,
-  className = "",
-  labelClassName = "",
+  className = '',
+  labelClassName = '',
 }: CheckboxProps) => {
   return (
     <TouchableOpacity
-      className={`flex-row items-center ${
-        disabled ? "opacity-50" : ""
-      } ${className}`}
+      className={`flex-row items-center ${disabled ? 'opacity-50' : ''} ${className}`}
       onPress={() => !disabled && onCheck(!checked)}
       activeOpacity={0.7}
     >
       <View
         className={`
         h-5 w-5 rounded border items-center justify-center
-        ${checked ? "bg-blue-500 border-blue-500" : "border-gray-300 bg-white"}
-        ${disabled ? "border-gray-200" : ""}
+        ${checked ? 'bg-blue-500 border-blue-500' : 'border-gray-300 bg-white'}
+        ${disabled ? 'border-gray-200' : ''}
       `}
       >
-        {checked && <Check size={14} color="white" strokeWidth={3} />}
+        {checked && <Text className="text-white text-sm">✓</Text>}
       </View>
 
-      {label && (
-        <Text className={`ml-2 text-md text-gray-700 ${labelClassName}`}>{label}</Text>
-      )}
+      {label && <Text className={`ml-2 text-md text-gray-700 ${labelClassName}`}>{label}</Text>}
     </TouchableOpacity>
   );
 };

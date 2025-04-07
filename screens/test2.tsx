@@ -7,37 +7,37 @@ import {
   ScrollView,
   Switch,
   Image,
-} from "react-native";
-import React, { useState } from "react";
-import { Ionicons } from "@expo/vector-icons";
-import { Picker } from "@react-native-picker/picker";
-import * as ImagePicker from "expo-image-picker";
+} from 'react-native';
+import React, { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
+import * as ImagePicker from 'expo-image-picker';
 
 const Test2 = () => {
-  const [courseName, setCourseName] = useState("");
-  const [category, setCategory] = useState("Lập trình");
-  const [description, setDescription] = useState("");
+  const [courseName, setCourseName] = useState('');
+  const [category, setCategory] = useState('Lập trình');
+  const [description, setDescription] = useState('');
   const [isFree, setIsFree] = useState(true);
-  const [price, setPrice] = useState("");
+  const [price, setPrice] = useState('');
   const [hasDiscount, setHasDiscount] = useState(false);
-  const [discountPrice, setDiscountPrice] = useState("");
+  const [discountPrice, setDiscountPrice] = useState('');
   const [courseImage, setCourseImage] = useState<string | null>(null);
 
   const categories = [
-    "Lập trình",
-    "Thiết kế",
-    "Kinh doanh",
-    "Marketing",
-    "Ngoại ngữ",
-    "Phát triển cá nhân",
+    'Lập trình',
+    'Thiết kế',
+    'Kinh doanh',
+    'Marketing',
+    'Ngoại ngữ',
+    'Phát triển cá nhân',
   ];
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     //const { status } = await ImagePicker.requestCameraPermissionsAsync();
     console.log(status);
-    if (status !== "granted") {
-      console.log("Permission to access camera roll is required!");
+    if (status !== 'granted') {
+      console.log('Permission to access camera roll is required!');
       return;
     }
     // const result = await ImagePicker.launchCameraAsync({
@@ -46,7 +46,7 @@ const Test2 = () => {
     //   quality: 1,
     // });
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [16, 9],
       quality: 1,
@@ -68,18 +68,13 @@ const Test2 = () => {
         {/* Course Image */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Ảnh Khóa Học</Text>
-          <TouchableOpacity
-            style={styles.imageUploadButton}
-            onPress={pickImage}
-          >
+          <TouchableOpacity style={styles.imageUploadButton} onPress={pickImage}>
             {courseImage ? (
               <Image source={{ uri: courseImage }} style={styles.courseImage} />
             ) : (
               <View style={styles.imagePlaceholder}>
                 <Ionicons name="image-outline" size={40} color="#666" />
-                <Text style={styles.imagePlaceholderText}>
-                  Chọn ảnh khóa học
-                </Text>
+                <Text style={styles.imagePlaceholderText}>Chọn ảnh khóa học</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -105,7 +100,7 @@ const Test2 = () => {
               onValueChange={(itemValue: string) => setCategory(itemValue)}
               style={styles.picker}
             >
-              {categories.map((cat) => (
+              {categories.map(cat => (
                 <Picker.Item key={cat} label={cat} value={cat} />
               ))}
             </Picker>
@@ -130,20 +125,14 @@ const Test2 = () => {
           <Text style={styles.label}>Giá Khóa Học</Text>
           <View style={styles.priceContainer}>
             <View style={styles.radioGroup}>
-              <TouchableOpacity
-                style={styles.radioButton}
-                onPress={() => setIsFree(true)}
-              >
+              <TouchableOpacity style={styles.radioButton} onPress={() => setIsFree(true)}>
                 <View style={styles.radioCircle}>
                   {isFree && <View style={styles.selectedRb} />}
                 </View>
                 <Text style={styles.radioLabel}>Miễn phí</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.radioButton}
-                onPress={() => setIsFree(false)}
-              >
+              <TouchableOpacity style={styles.radioButton} onPress={() => setIsFree(false)}>
                 <View style={styles.radioCircle}>
                   {!isFree && <View style={styles.selectedRb} />}
                 </View>
@@ -173,8 +162,8 @@ const Test2 = () => {
             <Switch
               value={hasDiscount}
               onValueChange={setHasDiscount}
-              trackColor={{ false: "#767577", true: "#81b0ff" }}
-              thumbColor={hasDiscount ? "#007AFF" : "#f4f3f4"}
+              trackColor={{ false: '#767577', true: '#81b0ff' }}
+              thumbColor={hasDiscount ? '#007AFF' : '#f4f3f4'}
             />
           </View>
 
@@ -204,18 +193,18 @@ const Test2 = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: '#f5f5f5',
   },
   header: {
     padding: 16,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: '#eee',
   },
   headerTitle: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: 'bold',
+    color: '#333',
   },
   formContainer: {
     padding: 16,
@@ -225,45 +214,45 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
+    fontWeight: '600',
+    color: '#333',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: '#ddd',
   },
   textArea: {
     height: 100,
-    textAlignVertical: "top",
+    textAlignVertical: 'top',
   },
   pickerContainer: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: '#ddd',
   },
   picker: {
     height: 50,
   },
   priceContainer: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 8,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: '#ddd',
   },
   radioGroup: {
-    flexDirection: "row",
+    flexDirection: 'row',
     marginBottom: 12,
   },
   radioButton: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginRight: 20,
   },
   radioCircle: {
@@ -271,70 +260,70 @@ const styles = StyleSheet.create({
     width: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: "#007AFF",
-    alignItems: "center",
-    justifyContent: "center",
+    borderColor: '#007AFF',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: 8,
   },
   selectedRb: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#007AFF",
+    backgroundColor: '#007AFF',
   },
   radioLabel: {
     fontSize: 16,
-    color: "#333",
+    color: '#333',
   },
   priceInputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   currency: {
     fontSize: 16,
-    color: "#666",
+    color: '#666',
     marginLeft: 8,
   },
   discountHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
   },
   submitButton: {
-    backgroundColor: "#007AFF",
+    backgroundColor: '#007AFF',
     padding: 16,
     borderRadius: 8,
-    alignItems: "center",
+    alignItems: 'center',
     marginTop: 20,
   },
   submitButtonText: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   imageUploadButton: {
-    width: "100%",
+    width: '100%',
     height: 200,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ddd",
-    overflow: "hidden",
+    borderColor: '#ddd',
+    overflow: 'hidden',
   },
   imagePlaceholder: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   imagePlaceholderText: {
     marginTop: 8,
     fontSize: 16,
-    color: "#666",
+    color: '#666',
   },
   courseImage: {
-    width: "100%",
-    height: "100%",
+    width: '100%',
+    height: '100%',
   },
 });
 

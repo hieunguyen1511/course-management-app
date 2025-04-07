@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native'
-import React, { useState, useEffect } from 'react'
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
 
 const DashboardScreen = () => {
   // State for dashboard data
@@ -19,15 +19,46 @@ const DashboardScreen = () => {
         totalUsers: 245,
         totalCourses: 12,
       });
-      
+
       setRecentActivity([
-        { id: 1, type: 'enrollment', user: 'John Doe', course: 'React Native Basics', time: '2 hours ago' },
-        { id: 2, type: 'completion', user: 'Sarah Smith', course: 'Advanced JavaScript', time: '5 hours ago' },
-        { id: 3, type: 'review', user: 'Mike Johnson', course: 'UI/UX Design', rating: 4.5, time: '1 day ago' },
-        { id: 4, type: 'enrollment', user: 'Emma Wilson', course: 'Flutter Development', time: '1 day ago' },
-        { id: 5, type: 'completion', user: 'Robert Brown', course: 'Node.js Fundamentals', time: '2 days ago' },
+        {
+          id: 1,
+          type: 'enrollment',
+          user: 'John Doe',
+          course: 'React Native Basics',
+          time: '2 hours ago',
+        },
+        {
+          id: 2,
+          type: 'completion',
+          user: 'Sarah Smith',
+          course: 'Advanced JavaScript',
+          time: '5 hours ago',
+        },
+        {
+          id: 3,
+          type: 'review',
+          user: 'Mike Johnson',
+          course: 'UI/UX Design',
+          rating: 4.5,
+          time: '1 day ago',
+        },
+        {
+          id: 4,
+          type: 'enrollment',
+          user: 'Emma Wilson',
+          course: 'Flutter Development',
+          time: '1 day ago',
+        },
+        {
+          id: 5,
+          type: 'completion',
+          user: 'Robert Brown',
+          course: 'Node.js Fundamentals',
+          time: '2 days ago',
+        },
       ]);
-      
+
       setLoading(false);
     }, 1000);
   }, []);
@@ -35,7 +66,7 @@ const DashboardScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.headerText}>Admin Dashboard</Text>
-      
+
       {loading ? (
         <Text style={styles.loadingText}>Loading dashboard data...</Text>
       ) : (
@@ -46,19 +77,17 @@ const DashboardScreen = () => {
               <Text style={styles.statValue}>{stats.totalUsers}</Text>
               <Text style={styles.statLabel}>Total Users</Text>
             </View>
-            
+
             <View style={styles.statCard}>
               <Text style={styles.statValue}>{stats.totalCourses}</Text>
               <Text style={styles.statLabel}>Total Courses</Text>
             </View>
           </View>
-          
+
           {/* Recent Activity */}
           <View style={styles.sectionContainer}>
             <Text style={styles.sectionTitle}>Recent Activity</Text>
-            
-            
-            
+
             <TouchableOpacity style={styles.viewAllButton}>
               <Text style={styles.viewAllText}>View All Activity</Text>
             </TouchableOpacity>
@@ -66,26 +95,26 @@ const DashboardScreen = () => {
         </ScrollView>
       )}
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#f8f9fa'
+    backgroundColor: '#f8f9fa',
   },
   headerText: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
-    color: '#333'
+    color: '#333',
   },
   loadingText: {
     textAlign: 'center',
     marginTop: 20,
     fontSize: 16,
-    color: '#666'
+    color: '#666',
   },
   statsContainer: {
     flexDirection: 'row',
@@ -178,7 +207,7 @@ const styles = StyleSheet.create({
   viewAllText: {
     color: '#4a6ee0',
     fontWeight: '500',
-  }
+  },
 });
 
-export default DashboardScreen
+export default DashboardScreen;

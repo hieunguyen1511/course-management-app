@@ -1,46 +1,114 @@
-import axios from "axios";
-import { Platform } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { router } from 'expo-router';
 
-let accessToken: string | null = null;
+import tokenStorageManager from '@/storage/tokenStorage/tokenStorageManager';
 
+interface ExtendAxiosRequestConfig extends InternalAxiosRequestConfig {
+  _retry: boolean;
+}
+
+let tokenRefreshing = false;
+
+let failedQueue: {
+  resolve: (value: unknown) => void;
+  reject: (reason?: any) => void;
+  config: ExtendAxiosRequestConfig;
+}[] = [];
 
 const axiosInstance = axios.create({
   baseURL: process.env.EXPO_PUBLIC_DEV_BACKEND_API_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept: 'application/json',
   },
 });
-axiosInstance.interceptors.request.use(
-  async (config) => {
-    // Do something before request is sent
-    console.log("Request interceptor", config);
-    
-    const token = await getAccessToken();
-    console.log(token)
-    config.headers.Authorization = `Bearer ${token}`;
-    return config;
-  },
-  (error) => {
-    // Do something with request error
-    console.log("Request interceptor error", error);
+
+axiosInstance.interceptors.response.use(
+  response => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config as ExtendAxiosRequestConfig;
+
+    // If error is 401 and we haven't tried refreshing the token yet
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (tokenRefreshing) {
+        // If refresh is in progress, add request to queue
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject, config: originalRequest });
+        });
+      }
+
+      originalRequest._retry = true;
+      tokenRefreshing = true;
+
+      try {
+        const accessToken = await refreshToken();
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+
+        processQueue();
+
+        return axiosInstance(originalRequest);
+      } catch (refreshError) {
+        await tokenStorageManager.deleteRefreshToken();
+        processQueue(refreshError);
+        router.replace('/login');
+        return Promise.reject(refreshError);
+      } finally {
+        tokenRefreshing = false;
+      }
+    }
+
     return Promise.reject(error);
   }
 );
 
+const refreshToken = async () => {
+  try {
+    const refreshToken = await tokenStorageManager.getRefreshToken();
+    console.log('axiosInstance Refresh token', refreshToken);
+    const response = await axios.post(
+      `${process.env.EXPO_PUBLIC_DEV_BACKEND_API_URL}${process.env.EXPO_PUBLIC_API_REFRESH_TOKEN}`,
+      {
+        refresh_token: refreshToken,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+      }
+    );
 
-async function setAccessToken(token: string) {
-  accessToken = token;
-  await AsyncStorage.setItem("access_token", token);
-}
+    tokenStorageManager.setAccessToken(response.data.access_token);
 
-async function getAccessToken() {
-  if (!accessToken) {
-    accessToken = await AsyncStorage.getItem("access_token");
+    return response.data;
+  } catch (error) {
+    throw error;
   }
-  return accessToken;
-}
+};
+
+const processQueue = (error: any = null): void => {
+  failedQueue.forEach(request => {
+    if (error) {
+      request.reject(error);
+    } else {
+      request.resolve(axiosInstance(request.config));
+    }
+  });
+
+  failedQueue = [];
+};
+
+axiosInstance.interceptors.request.use(
+  async config => {
+    const token = await tokenStorageManager.getAccessToken();
+
+    config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  },
+  error => {
+    return Promise.reject(error);
+  }
+);
+
 export default axiosInstance;
-export { setAccessToken, getAccessToken };

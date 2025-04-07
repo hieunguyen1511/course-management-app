@@ -1,8 +1,19 @@
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Platform } from 'react-native'
-import React, { useState, useEffect } from 'react'
-import { Ionicons } from '@expo/vector-icons'
-import { NavigationIndependentTree } from '@react-navigation/native';
-import { create } from 'react-test-renderer';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+  Platform,
+} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { MyScreenProps } from '@/types/MyScreenProps';
+import * as ImagePicker from 'expo-image-picker';
+
+import tokenStorageManager from '@/storage/tokenStorage/tokenStorageManager';
+import * as SecureStore from 'expo-secure-store';
 
 // Define user interface
 interface User {
@@ -13,7 +24,7 @@ interface User {
   totalCourses: number;
 }
 
-const AccountScreen = () => {
+const Account: React.FC<MyScreenProps['AccountScreenProps']> = ({ navigation, route }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -23,25 +34,42 @@ const AccountScreen = () => {
     setTimeout(() => {
       setUser({
         id: '123456',
-        name: 'Hieu Nguyen',
+        name: 'Nguyen Trong Hieu',
         email: 'hieu.nguyen@example.com',
         avatar: 'https://via.placeholder.com/150',
-        totalCourses: 5
+        totalCourses: 5,
       });
       setLoading(false);
     }, 800);
   }, []);
 
-  const handleLogout = () => {
-    // Handle logout functionality
-    console.log('Logging out...');
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      // TODO: Upload image to server and update user avatar
+      setUser(prev => (prev ? { ...prev, avatar: result.assets[0].uri } : null));
+    }
+  };
+
+  const handleLogout = async () => {
+    await SecureStore.deleteItemAsync('user');
+    await tokenStorageManager.deleteRefreshToken();
+    navigation.replace('Login', {
+      message: 'Đăng xuất thành công',
+    });
     // In a real app, you would clear tokens, user data, etc.
   };
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading account information...</Text>
+        <Text style={styles.loadingText}>Đang tải thông tin tài khoản...</Text>
       </View>
     );
   }
@@ -51,92 +79,105 @@ const AccountScreen = () => {
       {/* User Info Card */}
       <View style={styles.card}>
         <View style={styles.avatarContainer}>
-          <Image 
-            source={{ uri: user?.avatar }} 
-            style={styles.avatar} 
-          />
-          {/*<TouchableOpacity style={styles.editAvatarButton}>
+          <Image source={{ uri: user?.avatar }} style={styles.avatar} />
+          <TouchableOpacity style={styles.editAvatarButton} onPress={pickImage}>
             <Ionicons name="camera" size={18} color="white" />
-          </TouchableOpacity>*/}
+          </TouchableOpacity>
         </View>
-        
+
         <View style={styles.userInfo}>
           <Text style={styles.userName}>{user?.name}</Text>
           <Text style={styles.userEmail}>{user?.email}</Text>
-          
+
           <View style={styles.statsContainer}>
             <View style={styles.stat}>
               <Text style={styles.statValue}>{user?.totalCourses}</Text>
-              <Text style={styles.statLabel}>Courses</Text>
+              <Text style={styles.statLabel}>Khóa học</Text>
             </View>
             {/* You can add more stats here if needed */}
           </View>
         </View>
       </View>
-      
+
       {/* Action Items */}
       <View style={styles.menuContainer}>
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('EditProfileScreen', { message: '' })}
+        >
           <View style={styles.menuIconContainer}>
             <Ionicons name="person-outline" size={22} color="#4a6ee0" />
           </View>
           <View style={styles.menuTextContainer}>
-            <Text style={styles.menuText}>Profile</Text>
-            <Text style={styles.menuSubtext}>Edit your personal information</Text>
+            <Text style={styles.menuText}>Hồ sơ</Text>
+            <Text style={styles.menuSubtext}>Chỉnh sửa thông tin cá nhân</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#ccc" />
         </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.menuItem}>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('UserViewAllEnrollmentScreen', { message: '' })}
+        >
           <View style={styles.menuIconContainer}>
             <Ionicons name="book-outline" size={22} color="#4a6ee0" />
           </View>
           <View style={styles.menuTextContainer}>
-            <Text style={styles.menuText}>Enrollments</Text>
-            <Text style={styles.menuSubtext}>Manage your course enrollments</Text>
+            <Text style={styles.menuText}>Khóa học của tôi</Text>
+            <Text style={styles.menuSubtext}>Quản lý khóa học đã đăng ký</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#ccc" />
         </TouchableOpacity>
-        
+        {/* Doi mat khau */}
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('ChangePasswordScreen', { message: '' })}
+        >
+          <View style={styles.menuIconContainer}>
+            <Ionicons name="lock-closed-outline" size={22} color="#4a6ee0" />
+          </View>
+          <View style={styles.menuTextContainer}>
+            <Text style={styles.menuText}>Đổi mật khẩu</Text>
+            <Text style={styles.menuSubtext}>Đổi mật khẩu tài khoản</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#ccc" />
+        </TouchableOpacity>
         {/* <TouchableOpacity style={styles.menuItem}>
           <View style={styles.menuIconContainer}>
             <Ionicons name="notifications-outline" size={22} color="#4a6ee0" />
           </View>
           <View style={styles.menuTextContainer}>
-            <Text style={styles.menuText}>Notifications</Text>
-            <Text style={styles.menuSubtext}>Configure notification preferences</Text>
+            <Text style={styles.menuText}>Thông báo</Text>
+            <Text style={styles.menuSubtext}>Cài đặt tùy chọn thông báo</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#ccc" />
         </TouchableOpacity> */}
-        
-        <TouchableOpacity style={styles.menuItem}>
+
+        {/*<TouchableOpacity style={styles.menuItem}>
           <View style={styles.menuIconContainer}>
             <Ionicons name="settings-outline" size={22} color="#4a6ee0" />
           </View>
           <View style={styles.menuTextContainer}>
-            <Text style={styles.menuText}>Settings</Text>
-            <Text style={styles.menuSubtext}>App preferences and account settings</Text>
+            <Text style={styles.menuText}>Cài đặt</Text>
+            <Text style={styles.menuSubtext}>Tùy chọn ứng dụng và tài khoản</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#ccc" />
-        </TouchableOpacity>
+        </TouchableOpacity>*/}
       </View>
-      
+
       <View style={styles.separator} />
-      
+
       {/* Logout Button */}
-      <TouchableOpacity 
-        style={styles.logoutButton}
-        onPress={handleLogout}
-      >
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Ionicons name="log-out-outline" size={22} color="#e04a4a" />
-        <Text style={styles.logoutText}>Logout</Text>
+        <Text style={styles.logoutText}>Đăng xuất</Text>
       </TouchableOpacity>
-      
+
       {/* App Version */}
-      <Text style={styles.versionText}>Version 1.0.0</Text>
+      <Text style={styles.versionText}>Phiên bản 1.0.0</Text>
     </ScrollView>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -296,21 +337,19 @@ const styles = StyleSheet.create({
   },
 });
 
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+// function AccountScreenRoutes() {
+//   return (
+//     <NavigationIndependentTree>
+//       <Stack.Navigator
+//         initialRouteName="AccountScreen"
+//         screenOptions={{ headerShown: false }}
+//       >
+//         <Stack.Screen name="AccountScreen" component={AccountScreen} />
 
+//         {/* Add other screens here if needed */}
+//       </Stack.Navigator>
+//     </NavigationIndependentTree>
+//   );
+// }
 
-
-const Stack = createNativeStackNavigator();
-
-function TestRoute() {
-  return (
-    <NavigationIndependentTree>
-      <Stack.Navigator initialRouteName="Account" screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Account" component={AccountScreen} />
-        {/* Add other screens here if needed */}
-      </Stack.Navigator>
-    </NavigationIndependentTree>
-  );
-}
-
-export default AccountScreen
+export default Account;

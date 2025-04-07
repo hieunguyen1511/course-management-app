@@ -1,116 +1,92 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, FlatList } from 'react-native'
-import React, { useState, useEffect } from 'react'
-import { Ionicons } from '@expo/vector-icons'
+import React, { useState, useEffect, useCallback } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/types/RootStackParamList';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  FlatList,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
 
+import { MyScreenProps } from '@/types/MyScreenProps';
+import axiosInstance from '@/api/axiosInstance';
+import { useFocusEffect } from '@react-navigation/native';
+import dayjs from 'dayjs';
+import { Enrollment } from '@/types/apiModels';
+import { formatDateOrRelative } from '@/utils/datetime';
+const Stack = createNativeStackNavigator<RootStackParamList>();
 // Define course interface
 interface Course {
   id: number;
+  enrollment_id: number;
   title: string;
-  instructor: string;
   category: string;
   image: string;
   rating: number;
 }
 
-// Interface for in-progress courses
-interface CourseInProgress extends Course {
-  progress: number;
-  nextLesson: string;
-  lastAccessed: string;
-  totalLessons: number;
-  completedLessons: number;
-}
-
-// Interface for completed courses
-interface CourseCompleted extends Course {
-  completedDate: string;
-  certificateUrl?: string;
-  finalScore?: number;
-}
-
-const CourseScreen = () => {
+const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, route }) => {
   // State variables
   const [activeTab, setActiveTab] = useState<'progress' | 'completed'>('progress');
-  const [inProgressCourses, setInProgressCourses] = useState<CourseInProgress[]>([]);
-  const [completedCourses, setCompletedCourses] = useState<CourseCompleted[]>([]);
+  const [inProgressEnrollments, setInProgressEnrollments] = useState<Enrollment[]>([]);
+  const [completedEnrollments, setCompletedEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch user courses
-  useEffect(() => {
-    // Simulated API call - replace with actual API in production
-    setTimeout(() => {
-      // Mock data for in-progress courses
-      setInProgressCourses([
-        {
-          id: 1,
-          title: 'React Native Fundamentals',
-          instructor: 'John Doe',
-          category: 'Programming',
-          image: 'https://via.placeholder.com/100',
-          rating: 4.7,
-          progress: 65,
-          nextLesson: 'Navigation in React Native',
-          lastAccessed: '2 days ago',
-          totalLessons: 12,
-          completedLessons: 8
-        },
-        {
-          id: 2,
-          title: 'UI/UX Design Principles',
-          instructor: 'Sarah Smith',
-          category: 'Design',
-          image: 'https://via.placeholder.com/100',
-          rating: 4.5,
-          progress: 32,
-          nextLesson: 'Color Theory Basics',
-          lastAccessed: 'Yesterday',
-          totalLessons: 10,
-          completedLessons: 3
-        },
-        {
-          id: 3,
-          title: 'Digital Marketing Strategies',
-          instructor: 'Michael Brown',
-          category: 'Marketing',
-          image: 'https://via.placeholder.com/100',
-          rating: 4.2,
-          progress: 78,
-          nextLesson: 'Social Media Campaigns',
-          lastAccessed: '3 hours ago',
-          totalLessons: 8,
-          completedLessons: 6
-        }
-      ]);
+  const fetchInProgressEnrollments = async () => {
+    try {
+      console.log('Fetching in-progress enrollments...');
+      const respone = await axiosInstance.get(
+        `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_IN_PROGRESS}`
+      );
 
-      // Mock data for completed courses
-      setCompletedCourses([
-        {
-          id: 4,
-          title: 'JavaScript Basics',
-          instructor: 'Robert Wilson',
-          category: 'Programming',
-          image: 'https://via.placeholder.com/100',
-          rating: 4.6,
-          completedDate: '2023-05-15',
-          certificateUrl: 'https://example.com/cert/123',
-          finalScore: 95
-        },
-        {
-          id: 5,
-          title: 'Introduction to HTML & CSS',
-          instructor: 'Jennifer Davis',
-          category: 'Web Development',
-          image: 'https://via.placeholder.com/100',
-          rating: 4.8,
-          completedDate: '2023-03-20',
-          certificateUrl: 'https://example.com/cert/456',
-          finalScore: 92
-        }
-      ]);
+      return respone.data.enrollments;
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+    }
+  };
 
-      setLoading(false);
-    }, 1000);
-  }, []);
+  const fetchCompletedCourses = async () => {
+    try {
+      console.log('Fetching completed courses...');
+      const respone = await axiosInstance.get(
+        `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_COMPLETED}`
+      );
+
+      return respone.data.enrollments;
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+    }
+  };
+
+  const fetchAllData = async () => {
+    setLoading(true);
+    const [inProgressEnrollments, completedEnrollments] = await Promise.all([
+      fetchInProgressEnrollments(),
+      fetchCompletedCourses(),
+    ]);
+    setInProgressEnrollments(inProgressEnrollments);
+    setCompletedEnrollments(completedEnrollments);
+    setLoading(false);
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchAllData();
+    }, [])
+  );
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchAllData();
+    setRefreshing(false);
+  }, [fetchAllData]);
 
   // Render progress bar
   const ProgressBar = ({ progress }: { progress: number }) => (
@@ -123,66 +99,76 @@ const CourseScreen = () => {
   const renderTabs = () => (
     <View style={styles.tabContainer}>
       <TouchableOpacity
-        style={[
-          styles.tab,
-          activeTab === 'progress' && styles.activeTab
-        ]}
+        style={[styles.tab, activeTab === 'progress' && styles.activeTab]}
         onPress={() => setActiveTab('progress')}
       >
-        <Text
-          style={[
-            styles.tabText,
-            activeTab === 'progress' && styles.activeTabText
-          ]}
-        >
-          In Progress
+        <Text style={[styles.tabText, activeTab === 'progress' && styles.activeTabText]}>
+          Đang học
         </Text>
       </TouchableOpacity>
-      
+
       <TouchableOpacity
-        style={[
-          styles.tab,
-          activeTab === 'completed' && styles.activeTab
-        ]}
+        style={[styles.tab, activeTab === 'completed' && styles.activeTab]}
         onPress={() => setActiveTab('completed')}
       >
-        <Text
-          style={[
-            styles.tabText,
-            activeTab === 'completed' && styles.activeTabText
-          ]}
-        >
-          Completed
+        <Text style={[styles.tabText, activeTab === 'completed' && styles.activeTabText]}>
+          Đã hoàn thành
         </Text>
       </TouchableOpacity>
     </View>
   );
 
   // Render in-progress course
-  const renderInProgressCourse = ({ item }: { item: CourseInProgress }) => (
+  const renderInProgressCourse = ({ item }: { item: Enrollment }) => (
     <TouchableOpacity style={styles.courseCard}>
-      <Image source={{ uri: item.image }} style={styles.courseImage} />
-      
+      <Image source={{ uri: item?.course?.image }} style={styles.courseImage} />
+
       <View style={styles.courseInfo}>
-        <Text style={styles.courseTitle} numberOfLines={1}>{item.title}</Text>
-        <Text style={styles.instructorName}>{item.instructor}</Text>
-        
+        <Text style={styles.courseTitle} numberOfLines={1}>
+          {item?.course?.name}
+        </Text>
+        <Text style={styles.categoryText}>{item?.course?.category?.name}</Text>
+
         <View style={styles.progressContainer}>
-          <ProgressBar progress={item.progress} />
+          <ProgressBar
+            progress={
+              ((item.total_lesson_completed ?? 0) /
+                (item.total_lesson > 0 ? item.total_lesson : 1)) *
+              100
+            }
+          />
           <View style={styles.progressTextContainer}>
-            <Text style={styles.progressText}>{item.progress}% Complete</Text>
-            <Text style={styles.lessonCount}>{item.completedLessons}/{item.totalLessons} lessons</Text>
+            <Text style={styles.progressText}>
+              {Math.round(
+                ((item.total_lesson_completed ?? 0) /
+                  (item.total_lesson > 0 ? item.total_lesson : 1)) *
+                  100
+              )}
+              % Hoàn thành
+            </Text>
+            <Text style={styles.lessonCount}>
+              {item.total_lesson_completed}/{item.total_lesson ?? 0} bài học
+            </Text>
           </View>
         </View>
-        
-        <View style={styles.lessonContainer}>
-          <Ionicons name="play-circle-outline" size={16} color="#4a6ee0" />
-          <Text style={styles.nextLessonText} numberOfLines={1}>Next: {item.nextLesson}</Text>
-        </View>
+
+        {item.last_access && (
+          <Text style={styles.lastAccessedText}>
+            Truy cập lần cuối: {formatDateOrRelative(item.last_access)}
+          </Text>
+        )}
       </View>
-      
-      <TouchableOpacity style={styles.continueButton}>
-        <Text style={styles.continueButtonText}>Continue</Text>
+
+      <TouchableOpacity
+        style={styles.continueButton}
+        onPress={() =>
+          navigation.navigate('UserDetailCourseScreen', {
+            enrollmentId: item.id,
+            courseId: item.course_id,
+          })
+        }
+      >
+        <Text style={styles.continueButtonText}>Tiếp tục</Text>
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -190,53 +176,82 @@ const CourseScreen = () => {
   // Format date
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    return date.toLocaleDateString('vi-VN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
     });
   };
 
   // Render completed course
-  const renderCompletedCourse = ({ item }: { item: CourseCompleted }) => (
-    <TouchableOpacity style={styles.courseCard}>
+  const renderCompletedCourse = ({ item }: { item: any }) => (
+    <TouchableOpacity
+      style={styles.courseCard}
+      onPress={() =>
+        navigation.navigate('UserDetailCourseScreen', {
+          enrollmentId: item.id,
+          courseId: item.course_id,
+        })
+      }
+    >
       <Image source={{ uri: item.image }} style={styles.courseImage} />
-      
+
       <View style={styles.courseInfo}>
-        <Text style={styles.courseTitle} numberOfLines={1}>{item.title}</Text>
-        <Text style={styles.instructorName}>{item.instructor}</Text>
-        
+        <Text style={styles.courseTitle} numberOfLines={1}>
+          {item?.course?.name}
+        </Text>
+        <Text style={styles.categoryText}>{item?.course?.category?.name}</Text>
+
         <View style={styles.completedInfoContainer}>
           <View style={styles.completedDateContainer}>
             <Ionicons name="calendar-outline" size={14} color="#666" />
-            <Text style={styles.completedDate}>
-              Completed: {formatDate(item.completedDate)}
-            </Text>
+            <Text style={styles.completedDate}>Hoàn thành: {formatDate(item.completed_at)}</Text>
           </View>
-          
-          {item.finalScore && (
-            <View style={styles.scoreContainer}>
-              <Ionicons name="ribbon-outline" size={14} color="#666" />
-              <Text style={styles.scoreText}>Score: {item.finalScore}%</Text>
-            </View>
-          )}
         </View>
       </View>
-      
-      {item.certificateUrl && (
-        <TouchableOpacity style={styles.certificateButton}>
-          <Ionicons name="document-text-outline" size={16} color="#4a6ee0" />
-          <Text style={styles.certificateText}>Certificate</Text>
-        </TouchableOpacity>
-      )}
+
+      <TouchableOpacity
+        style={styles.reviewButton}
+        onPress={() =>
+          item.rating !== null
+            ? navigation.navigate('UserRatingScreen', {
+                message: '',
+                enrollmentId: item.id,
+                is_rated: true,
+                courseName: item.course.name,
+                categoryName: item.course.category.name,
+              })
+            : navigation.navigate('UserRatingScreen', {
+                message: '',
+                enrollmentId: item.id,
+                is_rated: false,
+                courseName: item.course.name,
+                categoryName: item.course.category.name,
+              })
+        }
+      >
+        <Ionicons name={item.rating !== null ? 'star' : 'star-outline'} size={16} color="#fdd700" />
+        <Text style={styles.reviewText}>{item.rating > 0 ? 'Xem đánh giá' : 'Đánh giá'}</Text>
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 
-  // Loading state
-  if (loading) {
+  if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading your courses...</Text>
+        <Text style={styles.loadingText}>Đang tải khóa học của bạn...</Text>
+      </View>
+    );
+  }
+
+  if (error && !refreshing) {
+    return (
+      <View style={styles.errorContainer}>
+        <Ionicons name="alert-circle-outline" size={50} color="#ff6b6b" />
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchAllData}>
+          <Text style={styles.retryButtonText}>Thử lại</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -245,60 +260,55 @@ const CourseScreen = () => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Courses</Text>
-        <TouchableOpacity style={styles.filterButton}>
-          <Ionicons name="filter-outline" size={20} color="#4a6ee0" />
-          <Text style={styles.filterText}>Filter</Text>
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Khóa học của tôi</Text>
       </View>
-      
+
       {/* Tabs */}
       {renderTabs()}
-      
+
       {/* Course Lists */}
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {activeTab === 'progress' ? (
           <>
-            {inProgressCourses.length > 0 ? (
-              inProgressCourses.map(course => (
-                <View key={course.id.toString()}>
-                  {renderInProgressCourse({ item: course })}
+            {inProgressEnrollments.length > 0 ? (
+              inProgressEnrollments.map(enrollment => (
+                <View key={enrollment.id.toString()}>
+                  {renderInProgressCourse({ item: enrollment })}
                 </View>
               ))
             ) : (
               <View style={styles.emptyContainer}>
                 <Ionicons name="book-outline" size={50} color="#ccc" />
-                <Text style={styles.emptyText}>You haven't started any courses yet</Text>
+                <Text style={styles.emptyText}>Bạn chưa bắt đầu khóa học nào</Text>
                 <TouchableOpacity style={styles.exploreCourseButton}>
-                  <Text style={styles.exploreCourseText}>Explore Courses</Text>
+                  <Text style={styles.exploreCourseText}>Khám phá khóa học</Text>
                 </TouchableOpacity>
               </View>
             )}
           </>
         ) : (
           <>
-            {completedCourses.length > 0 ? (
-              completedCourses.map(course => (
-                <View key={course.id.toString()}>
-                  {renderCompletedCourse({ item: course })}
+            {completedEnrollments.length > 0 ? (
+              completedEnrollments.map(enrollment => (
+                <View key={enrollment.id.toString()}>
+                  {renderCompletedCourse({ item: enrollment })}
                 </View>
               ))
             ) : (
               <View style={styles.emptyContainer}>
                 <Ionicons name="trophy-outline" size={50} color="#ccc" />
-                <Text style={styles.emptyText}>You haven't completed any courses yet</Text>
-                <Text style={styles.emptySubText}>Your completed courses will appear here</Text>
+                <Text style={styles.emptyText}>Bạn chưa hoàn thành khóa học nào</Text>
+                <Text style={styles.emptySubText}>
+                  Các khóa học đã hoàn thành sẽ hiển thị ở đây
+                </Text>
               </View>
             )}
           </>
         )}
       </ScrollView>
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -320,15 +330,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
-  },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  filterText: {
-    marginLeft: 4,
-    color: '#4a6ee0',
-    fontWeight: '500',
   },
   tabContainer: {
     flexDirection: 'row',
@@ -358,6 +359,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
     paddingBottom: 30,
+    flexGrow: 1,
   },
   courseCard: {
     flexDirection: 'row',
@@ -455,16 +457,7 @@ const styles = StyleSheet.create({
     color: '#666',
     marginLeft: 5,
   },
-  scoreContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  scoreText: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 5,
-  },
-  certificateButton: {
+  reviewButton: {
     flexDirection: 'column',
     backgroundColor: '#f0f5ff',
     paddingHorizontal: 12,
@@ -473,7 +466,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 10,
     borderBottomRightRadius: 10,
   },
-  certificateText: {
+  reviewText: {
     color: '#4a6ee0',
     fontWeight: '500',
     fontSize: 10,
@@ -516,6 +509,40 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
+  categoryText: {
+    fontSize: 14,
+    color: '#4a6ee0',
+    marginBottom: 8,
+  },
+  lastAccessedText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 5,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#f8f9fa',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 15,
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#4a6ee0',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
 });
 
-export default CourseScreen
+export default Course;

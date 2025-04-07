@@ -21,13 +21,11 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.RECORD_AUDIO",
-        "android.permission.CAMERA",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.INTERNET"
       ],
       "maxSdkVersion": "35",
-      "package": "com.anonymous.courseapp"
+      "package": "com.anonymous.courseapp",
+      "kotlinVersion": "1.9.22"
     },
     "web": {
       "bundler": "metro",
@@ -45,11 +43,23 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-secure-store",
+      ["expo-secure-store", {
+          "configureAndroidBackup": true,
+          "faceIDPermission": "Allow CourseApp to access your Face ID biometric data."
+        }
+      ],
       "expo-image-picker"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "baa8ab05-b753-4f5e-b53e-942133eef7c9"
+      }
     }
   }
 }
