@@ -38,20 +38,36 @@ import PaymentCheckoutScreen from '@/screens/user/PaymentCheckoutScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+// async function getUserInformation() {
+//   try {
+//     const user = await SecureStore.getItemAsync('user');
+//     if (user) {
+//       console.log('User', user);
+//       return user;
+//     } else {
+//       console.log('No user');
+//       return JSON.stringify({});
+//     }
+//   } catch (e) {
+//     console.log('Error getting user', e);
+//     return JSON.stringify({});
+//   }
+// }
+
 async function getUserInformation() {
   try {
-    const user = await SecureStore.getItemAsync('user');
-    if (user) {
-      console.log('User', user);
-      return user;
-    } else {
-      console.log('No user');
-      return JSON.stringify({});
+    const response = await axiosInstance.get(`${process.env.EXPO_PUBLIC_API_GET_USER_INFO_JWT}`);
+    if (response.status === 200) {
+      console.log('User', response.data);
+      return JSON.stringify(response.data.user);
     }
   } catch (e) {
     console.log('Error getting user', e);
     return JSON.stringify({});
+  } finally {
+    console.log('Finally');
   }
+  return JSON.stringify({});
 }
 
 async function refreshToken() {

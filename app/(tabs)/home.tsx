@@ -76,15 +76,21 @@ import CourseCard from '@/components/user/CourseCard';
 import InProgressCourseCard from '@/components/user/InProgressCourseCard';
 
 // Helper functions
-const getUserInformation = async (): Promise<User | null> => {
+async function getUserInformation() {
   try {
-    const user = await SecureStore.getItemAsync('user');
-    return user ? JSON.parse(user) : null;
-  } catch (error) {
-    console.error('Error getting user:', error);
-    return null;
+    const response = await axiosInstance.get(`${process.env.EXPO_PUBLIC_API_GET_USER_INFO_JWT}`);
+    if (response.status === 200) {
+      console.log('User', response.data);
+      return JSON.stringify(response.data.user);
+    }
+  } catch (e) {
+    console.log('Error getting user', e);
+    return JSON.stringify({});
+  } finally {
+    console.log('Finally');
   }
-};
+  return JSON.stringify({});
+}
 
 const getCoursesByReferenceCategory = async (categoryId: number | string): Promise<Course[]> => {
   try {
@@ -204,11 +210,12 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
     setLoading(true);
     try {
       const userInfo = await getUserInformation();
-      if (userInfo) {
-        setUserName(userInfo.fullname || 'User');
+      const parsedUserInfo = JSON.parse(userInfo);
+      if (parsedUserInfo) {
+        setUserName(parsedUserInfo.fullname || 'User');
 
-        if (userInfo.id) {
-          await fetchUserEnrollments(userInfo.id);
+        if (parsedUserInfo.id) {
+          await fetchUserEnrollments(parsedUserInfo.id);
         }
       }
 

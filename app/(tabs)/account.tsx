@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   ScrollView,
   Platform,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,14 +16,29 @@ import * as ImagePicker from 'expo-image-picker';
 
 import tokenStorageManager from '@/storage/tokenStorage/tokenStorageManager';
 import * as SecureStore from 'expo-secure-store';
+import axiosInstance from '@/api/axiosInstance';
 
 // Define user interface
 interface User {
   id: string;
-  name: string;
+  fullname: string;
+  username: string;
   email: string;
+  phone: string;
+  birth: string;
   avatar: string;
-  totalCourses: number;
+  totalCourses?: number;
+  name?: string;
+}
+
+async function getUserInfo_JWT() {
+  try {
+    const response = await axiosInstance.get(`${process.env.EXPO_PUBLIC_API_GET_USER_INFO_JWT}`);
+    return JSON.stringify(response.data.user);
+  } catch (error) {
+    console.log(error);
+    return JSON.stringify({});
+  }
 }
 
 const Account: React.FC<MyScreenProps['AccountScreenProps']> = ({ navigation, route }) => {
@@ -30,32 +47,20 @@ const Account: React.FC<MyScreenProps['AccountScreenProps']> = ({ navigation, ro
 
   // Fetch user data
   useEffect(() => {
-    // Mock API call - replace with actual API in production
-    setTimeout(() => {
-      setUser({
-        id: '123456',
-        name: 'Nguyen Trong Hieu',
-        email: 'hieu.nguyen@example.com',
-        avatar: 'https://via.placeholder.com/150',
-        totalCourses: 5,
-      });
-      setLoading(false);
-    }, 800);
+    const fetchUserData = async () => {
+      try {
+        const userData = await getUserInfo_JWT();
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
   }, []);
-
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      // TODO: Upload image to server and update user avatar
-      setUser(prev => (prev ? { ...prev, avatar: result.assets[0].uri } : null));
-    }
-  };
 
   const handleLogout = async () => {
     await SecureStore.deleteItemAsync('user');
@@ -75,111 +80,88 @@ const Account: React.FC<MyScreenProps['AccountScreenProps']> = ({ navigation, ro
   }
 
   return (
-    <ScrollView style={styles.container}>
-      {/* User Info Card */}
-      <View style={styles.card}>
-        <View style={styles.avatarContainer}>
-          <Image source={{ uri: user?.avatar }} style={styles.avatar} />
-          <TouchableOpacity style={styles.editAvatarButton} onPress={pickImage}>
-            <Ionicons name="camera" size={18} color="white" />
+    <SafeAreaView style={styles.safeAreaView}>
+      <ScrollView style={styles.container}>
+        {/* User Info Card */}
+        <View style={styles.card}>
+          <View style={styles.cardContent}>
+            <View style={styles.avatarContainer}>
+              <Image source={{ uri: user?.avatar }} style={styles.avatar} />
+            </View>
+
+            <View style={styles.userInfo}>
+              <Text style={styles.userName}>{user?.fullname}</Text>
+              <Text style={styles.userUsername}>@{user?.username}</Text>
+
+              <Text style={styles.userDetail}>Số điện thoại: {user?.phone}</Text>
+              <Text style={styles.userDetail}>Email: {user?.email.slice(0, 20)}...</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Action Items */}
+        <View style={styles.menuContainer}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('EditProfileScreen', { message: '' })}
+          >
+            <View style={styles.menuIconContainer}>
+              <Ionicons name="person-outline" size={22} color="#4a6ee0" />
+            </View>
+            <View style={styles.menuTextContainer}>
+              <Text style={styles.menuText}>Hồ sơ</Text>
+              <Text style={styles.menuSubtext}>Chỉnh sửa thông tin cá nhân</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#ccc" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('UserViewAllEnrollmentScreen', { message: '' })}
+          >
+            <View style={styles.menuIconContainer}>
+              <Ionicons name="book-outline" size={22} color="#4a6ee0" />
+            </View>
+            <View style={styles.menuTextContainer}>
+              <Text style={styles.menuText}>Khóa học của tôi</Text>
+              <Text style={styles.menuSubtext}>Quản lý khóa học đã đăng ký</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#ccc" />
+          </TouchableOpacity>
+          {/* Doi mat khau */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('ChangePasswordScreen', { message: '' })}
+          >
+            <View style={styles.menuIconContainer}>
+              <Ionicons name="lock-closed-outline" size={22} color="#4a6ee0" />
+            </View>
+            <View style={styles.menuTextContainer}>
+              <Text style={styles.menuText}>Đổi mật khẩu</Text>
+              <Text style={styles.menuSubtext}>Đổi mật khẩu tài khoản</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#ccc" />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.userInfo}>
-          <Text style={styles.userName}>{user?.name}</Text>
-          <Text style={styles.userEmail}>{user?.email}</Text>
+        <View style={styles.separator} />
 
-          <View style={styles.statsContainer}>
-            <View style={styles.stat}>
-              <Text style={styles.statValue}>{user?.totalCourses}</Text>
-              <Text style={styles.statLabel}>Khóa học</Text>
-            </View>
-            {/* You can add more stats here if needed */}
-          </View>
-        </View>
-      </View>
-
-      {/* Action Items */}
-      <View style={styles.menuContainer}>
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate('EditProfileScreen', { message: '' })}
-        >
-          <View style={styles.menuIconContainer}>
-            <Ionicons name="person-outline" size={22} color="#4a6ee0" />
-          </View>
-          <View style={styles.menuTextContainer}>
-            <Text style={styles.menuText}>Hồ sơ</Text>
-            <Text style={styles.menuSubtext}>Chỉnh sửa thông tin cá nhân</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#ccc" />
+        {/* Logout Button */}
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={22} color="#e04a4a" />
+          <Text style={styles.logoutText}>Đăng xuất</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate('UserViewAllEnrollmentScreen', { message: '' })}
-        >
-          <View style={styles.menuIconContainer}>
-            <Ionicons name="book-outline" size={22} color="#4a6ee0" />
-          </View>
-          <View style={styles.menuTextContainer}>
-            <Text style={styles.menuText}>Khóa học của tôi</Text>
-            <Text style={styles.menuSubtext}>Quản lý khóa học đã đăng ký</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#ccc" />
-        </TouchableOpacity>
-        {/* Doi mat khau */}
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate('ChangePasswordScreen', { message: '' })}
-        >
-          <View style={styles.menuIconContainer}>
-            <Ionicons name="lock-closed-outline" size={22} color="#4a6ee0" />
-          </View>
-          <View style={styles.menuTextContainer}>
-            <Text style={styles.menuText}>Đổi mật khẩu</Text>
-            <Text style={styles.menuSubtext}>Đổi mật khẩu tài khoản</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#ccc" />
-        </TouchableOpacity>
-        {/* <TouchableOpacity style={styles.menuItem}>
-          <View style={styles.menuIconContainer}>
-            <Ionicons name="notifications-outline" size={22} color="#4a6ee0" />
-          </View>
-          <View style={styles.menuTextContainer}>
-            <Text style={styles.menuText}>Thông báo</Text>
-            <Text style={styles.menuSubtext}>Cài đặt tùy chọn thông báo</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#ccc" />
-        </TouchableOpacity> */}
-
-        {/*<TouchableOpacity style={styles.menuItem}>
-          <View style={styles.menuIconContainer}>
-            <Ionicons name="settings-outline" size={22} color="#4a6ee0" />
-          </View>
-          <View style={styles.menuTextContainer}>
-            <Text style={styles.menuText}>Cài đặt</Text>
-            <Text style={styles.menuSubtext}>Tùy chọn ứng dụng và tài khoản</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#ccc" />
-        </TouchableOpacity>*/}
-      </View>
-
-      <View style={styles.separator} />
-
-      {/* Logout Button */}
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Ionicons name="log-out-outline" size={22} color="#e04a4a" />
-        <Text style={styles.logoutText}>Đăng xuất</Text>
-      </TouchableOpacity>
-
-      {/* App Version */}
-      <Text style={styles.versionText}>Phiên bản 1.0.0</Text>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeAreaView: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+  },
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
@@ -204,62 +186,37 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-    alignItems: 'center',
+  },
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
   },
   avatarContainer: {
-    position: 'relative',
-    marginBottom: 15,
+    marginRight: 20,
   },
   avatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
   },
-  editAvatarButton: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#4a6ee0',
-    borderRadius: 15,
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'white',
-  },
   userInfo: {
-    alignItems: 'center',
+    flex: 1,
   },
   userName: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 5,
+    marginBottom: 4,
   },
-  userEmail: {
+  userUsername: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 8,
+  },
+  userDetail: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 15,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    marginTop: 10,
-  },
-  stat: {
-    alignItems: 'center',
-    padding: 10,
-    minWidth: 80,
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#4a6ee0',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
+    marginBottom: 4,
   },
   menuContainer: {
     backgroundColor: 'white',

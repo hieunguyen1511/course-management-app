@@ -24,22 +24,22 @@ import NotificationToast from '@/components/NotificationToast';
 import { ToastType } from '@/components/NotificationToast';
 import tokenStorageManager from '@/storage/tokenStorage/tokenStorageManager';
 
-async function saveUserInformation(user: any) {
-  try {
-    await SecureStore.deleteItemAsync('user');
-    await SecureStore.setItemAsync('user', JSON.stringify(user));
-  } catch (e) {
-    console.log('Error saving user', e);
-  }
-}
+// async function saveUserInformation(user: any) {
+//   try {
+//     await SecureStore.deleteItemAsync('user');
+//     await SecureStore.setItemAsync('user', JSON.stringify(user));
+//   } catch (e) {
+//     console.log('Error saving user', e);
+//   }
+// }
 
-async function saveRefreshToken(refresh_token: string) {
-  try {
-    await tokenStorageManager.setRefreshToken(refresh_token);
-  } catch (e) {
-    console.log('Error saving token', e);
-  }
-}
+// async function saveRefreshToken(refresh_token: string) {
+//   try {
+//     await tokenStorageManager.setRefreshToken(refresh_token);
+//   } catch (e) {
+//     console.log('Error saving token', e);
+//   }
+// }
 
 const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => {
   const homeRouter = useRouter();
@@ -89,7 +89,7 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
           await tokenStorageManager.setRefreshToken(res.data.refresh_token, !isRemmebermeChecked);
 
           if (isRemmebermeChecked) {
-            await saveUserInformation(res.data.user);
+            //await saveUserInformation(res.data.user);
           }
 
           const userRole = res.data.user.role;
