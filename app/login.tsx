@@ -18,7 +18,6 @@ import { Strings } from '@/constants/Strings';
 import '../global.css';
 import Checkbox from '@/components/ui/Checkbox';
 import HorizontalRule from '@/components/ui/HorizontalRule';
-import * as SecureStore from 'expo-secure-store';
 
 import NotificationToast from '@/components/NotificationToast';
 import { ToastType } from '@/components/NotificationToast';
@@ -42,7 +41,7 @@ import tokenStorageManager from '@/storage/tokenStorage/tokenStorageManager';
 // }
 
 const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => {
-  const homeRouter = useRouter();
+  //const homeRouter = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isRemmebermeChecked, setIsRemmebermeChecked] = useState(false);
@@ -71,7 +70,7 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
   const handleLogin = async () => {
     try {
       if (username === '' || password === '') {
-        console.log('Username or password is empty');
+        showToast('Vui lòng nhập đầy đủ thông tin', ToastType.ERROR);
         return;
       }
 
@@ -85,35 +84,50 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
 
         if (res.status === 200) {
           console.log('Login successful');
-          tokenStorageManager.setAccessToken(res.data.access_token);
-          await tokenStorageManager.setRefreshToken(res.data.refresh_token, !isRemmebermeChecked);
 
           if (isRemmebermeChecked) {
-            //await saveUserInformation(res.data.user);
+            tokenStorageManager.setAccessToken(res.data.access_token);
+            await tokenStorageManager.setRefreshToken(res.data.refresh_token, !isRemmebermeChecked);
           }
 
-          const userRole = res.data.user.role;
-          if (userRole === 1) {
+          const user = {
+            role: res.data.user.role,
+          };
+          console.log('User role', user.role);
+          if (user.role === 1) {
             navigation.replace('UserTabLayout', {
               message: 'Hello from Login',
             });
           }
-          if (userRole === 0) {
+          if (user.role === 0) {
             navigation.replace('AdminLayout', {
               message: 'Hello from Login',
             });
           }
         }
-      } catch (e: any) {
-        console.log('Error in login attempt', e.response.data.message);
-        setTimeout(() => {
-          showToast(e.response.data.message || '', ToastType.ERROR);
-        }, 300);
+      } catch (error: any) {
+        console.error('Error in login attempt:', error);
+        let errorMessage = 'Đăng nhập thất bại';
+
+        if (error.response) {
+          // The request was made and the server responded with a status code
+          // that falls out of the range of 2xx
+          errorMessage = error.response.data?.message || 'Đăng nhập thất bại';
+        } else if (error.request) {
+          // The request was made but no response was received
+          errorMessage = 'Không thể kết nối đến máy chủ';
+        } else {
+          // Something happened in setting up the request that triggered an Error
+          errorMessage = 'Có lỗi xảy ra khi đăng nhập';
+        }
+
+        showToast(errorMessage, ToastType.ERROR);
       } finally {
         setIsLoading(false);
       }
     } catch (error) {
-      console.log('Login failed');
+      console.error('Login failed:', error);
+      showToast('Có lỗi xảy ra khi đăng nhập', ToastType.ERROR);
       setIsLoading(false);
     }
   };

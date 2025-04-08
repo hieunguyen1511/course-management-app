@@ -7,12 +7,11 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { RootStackParamList } from '@/types/RootStackParamList';
 import { MyScreenProps } from '@/types/MyScreenProps';
-import '../global.css';
+
 import { useState, useEffect } from 'react';
 import axiosInstance from '@/api/axiosInstance';
-import * as SecureStore from 'expo-secure-store';
+
 import tokenStorageManager from '@/storage/tokenStorage/tokenStorageManager';
-import '../global.css';
 
 // auth
 import Login from './login';
@@ -37,22 +36,6 @@ import { StripeProvider } from '@stripe/stripe-react-native';
 import PaymentCheckoutScreen from '@/screens/user/PaymentCheckoutScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-
-// async function getUserInformation() {
-//   try {
-//     const user = await SecureStore.getItemAsync('user');
-//     if (user) {
-//       console.log('User', user);
-//       return user;
-//     } else {
-//       console.log('No user');
-//       return JSON.stringify({});
-//     }
-//   } catch (e) {
-//     console.log('Error getting user', e);
-//     return JSON.stringify({});
-//   }
-// }
 
 async function getUserInformation() {
   try {
@@ -128,11 +111,11 @@ async function processLogin(navigation: any, homeRouter: any) {
 }
 
 const IndexScreen: React.FC<MyScreenProps['IndexScreenProps']> = ({ navigation, route }) => {
-  const homeRouter = useRouter();
+  //const homeRouter = useRouter();
   const [isProcessing, setIsProcessing] = useState(true);
   useEffect(() => {
     if (isProcessing) {
-      processLogin(navigation, homeRouter);
+      processLogin(navigation, route);
       setIsProcessing(false);
     }
   }, [isProcessing]);

@@ -1,7 +1,7 @@
 import { Lesson, Section } from './course';
 
 export type RootStackParamList = {
-  Main: { screen: keyof RootStackParamList };
+  //Main: { screen: keyof RootStackParamList };
 
   Index: { message?: string };
   Login: { message?: string; message_from_register?: string | '' };
@@ -88,9 +88,9 @@ export type RootStackParamList = {
   };
 };
 
-export type BottomTabParamList = {
-  home: { message?: string };
-  explore: { message?: string };
-  course: { message?: string };
-  account: { message?: string };
-};
+// export type BottomTabParamList = {
+//   home: { message?: string };
+//   explore: { message?: string };
+//   course: { message?: string };
+//   account: { message?: string };
+// };

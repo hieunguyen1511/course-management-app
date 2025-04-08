@@ -8,6 +8,7 @@ import {
   Platform,
   Alert,
   SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,8 +47,9 @@ async function updateUserInfo_JWT(user: User) {
         birth: user.birth,
       }
     );
+    //console.log('Update user info response', response.status);
     if (response.status === 200) {
-      return response.data;
+      return response;
     }
     throw new Error('Failed to update user info');
   } catch (error) {
@@ -121,6 +123,7 @@ async function updateUserAvatar_JWT(avatar_url: string) {
 const EditProfile: React.FC<MyScreenProps['EditProfileScreenProps']> = ({ navigation, route }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const [avatar, setAvatar] = useState<string | null>(null);
   const [fullName, setFullName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState(new Date());
@@ -174,7 +177,7 @@ const EditProfile: React.FC<MyScreenProps['EditProfileScreenProps']> = ({ naviga
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 1,
@@ -206,6 +209,12 @@ const EditProfile: React.FC<MyScreenProps['EditProfileScreenProps']> = ({ naviga
       return;
     }
 
+    if (!avatar) {
+      Alert.alert('Lỗi', 'Vui lòng chọn ảnh đại diện');
+      return;
+    }
+
+    setUpdating(true);
     try {
       const updatedUser: User = {
         ...user,
@@ -215,24 +224,35 @@ const EditProfile: React.FC<MyScreenProps['EditProfileScreenProps']> = ({ naviga
       };
 
       const response = await updateUserInfo_JWT(updatedUser);
+      console.log('Updated user:', response.data);
       if (response.status === 200) {
-        Alert.alert('Thành công', 'Cập nhật thông tin thành công');
         try {
           const response = await uploadToCloudinary(avatar ? avatar : '');
           if (response) {
             await updateUserAvatar_JWT(response);
-            Alert.alert('Thành công', 'Cập nhật ảnh đại diện thành công');
+            Alert.alert('Thành công', 'Cập nhật thông tin thành công', [
+              {
+                text: 'OK',
+                onPress: () => {
+                  setUpdating(false);
+                  //navigation.goBack();
+                },
+              },
+            ]);
           }
         } catch (error) {
           console.error('Error uploading image:', error);
           Alert.alert('Lỗi', 'Không thể cập nhật ảnh đại diện');
+          setUpdating(false);
         }
       } else {
         Alert.alert('Lỗi', 'Không thể cập nhật thông tin');
+        setUpdating(false);
       }
     } catch (error) {
       console.error('Error saving profile:', error);
       Alert.alert('Lỗi', 'Không thể cập nhật thông tin');
+      setUpdating(false);
     }
   };
 
@@ -319,8 +339,16 @@ const EditProfile: React.FC<MyScreenProps['EditProfileScreenProps']> = ({ naviga
           </View>
 
           {/* Save Button */}
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveButtonText}>Lưu thay đổi</Text>
+          <TouchableOpacity
+            style={[styles.saveButton, updating && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={updating}
+          >
+            {updating ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.saveButtonText}>Lưu thay đổi</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -446,6 +474,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#a0a0a0',
   },
   saveButtonText: {
     color: 'white',
