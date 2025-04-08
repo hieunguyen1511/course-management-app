@@ -47,6 +47,7 @@ interface UserEnrollments {
   complete_lesson: number;
   progress: number;
   image: string;
+  last_access: string;
   createdAt: string;
   updatedAt: string;
   course: {
@@ -149,22 +150,19 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
 
     try {
       const response = await axiosInstance.get(
-        `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_USER_ID}`.replace(
-          ':user_id',
-          userId.toString()
-        )
+        `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_USER_ID_JWT}`
       );
-
+      console.log('User enrollments response:', userId);
       if (response.data?.enrollments?.length > 0) {
         const sortedEnrollments = response.data.enrollments.sort(
           (a: UserEnrollments, b: UserEnrollments) =>
             new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         );
-
+        //console.log('User enrollments response:', response.data?.enrollments?.length);
         const firstEnrollment = sortedEnrollments[0];
         if (firstEnrollment) {
           setReferenceCategoryId(firstEnrollment.course.category_id);
-
+          //console.log('User enrollments response:', response.data?.enrollments?.length);
           const mappedData: UserEnrollments = {
             id: firstEnrollment.id,
             user_id: firstEnrollment.user_id,
@@ -183,6 +181,7 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
               ((firstEnrollment.complete_lesson || 0) / (firstEnrollment.total_lesson || 1)) * 100
             ),
             image: firstEnrollment.course?.image || '',
+            last_access: firstEnrollment.last_access || '',
             createdAt: firstEnrollment.createdAt || '',
             updatedAt: new Intl.DateTimeFormat('vi-VN', {
               day: '2-digit',

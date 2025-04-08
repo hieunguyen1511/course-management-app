@@ -242,6 +242,10 @@ const DetailCourseScreen: React.FC<MyScreenProps['DetailCourseScreenProps']> = (
 
   const handleEnroll = async () => {
     try {
+      const isUserInfoValid = await checkUserInfo();
+      if (!isUserInfoValid) {
+        return;
+      }
       if (course?.price === 0) {
         let url = `${process.env.EXPO_PUBLIC_API_CREATE_ENROLLMENT}`;
         const totalLesson = await getTotalLessonFromSections(sections);

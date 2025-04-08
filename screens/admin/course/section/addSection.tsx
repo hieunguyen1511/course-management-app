@@ -1,24 +1,32 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native'
-import React, { useState, useEffect } from 'react'
-import { MyScreenProps } from '@/types/MyScreenProps'
-import { Ionicons } from '@expo/vector-icons'
-import { Section } from '@/types/course'
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  Alert,
+} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { MyScreenProps } from '@/types/MyScreenProps';
+import { Ionicons } from '@expo/vector-icons';
+import { Section } from '@/types/course';
 
-const AddSectionScreen: React.FC<MyScreenProps['AddSectionScreenProps']> = ({ 
-  navigation, 
-  route 
+const AddSectionScreen: React.FC<MyScreenProps['AddSectionScreenProps']> = ({
+  navigation,
+  route,
 }) => {
   const { courseId, newId, onSectionAdded } = route.params;
 
   const [formData, setFormData] = useState({
     name: '',
-    description: ''
+    description: '',
   });
 
   const handleInputChange = (name: string, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -44,15 +52,10 @@ const AddSectionScreen: React.FC<MyScreenProps['AddSectionScreenProps']> = ({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {'Thêm Section Mới'}
-        </Text>
+        <Text style={styles.headerTitle}>{'Thêm Section Mới'}</Text>
       </View>
 
       <ScrollView style={styles.content}>
@@ -61,7 +64,7 @@ const AddSectionScreen: React.FC<MyScreenProps['AddSectionScreenProps']> = ({
           <TextInput
             style={styles.input}
             value={formData.name}
-            onChangeText={(value) => handleInputChange('name', value)}
+            onChangeText={value => handleInputChange('name', value)}
             placeholder="Nhập tên section"
           />
         </View>
@@ -71,7 +74,7 @@ const AddSectionScreen: React.FC<MyScreenProps['AddSectionScreenProps']> = ({
           <TextInput
             style={[styles.input, styles.textArea]}
             value={formData.description}
-            onChangeText={(value) => handleInputChange('description', value)}
+            onChangeText={value => handleInputChange('description', value)}
             placeholder="Nhập mô tả cho section"
             multiline
             numberOfLines={4}
@@ -81,19 +84,14 @@ const AddSectionScreen: React.FC<MyScreenProps['AddSectionScreenProps']> = ({
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity 
-          style={[styles.button, styles.cancelButton]} 
+        <TouchableOpacity
+          style={[styles.button, styles.cancelButton]}
           onPress={() => navigation.goBack()}
         >
           <Text style={styles.cancelButtonText}>Hủy</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.button, styles.submitButton]} 
-          onPress={handleSubmit}
-        >
-          <Text style={styles.submitButtonText}>
-            {'Thêm mới'}
-          </Text>
+        <TouchableOpacity style={[styles.button, styles.submitButton]} onPress={handleSubmit}>
+          <Text style={styles.submitButtonText}>{'Thêm mới'}</Text>
         </TouchableOpacity>
       </View>
     </View>
