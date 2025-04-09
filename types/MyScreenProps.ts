@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { BottomTabParamList, RootStackParamList } from '@/types/RootStackParamList';
+import { RootStackParamList } from '@/types/RootStackParamList';
 
 export type MyScreenProps = {
   IndexScreenProps: NativeStackScreenProps<RootStackParamList, 'Index'>;

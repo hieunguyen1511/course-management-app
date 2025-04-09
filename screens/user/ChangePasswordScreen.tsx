@@ -1,7 +1,37 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  Platform,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import React, { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { MyScreenProps } from '@/types/MyScreenProps';
+import axiosInstance from '@/api/axiosInstance';
+import { tokenStorageManager } from '@/storage/tokenStorage/tokenStorageManager';
+import * as SecureStore from 'expo-secure-store';
+async function changePassword(currentPassword: string, newPassword: string) {
+  try {
+    const response = await axiosInstance.put(
+      `${process.env.EXPO_PUBLIC_API_USER_CHANEGE_PASSWORD}`,
+      {
+        old_password: currentPassword,
+        password: newPassword,
+      }
+    );
+    if (response.status === 200) {
+      return response;
+    }
+    throw new Error('Failed to change password');
+  } catch (error) {
+    console.log(error);
+    throw new Error('Failed to change password');
+  }
+}
 
 const ChangePassword: React.FC<MyScreenProps['ChangePasswordScreenProps']> = ({
   navigation,
@@ -13,20 +43,59 @@ const ChangePassword: React.FC<MyScreenProps['ChangePasswordScreenProps']> = ({
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [updating, setUpdating] = useState(false);
 
-  const handleChangePassword = () => {
-    if (newPassword !== confirmPassword) {
-      // TODO: Show error message
-      console.log('Passwords do not match');
+  const handleLogout = async () => {
+    await SecureStore.deleteItemAsync('user');
+    await tokenStorageManager.deleteRefreshToken();
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
+    navigation.navigate('Login', {
+      message: 'Đăng xuất thành công',
+    });
+    // In a real app, you would clear tokens, user data, etc.
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentPassword.trim()) {
+      Alert.alert('Lỗi', 'Vui lòng nhập mật khẩu hiện tại');
       return;
     }
 
-    // TODO: Implement password change functionality
-    console.log('Change password:', {
-      currentPassword,
-      newPassword,
-      confirmPassword,
-    });
+    if (!newPassword.trim()) {
+      Alert.alert('Lỗi', 'Vui lòng nhập mật khẩu mới');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      Alert.alert('Lỗi', 'Mật khẩu mới phải có ít nhất 6 ký tự');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Lỗi', 'Mật khẩu mới không khớp');
+      return;
+    }
+
+    setUpdating(true);
+    try {
+      await changePassword(currentPassword, newPassword);
+      Alert.alert('Thành công', 'Đổi mật khẩu thành công', [
+        {
+          text: 'OK',
+          onPress: () => {
+            setUpdating(false);
+            handleLogout();
+          },
+        },
+      ]);
+    } catch (error) {
+      console.error('Error changing password:', error);
+      Alert.alert('Lỗi', 'Không thể đổi mật khẩu. Vui lòng kiểm tra lại mật khẩu hiện tại.');
+      setUpdating(false);
+    }
   };
 
   return (
@@ -107,8 +176,16 @@ const ChangePassword: React.FC<MyScreenProps['ChangePasswordScreenProps']> = ({
         </View>
 
         {/* Change Password Button */}
-        <TouchableOpacity style={styles.changeButton} onPress={handleChangePassword}>
-          <Text style={styles.changeButtonText}>Đổi mật khẩu</Text>
+        <TouchableOpacity
+          style={[styles.changeButton, updating && styles.changeButtonDisabled]}
+          onPress={handleChangePassword}
+          disabled={updating}
+        >
+          {updating ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text style={styles.changeButtonText}>Đổi mật khẩu</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -179,6 +256,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
+  },
+  changeButtonDisabled: {
+    backgroundColor: '#a0a0a0',
   },
   changeButtonText: {
     color: 'white',

@@ -191,9 +191,11 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
                 source={{ uri: getAvatarOrDefault(comment.user.avatar) }}
                 style={styles.avatar}
               />
+              <View style={{ paddingLeft: 10 }}>
+                <Text style={styles.userName}>{comment.user?.fullname || 'Người dùng'}</Text>
+                <Text style={styles.timestamp}>{formatDateOrRelative(comment.createdAt)}</Text>
+              </View>
             </View>
-            <Text style={styles.userName}>{comment.user?.fullname || 'Người dùng'}</Text>
-            <Text style={styles.timestamp}>{formatDateOrRelative(comment.createdAt)}</Text>
           </View>
         </View>
         <Text style={styles.commentContent}>{comment.content}</Text>
@@ -213,9 +215,13 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
                         source={{ uri: getAvatarOrDefault(reply.user.avatar) }}
                         style={styles.avatar}
                       />
+                      <View style={{ paddingLeft: 10 }}>
+                        <Text style={styles.userName}>{reply.user?.fullname || 'Người dùng'}</Text>
+                        <Text style={styles.timestamp}>
+                          {formatDateOrRelative(reply.createdAt)}
+                        </Text>
+                      </View>
                     </View>
-                    <Text style={styles.userName}>{reply.user?.fullname || 'Người dùng'}</Text>
-                    <Text style={styles.timestamp}>{formatDateOrRelative(reply.createdAt)}</Text>
                   </View>
                 </View>
                 <Text style={styles.commentContent}>{reply.content}</Text>
@@ -724,6 +730,7 @@ const styles = StyleSheet.create({
   },
   commentInfo: {
     flex: 1,
+    paddingLeft: 0,
   },
   userName: {
     fontSize: 14,
@@ -758,6 +765,8 @@ const styles = StyleSheet.create({
   },
   avatarContainer: {
     marginRight: 8,
+    alignItems: 'center',
+    flexDirection: 'row',
   },
   avatar: {
     width: 40,
