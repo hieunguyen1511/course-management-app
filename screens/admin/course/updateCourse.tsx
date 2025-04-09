@@ -1,13 +1,25 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, TextInput, Image, Switch } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  Modal,
+  TextInput,
+  Image,
+  Switch,
+} from 'react-native';
+import React, { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { MyScreenProps } from '@/types/MyScreenProps';
 import * as ImagePicker from 'expo-image-picker';
 import { Picker } from '@react-native-picker/picker';
 import axiosInstance from '@/api/axiosInstance';
 import { Category } from '@/types/category';
-import { Section, Lesson, Course, Question, Answer } from '@/types/course';
+import { Section, Lesson, Question, Answer } from '@/types/course';
 import { Strings } from '@/constants/Strings';
+import { uploadToCloudinary, deleteImagefromCloudinary } from '@/components/Cloudinary';
 
 interface DeleteModalProps {
   visible: boolean;
@@ -25,12 +37,7 @@ const DeleteModal: React.FC<DeleteModalProps> = ({
   onCancel,
 }) => {
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onCancel}
-    >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
@@ -39,16 +46,10 @@ const DeleteModal: React.FC<DeleteModalProps> = ({
           </View>
           <Text style={styles.modalMessage}>{message}</Text>
           <View style={styles.modalButtons}>
-            <TouchableOpacity 
-              style={[styles.modalButton, styles.cancelButton]} 
-              onPress={onCancel}
-            >
+            <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={onCancel}>
               <Text style={styles.cancelButtonText}>Hủy</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.modalButton, styles.deleteButton]} 
-              onPress={onConfirm}
-            >
+            <TouchableOpacity style={[styles.modalButton, styles.deleteButton]} onPress={onConfirm}>
               <Text style={styles.deleteButtonText}>Xóa</Text>
             </TouchableOpacity>
           </View>
@@ -58,10 +59,7 @@ const DeleteModal: React.FC<DeleteModalProps> = ({
   );
 };
 
-const UpdateCourseScreen = ({
-  navigation,
-  route,
-}: MyScreenProps["UpdateCourseScreenProps"]) =>  {
+const UpdateCourseScreen = ({ navigation, route }: MyScreenProps['UpdateCourseScreenProps']) => {
   const courseId = route.params.courseId;
   const [name, setName] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
@@ -84,7 +82,6 @@ const UpdateCourseScreen = ({
   const [oldNewIdSection, setOldNewIdSection] = useState(1);
   const [newIdSection, setNewIdSection] = useState(1);
 
-  
   const fetchCategories = async () => {
     try {
       const response = await axiosInstance.get(`${process.env.EXPO_PUBLIC_API_GET_ALL_CATEGORIES}`);
@@ -95,18 +92,18 @@ const UpdateCourseScreen = ({
         }
       } else {
         console.log(`Failed to fetch. Status: ${response.status}`);
-        Alert.alert("Lỗi", `Failed to fetch. Status: ${response.status}`, [{ text: "OK" }]);
+        Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
-      Alert.alert("Lỗi", `Error fetching categories: ${error}`, [{ text: "OK" }]);
+      Alert.alert('Lỗi', `Error fetching categories: ${error}`, [{ text: 'OK' }]);
     }
   };
 
   const fetchCourseById = async () => {
     try {
       const response = await axiosInstance.get(
-        `${process.env.EXPO_PUBLIC_API_GET_COURSE_BY_ID}`.replace(":id", String(courseId))
+        `${process.env.EXPO_PUBLIC_API_GET_COURSE_BY_ID}`.replace(':id', String(courseId))
       );
       if (response.status === 200) {
         const course = response.data.course;
@@ -114,24 +111,24 @@ const UpdateCourseScreen = ({
         setCategoryId(course.category_id);
         setDescription(course.description);
         setPrice(course.price);
-        setIsFree(course.price == 0);
+        setIsFree(course.price === 0);
         setDiscount(course.discount);
-        setHasDiscount(course.discount != 0);
+        setHasDiscount(course.discount !== 0);
         setStatus(course.status);
         setTotalRating(course.total_rating);
         setImage(course.image);
-        setOldImage(course.oldImage);
+        setOldImage(course.image);
       }
     } catch (error) {
       console.error('Error fetching course:', error);
-      Alert.alert("Lỗi", Strings.courses.loadError, [{ text: "OK" }]);
+      Alert.alert('Lỗi', Strings.courses.loadError, [{ text: 'OK' }]);
     }
   };
 
   const fetchSectionsByCourseId = async () => {
     try {
       const response = await axiosInstance.get(
-        `${process.env.EXPO_PUBLIC_API_GET_SECTION_BY_COURSE_ID}`.replace(":id", String(courseId))
+        `${process.env.EXPO_PUBLIC_API_GET_SECTION_BY_COURSE_ID}`.replace(':id', String(courseId))
       );
       if (response.status === 200) {
         const tempSections = response.data.sections;
@@ -146,7 +143,6 @@ const UpdateCourseScreen = ({
           });
         });
 
-
         const lenSections = tempSections.length;
         for (let index = 0; index < lenSections; index++) {
           const lenLessons = tempSections[index].lessons.length;
@@ -154,19 +150,19 @@ const UpdateCourseScreen = ({
           for (let j = 0; j < lenLessons; j++) {
             const lenQuestions = tempSections[index].lessons[j].questions.length;
             tempSections[index].lessons[j].save = true;
-            if (lenQuestions != 0) {
-              tempSections[index].lessons[j].newIdQuestion = tempSections[index].lessons[j].questions[lenQuestions - 1].id + 1;
-            }
-            else {
+            if (lenQuestions !== 0) {
+              tempSections[index].lessons[j].newIdQuestion =
+                tempSections[index].lessons[j].questions[lenQuestions - 1].id + 1;
+            } else {
               tempSections[index].lessons[j].newIdQuestion = 1;
             }
             for (let k = 0; k < lenQuestions; k++) {
               const lenAnswers = tempSections[index].lessons[j].questions[k].answers.length;
               tempSections[index].lessons[j].questions[k].save = true;
-              if (lenAnswers != 0) {
-                tempSections[index].lessons[j].questions[k].newIdAnswer = tempSections[index].lessons[j].questions[k].answers[lenAnswers - 1].id + 1;
-              }
-              else {
+              if (lenAnswers !== 0) {
+                tempSections[index].lessons[j].questions[k].newIdAnswer =
+                  tempSections[index].lessons[j].questions[k].answers[lenAnswers - 1].id + 1;
+              } else {
                 tempSections[index].lessons[j].questions[k].newIdAnswer = 1;
               }
               for (let l = 0; l < lenAnswers; l++) {
@@ -175,27 +171,25 @@ const UpdateCourseScreen = ({
             }
           }
 
-          if (lenLessons != 0) {
+          if (lenLessons !== 0) {
             tempSections[index].newIdLesson = tempSections[index].lessons[lenLessons - 1].id + 1;
-          }
-          else {
+          } else {
             tempSections[index].newIdLesson = 1;
           }
         }
-        if (lenSections != 0) {
+        if (lenSections !== 0) {
           setOldNewIdSection(tempSections[lenSections - 1].id + 1);
           setNewIdSection(tempSections[lenSections - 1].id + 1);
         }
         setOldSections(tempSections);
         setSections(tempSections);
-
       } else {
         console.log(`Failed to fetch. Status: ${response.status}`);
-        Alert.alert("Lỗi", `Failed to fetch. Status: ${response.status}`, [{ text: "OK" }]);
+        Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
       }
     } catch (error) {
       console.error('Error fetching sections:', error);
-      Alert.alert("Lỗi", `Error fetching sections: ${error}`, [{ text: "OK" }]);
+      Alert.alert('Lỗi', `Error fetching sections: ${error}`, [{ text: 'OK' }]);
     } finally {
       setLoading(false);
     }
@@ -209,7 +203,9 @@ const UpdateCourseScreen = ({
 
   // State for delete modal
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<{type: 'section' | 'lesson', id: number} | undefined>(undefined);
+  const [itemToDelete, setItemToDelete] = useState<
+    { type: 'section' | 'lesson'; id: number } | undefined
+  >(undefined);
 
   const handleAddSection = () => {
     navigation.navigate('AddSection', {
@@ -218,7 +214,7 @@ const UpdateCourseScreen = ({
       onSectionAdded: (newSection: Section) => {
         setSections([...sections, newSection]);
         setNewIdSection(newSection.id + 1);
-      }
+      },
     });
   };
 
@@ -227,10 +223,10 @@ const UpdateCourseScreen = ({
       courseId: 1,
       sectionData,
       onSectionUpdated: (updatedSection: Section) => {
-        setSections(sections.map(section => 
-          section.id === updatedSection.id ? updatedSection : section
-        ));
-      }
+        setSections(
+          sections.map(section => (section.id === updatedSection.id ? updatedSection : section))
+        );
+      },
     });
   };
 
@@ -243,17 +239,19 @@ const UpdateCourseScreen = ({
     navigation.navigate('AddLesson', {
       sectionData: section,
       onLessonAdded: (newLesson: Lesson) => {
-        setSections(sections.map(sec => {
-          if (sec.id === section.id) {
-            return {
-              ...sec,
-              newIdLesson: newLesson.id + 1,
-              lessons: [...sec.lessons, newLesson]
-            };
-          }
-          return sec;
-        }));
-      }
+        setSections(
+          sections.map(sec => {
+            if (sec.id === section.id) {
+              return {
+                ...sec,
+                newIdLesson: newLesson.id + 1,
+                lessons: [...sec.lessons, newLesson],
+              };
+            }
+            return sec;
+          })
+        );
+      },
     });
   };
 
@@ -262,18 +260,20 @@ const UpdateCourseScreen = ({
       sectionData: section,
       lessonData,
       onLessonUpdated: (updatedLesson: Lesson) => {
-        setSections(sections.map(sec => {
-          if (sec.id === section.id) {
-            return {
-              ...sec,
-              lessons: sec.lessons.map(lesson =>
-                lesson.id === updatedLesson.id ? updatedLesson : lesson
-              )
-            };
-          }
-          return sec;
-        }));
-      }
+        setSections(
+          sections.map(sec => {
+            if (sec.id === section.id) {
+              return {
+                ...sec,
+                lessons: sec.lessons.map(lesson =>
+                  lesson.id === updatedLesson.id ? updatedLesson : lesson
+                ),
+              };
+            }
+            return sec;
+          })
+        );
+      },
     });
   };
 
@@ -288,10 +288,12 @@ const UpdateCourseScreen = ({
     if (itemToDelete.type === 'section') {
       setSections(sections.filter(section => section.id !== itemToDelete.id));
     } else {
-      setSections(sections.map(section => ({
-        ...section,
-        lessons: section.lessons.filter(lesson => lesson.id !== itemToDelete.id)
-      })));
+      setSections(
+        sections.map(section => ({
+          ...section,
+          lessons: section.lessons.filter(lesson => lesson.id !== itemToDelete.id),
+        }))
+      );
     }
     setDeleteModalVisible(false);
     setItemToDelete(undefined);
@@ -303,20 +305,16 @@ const UpdateCourseScreen = ({
   };
 
   const handleReset = async () => {
-    Alert.alert(
-      'Xác nhận khôi phục',
-      'Bạn có chắc chắn muốn khôi phục về trạng thái ban đầu?',
-      [
-        { text: 'Hủy', style: 'cancel' },
-        { 
-          text: 'Khôi phục', 
-          style: 'destructive',
-          onPress: () => {
-            resetButton();
-          }
-        }
-      ]
-    );
+    Alert.alert('Xác nhận khôi phục', 'Bạn có chắc chắn muốn khôi phục về trạng thái ban đầu?', [
+      { text: 'Hủy', style: 'cancel' },
+      {
+        text: 'Khôi phục',
+        style: 'destructive',
+        onPress: () => {
+          resetButton();
+        },
+      },
+    ]);
   };
 
   const resetButton = async () => {
@@ -324,7 +322,7 @@ const UpdateCourseScreen = ({
       setLoading(true);
       try {
         const response = await axiosInstance.get(
-          `${process.env.EXPO_PUBLIC_API_GET_COURSE_BY_ID}`.replace(":id", String(courseId))
+          `${process.env.EXPO_PUBLIC_API_GET_COURSE_BY_ID}`.replace(':id', String(courseId))
         );
         if (response.status === 200) {
           const course = response.data.course;
@@ -332,179 +330,145 @@ const UpdateCourseScreen = ({
           setCategoryId(course.category_id);
           setDescription(course.description);
           setPrice(course.price);
-          setIsFree(course.price == 0);
+          setIsFree(course.price === 0);
           setDiscount(course.discount);
-          setHasDiscount(course.discount != 0);
+          setHasDiscount(course.discount !== 0);
           setStatus(course.status);
           setTotalRating(course.total_rating);
           setImage(course.image);
         }
-      } catch (error) {
-        Alert.alert("Lỗi", Strings.courses.resetError, [{ text: "OK" }]);
-      }
-      finally {
+      } catch {
+        Alert.alert('Lỗi', Strings.courses.resetError, [{ text: 'OK' }]);
+      } finally {
         setLoading(false);
       }
-    }
-    else {
+    } else {
       setSections(oldSections);
       setNewIdSection(oldNewIdSection);
     }
-  }
+  };
 
-  const uploadToCloudinary = async (imageUri: string) => {
+  const pickImage = async (useCamera = false) => {
     try {
-      const upload_preset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_COURSE_PRESET;
-      const cloud_name = process.env.EXPO_PUBLIC_CLOUDINARY_COURSE_CLOUD_NAME;
-      const upload_url = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_COURSE_API_URL;
-      
-      if (!upload_preset || !cloud_name || !upload_url) {
-        throw new Error('Cloudinary configuration is missing');
+      const { status } = useCamera
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== 'granted') {
+        Alert.alert('Cần quyền truy cập', 'Vui lòng cấp quyền truy cập để tiếp tục.', [
+          { text: 'OK' },
+        ]);
+        return;
       }
-      
-      const formData = new FormData();
-      
-      const uriParts = imageUri.split('.');
-      const fileType = uriParts[uriParts.length - 1];
-      
-      formData.append('file', {
-        uri: imageUri,
-        type: `image/${fileType}`,
-        name: `photo.${fileType}`
-      } as any);
-      
-      formData.append('upload_preset', upload_preset);
-      formData.append('cloud_name', cloud_name);
-  
-      const response = await fetch(
-        `${upload_url}`,
-        {
-          method: 'POST',
-          body: formData,
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-  
-      if (!response.ok) {
-        throw new Error('Upload failed');
+
+      const result = useCamera
+        ? await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [16, 9], quality: 1 })
+        : await ImagePicker.launchImageLibraryAsync({
+            allowsEditing: true,
+            aspect: [16, 9],
+            quality: 1,
+          });
+
+      if (!result.canceled) {
+        setImage(result.assets[0].uri);
       }
-  
-      const result = await response.json();
-      return result.secure_url;
     } catch (error) {
-      console.error('Error uploading image:', error);
-      Alert.alert("Lỗi", `Error uploading image: ${error}`, [{ text: "OK" }]);
-      return null;
+      console.error('Error in pickImage:', error);
+      Alert.alert('Lỗi', Strings.courses.pickImageError, [{ text: 'OK' }]);
     }
   };
 
   const uploadImage = async (uri: string) => {
     const imageUrl = await uploadToCloudinary(uri);
     if (!imageUrl) {
-      Alert.alert("Lỗi", Strings.courses.uploadError, [{ text: "OK" }]);
+      Alert.alert('Lỗi', Strings.courses.uploadError, [{ text: 'OK' }]);
       return;
     }
     return imageUrl;
   };
 
-  const pickImage = async (useCamera = false) => {
-    try {
-      const { status } = useCamera 
-        ? await ImagePicker.requestCameraPermissionsAsync()
-        : await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (status !== 'granted') {
-        Alert.alert("Cần quyền truy cập", "Vui lòng cấp quyền truy cập để tiếp tục.", [{ text: "OK" }]);
-        return;
-      }
-
-      const result = useCamera
-        ? await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [16, 9], quality: 1 })
-        : await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, aspect: [16, 9], quality: 1 });
-
-      if (!result.canceled) {
-        setImage(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error("Error in pickImage:", error);
-      Alert.alert("Lỗi", Strings.courses.pickImageError, [{ text: "OK" }]);
-    }
-  };
-
   const handleUpdate = async () => {
-
-    if (activeTab == 'info') {
+    if (activeTab === 'info') {
       try {
         if (!name.trim()) {
-          Alert.alert("Lỗi", Strings.courses.nameRequired, [{ text: "OK" }]);
+          Alert.alert('Lỗi', Strings.courses.nameRequired, [{ text: 'OK' }]);
           return;
         }
-  
+
         if (!categoryId) {
-          Alert.alert("Lỗi", Strings.courses.categoryRequired, [{ text: "OK" }]);
+          Alert.alert('Lỗi', Strings.courses.categoryRequired, [{ text: 'OK' }]);
           return;
         }
         setLoading(true);
         const response = await axiosInstance.put(
-          `${process.env.EXPO_PUBLIC_API_UPDATE_COURSE}`.replace(":id", String(courseId)), {
+          `${process.env.EXPO_PUBLIC_API_UPDATE_COURSE}`.replace(':id', String(courseId)),
+          {
             category_id: categoryId,
             name: name.trim(),
             description: description.trim(),
             status: status,
             total_rating: total_rating,
-            image: '',
+            image: oldImage,
             price: isFree ? 0 : price,
             discount: hasDiscount ? discount : 0,
-        });
-  
-  
+          }
+        );
+
         if (response.status === 200) {
-  
-          if (image && image != oldImage) {
+          if (image && image !== oldImage) {
+            console.log(oldImage);
+            if (oldImage) {
+              const response = await deleteImagefromCloudinary(oldImage);
+              if (!response) {
+                Alert.alert('Lỗi', 'Không thể xoá ảnh khỏi Cloudinary');
+                return;
+              }
+            }
             //delete oldImage
             const savedPath = await uploadImage(image);
             if (savedPath) {
-              const responseUp = await axiosInstance.put(`${process.env.EXPO_PUBLIC_API_UPDATE_COURSE}`.replace(":id", String(response.data.course.id)),
-              {
-                category_id: categoryId,
-                name: name.trim(),
-                description: description.trim(),
-                status: status,
-                total_rating: total_rating,
-                image: savedPath,
-                price: isFree ? 0 : price,
-                discount: hasDiscount ? discount : 0,
-              });
+              const responseUp = await axiosInstance.put(
+                `${process.env.EXPO_PUBLIC_API_UPDATE_COURSE}`.replace(
+                  ':id',
+                  String(response.data.course.id)
+                ),
+                {
+                  category_id: categoryId,
+                  name: name.trim(),
+                  description: description.trim(),
+                  status: status,
+                  total_rating: total_rating,
+                  image: savedPath,
+                  price: isFree ? 0 : price,
+                  discount: hasDiscount ? discount : 0,
+                }
+              );
               if (responseUp.status === 200) {
                 setOldImage(savedPath);
                 setImage(savedPath);
-                console.log("Thành công lưu ảnh");
-              }
-              else {
-                console.error("Thất bại lưu ảnh");
+                console.log('Thành công lưu ảnh');
+              } else {
+                console.error('Thất bại lưu ảnh');
               }
             }
           }
-          Alert.alert("Thành công", `${Strings.courses.updateSuccess} ${response.data.course.id}`, [{ text: "OK", onPress: () => navigation.goBack() }]);
+          Alert.alert('Thành công', `${Strings.courses.updateSuccess} ${response.data.course.id}`, [
+            { text: 'OK', onPress: () => navigation.goBack() },
+          ]);
         }
       } catch (error: any) {
-        console.error("Error updatting course:", error);
-        Alert.alert("Lỗi", error.response?.data?.message || "Có lỗi xảy ra.", [{ text: "OK" }]);
-      }
-      finally {
+        console.error('Error updatting course:', error);
+        Alert.alert('Lỗi', error.response?.data?.message || 'Có lỗi xảy ra.', [{ text: 'OK' }]);
+      } finally {
         setLoading(false);
       }
-    }
-    else {
-
+    } else {
       setLoading(true);
       try {
         for (let index = 0; index < oldSections.length; index++) {
           const oldSection = oldSections[index];
           const foundSection = sections.find(s => s.id === oldSection.id);
-          
+
           if (!foundSection) {
             //delete
             const rsSection = await deleteSection(oldSection);
@@ -551,7 +515,7 @@ const UpdateCourseScreen = ({
         }
       } catch (error: any) {
         console.error('Có lỗi xảy ra:', error.message);
-        Alert.alert("Lỗi", error.response?.data?.message || "Có lỗi xảy ra.", [{ text: "OK" }]);
+        Alert.alert('Lỗi', error.response?.data?.message || 'Có lỗi xảy ra.', [{ text: 'OK' }]);
       }
 
       for (let index = 0; index < sections.length; index++) {
@@ -565,8 +529,7 @@ const UpdateCourseScreen = ({
             }
             sections[index].save = true;
           }
-        }
-        else {
+        } else {
           const rsSection = await addSection(section);
           if (!rsSection) {
             throw new Error(`Error creating section ${section.id}`);
@@ -588,8 +551,7 @@ const UpdateCourseScreen = ({
               }
               sections[index].lessons[j].save = true;
             }
-          }
-          else {
+          } else {
             const rsLesson = await addLesson(lesson);
             if (!rsLesson) {
               throw new Error(`Error creating lesson ${lesson.id}`);
@@ -611,8 +573,7 @@ const UpdateCourseScreen = ({
                 }
                 sections[index].lessons[j].questions[k].save = true;
               }
-            }
-            else {
+            } else {
               const rsQuestion = await addQuestion(question);
               if (!rsQuestion) {
                 throw new Error(`Error creating question ${question.id}`);
@@ -634,8 +595,7 @@ const UpdateCourseScreen = ({
                   }
                   sections[index].lessons[j].questions[k].answers[l].save = true;
                 }
-              }
-              else {
+              } else {
                 const rsAnswer = await addAnswer(answer);
                 if (!rsAnswer) {
                   throw new Error(`Error creating answer ${answer.id}`);
@@ -650,20 +610,17 @@ const UpdateCourseScreen = ({
       }
       setOldSections(sections);
       setLoading(false);
-      Alert.alert("Thành công", `${Strings.courses.updateSuccess} ${courseId}`, [{ text: "OK" }]);
+      Alert.alert('Thành công', `${Strings.courses.updateSuccess} ${courseId}`, [{ text: 'OK' }]);
     }
   };
 
-
   const addSection = async (section: Section) => {
     try {
-      const response = await axiosInstance.post(
-        `${process.env.EXPO_PUBLIC_API_CREATE_SECTION}`, {
-          course_id: section.course_id,
-          name: section.name,
-          description: section.description,
-        }
-      );
+      const response = await axiosInstance.post(`${process.env.EXPO_PUBLIC_API_CREATE_SECTION}`, {
+        course_id: section.course_id,
+        name: section.name,
+        description: section.description,
+      });
       if (response.status === 201) {
         return response.data.section;
       }
@@ -675,7 +632,8 @@ const UpdateCourseScreen = ({
   const updateSection = async (section: Section) => {
     try {
       const response = await axiosInstance.put(
-        `${process.env.EXPO_PUBLIC_API_UPDATE_SECTION}`.replace(":id", String(section.id)), {
+        `${process.env.EXPO_PUBLIC_API_UPDATE_SECTION}`.replace(':id', String(section.id)),
+        {
           course_id: section.course_id,
           name: section.name,
           description: section.description,
@@ -692,7 +650,7 @@ const UpdateCourseScreen = ({
   const deleteSection = async (section: Section) => {
     try {
       const response = await axiosInstance.delete(
-        `${process.env.EXPO_PUBLIC_API_DELETE_SECTION}`.replace(":id", String(section.id))
+        `${process.env.EXPO_PUBLIC_API_DELETE_SECTION}`.replace(':id', String(section.id))
       );
       if (response.status === 200) {
         return true;
@@ -704,15 +662,13 @@ const UpdateCourseScreen = ({
 
   const addLesson = async (lesson: Lesson) => {
     try {
-      const response = await axiosInstance.post(
-        `${process.env.EXPO_PUBLIC_API_CREATE_LESSON}`, {
-          section_id: lesson.section_id,
-          title: lesson.title,
-          content: lesson.content,
-          is_quizz: lesson.is_quizz,
-          video_url: lesson.video_url,
-        }
-      );
+      const response = await axiosInstance.post(`${process.env.EXPO_PUBLIC_API_CREATE_LESSON}`, {
+        section_id: lesson.section_id,
+        title: lesson.title,
+        content: lesson.content,
+        is_quizz: lesson.is_quizz,
+        video_url: lesson.video_url,
+      });
       if (response.status === 201) {
         return response.data.lesson;
       }
@@ -724,7 +680,8 @@ const UpdateCourseScreen = ({
   const updateLesson = async (lesson: Lesson) => {
     try {
       const response = await axiosInstance.put(
-        `${process.env.EXPO_PUBLIC_API_UPDATE_LESSON}`.replace(":id", String(lesson.id)), {
+        `${process.env.EXPO_PUBLIC_API_UPDATE_LESSON}`.replace(':id', String(lesson.id)),
+        {
           section_id: lesson.section_id,
           title: lesson.title,
           content: lesson.content,
@@ -743,7 +700,7 @@ const UpdateCourseScreen = ({
   const deleteLesson = async (lesson: Lesson) => {
     try {
       const response = await axiosInstance.delete(
-        `${process.env.EXPO_PUBLIC_API_DELETE_LESSON}`.replace(":id", String(lesson.id))
+        `${process.env.EXPO_PUBLIC_API_DELETE_LESSON}`.replace(':id', String(lesson.id))
       );
       if (response.status === 200) {
         return true;
@@ -755,13 +712,11 @@ const UpdateCourseScreen = ({
 
   const addQuestion = async (question: Question) => {
     try {
-      const response = await axiosInstance.post(
-        `${process.env.EXPO_PUBLIC_API_CREATE_QUESTION}`, {
-          lesson_id: question.lesson_id,
-          content: question.content,
-          note: question.note || '',
-        }
-      );
+      const response = await axiosInstance.post(`${process.env.EXPO_PUBLIC_API_CREATE_QUESTION}`, {
+        lesson_id: question.lesson_id,
+        content: question.content,
+        note: question.note || '',
+      });
       if (response.status === 201) {
         return response.data.question;
       }
@@ -773,7 +728,8 @@ const UpdateCourseScreen = ({
   const updateQuestion = async (question: Question) => {
     try {
       const response = await axiosInstance.put(
-        `${process.env.EXPO_PUBLIC_API_UPDATE_QUESTION}`.replace(":id", String(question.id)), {
+        `${process.env.EXPO_PUBLIC_API_UPDATE_QUESTION}`.replace(':id', String(question.id)),
+        {
           lesson_id: question.lesson_id,
           content: question.content,
           note: question.note,
@@ -790,7 +746,7 @@ const UpdateCourseScreen = ({
   const deleteQuestion = async (question: Question) => {
     try {
       const response = await axiosInstance.delete(
-        `${process.env.EXPO_PUBLIC_API_DELETE_QUESTION}`.replace(":id", String(question.id))
+        `${process.env.EXPO_PUBLIC_API_DELETE_QUESTION}`.replace(':id', String(question.id))
       );
       if (response.status === 200) {
         return true;
@@ -801,13 +757,11 @@ const UpdateCourseScreen = ({
   };
   const addAnswer = async (answer: Answer) => {
     try {
-      const response = await axiosInstance.post(
-        `${process.env.EXPO_PUBLIC_API_CREATE_ANSWER}`, {
-          question_id: answer.question_id,
-          content: answer.content,
-          is_correct: answer.is_correct,
-        }
-      );
+      const response = await axiosInstance.post(`${process.env.EXPO_PUBLIC_API_CREATE_ANSWER}`, {
+        question_id: answer.question_id,
+        content: answer.content,
+        is_correct: answer.is_correct,
+      });
       if (response.status === 201) {
         return response.data.answer;
       }
@@ -819,7 +773,8 @@ const UpdateCourseScreen = ({
   const updateAnswer = async (answer: Answer) => {
     try {
       const response = await axiosInstance.put(
-        `${process.env.EXPO_PUBLIC_API_UPDATE_ANSWER}`.replace(":id", String(answer.id)), {
+        `${process.env.EXPO_PUBLIC_API_UPDATE_ANSWER}`.replace(':id', String(answer.id)),
+        {
           question_id: answer.question_id,
           content: answer.content,
           is_correct: answer.is_correct,
@@ -836,7 +791,7 @@ const UpdateCourseScreen = ({
   const deleteAnswer = async (answer: Answer) => {
     try {
       const response = await axiosInstance.delete(
-        `${process.env.EXPO_PUBLIC_API_DELETE_ANSWER}`.replace(":id", String(answer.id))
+        `${process.env.EXPO_PUBLIC_API_DELETE_ANSWER}`.replace(':id', String(answer.id))
       );
       if (response.status === 200) {
         return true;
@@ -848,12 +803,16 @@ const UpdateCourseScreen = ({
 
   const renderInfoTab = () => (
     <ScrollView style={styles.tabContent}>
-      <TouchableOpacity style={styles.imageContainer} disabled={loading} onPress={() => pickImage(false)}>
-        { image ? (
+      <TouchableOpacity
+        style={styles.imageContainer}
+        disabled={loading}
+        onPress={() => pickImage(false)}
+      >
+        {image ? (
           <Image source={{ uri: image }} style={styles.courseImage} />
         ) : (
           <Image style={styles.courseImage} />
-        ) }
+        )}
         <View style={styles.imageOverlay}>
           <Ionicons name="camera" size={24} color="#fff" />
           <Text style={styles.imageText}>Thay đổi ảnh</Text>
@@ -865,7 +824,8 @@ const UpdateCourseScreen = ({
         <TextInput
           style={styles.input}
           value={name}
-          onChangeText={(value) => setName(value)}
+          readOnly={loading}
+          onChangeText={value => setName(value)}
           placeholder="Nhập tên khóa học"
         />
       </View>
@@ -873,17 +833,17 @@ const UpdateCourseScreen = ({
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Danh mục</Text>
         <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={categoryId}
-              onValueChange={(itemValue: number) => setCategoryId(itemValue)}
-              style={styles.picker}
-              enabled={!loading}
-            >
-              {categories.map((cat) => (
-                <Picker.Item key={cat.id} label={cat.name} value={cat.id} />
-              ))}
-            </Picker>
-          </View>
+          <Picker
+            selectedValue={categoryId}
+            onValueChange={(itemValue: number) => setCategoryId(itemValue)}
+            style={styles.picker}
+            enabled={!loading}
+          >
+            {categories.map(cat => (
+              <Picker.Item key={cat.id} label={cat.name} value={cat.id} />
+            ))}
+          </Picker>
+        </View>
       </View>
 
       <View style={styles.inputContainer}>
@@ -891,7 +851,8 @@ const UpdateCourseScreen = ({
         <TextInput
           style={[styles.input, styles.textArea]}
           value={description}
-          onChangeText={(value) => setDescription(value)}
+          readOnly={loading}
+          onChangeText={value => setDescription(value)}
           placeholder="Nhập mô tả khóa học"
           multiline
           numberOfLines={4}
@@ -901,25 +862,21 @@ const UpdateCourseScreen = ({
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Giá Khóa Học</Text>
         <View style={styles.radioGroup}>
-          <TouchableOpacity 
-            style={styles.radioButton} 
+          <TouchableOpacity
+            style={styles.radioButton}
             disabled={loading}
             onPress={() => setIsFree(true)}
           >
-            <View style={styles.radio}>
-              {isFree && <View style={styles.radioSelected} />}
-            </View>
+            <View style={styles.radio}>{isFree && <View style={styles.radioSelected} />}</View>
             <Text style={styles.radioLabel}>Miễn phí</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.radioButton} 
+
+          <TouchableOpacity
+            style={styles.radioButton}
             disabled={loading}
             onPress={() => setIsFree(false)}
           >
-            <View style={styles.radio}>
-              {!isFree && <View style={styles.radioSelected} />}
-            </View>
+            <View style={styles.radio}>{!isFree && <View style={styles.radioSelected} />}</View>
             <Text style={styles.radioLabel}>Có phí</Text>
           </TouchableOpacity>
         </View>
@@ -928,9 +885,10 @@ const UpdateCourseScreen = ({
           <View style={styles.priceInputContainer}>
             <TextInput
               style={styles.input}
+              readOnly={loading}
               value={price.toString()}
-              onChangeText={(text) => {
-                const numericValue = text.replace(/[^0-9]/g, ''); 
+              onChangeText={text => {
+                const numericValue = text.replace(/[^0-9]/g, '');
                 // Nếu rỗng, set 0
                 if (numericValue === '') {
                   setPrice(0);
@@ -965,8 +923,9 @@ const UpdateCourseScreen = ({
             <TextInput
               style={styles.input}
               value={discount.toString()}
-              onChangeText={(text) => {
-                const numericValue = text.replace(/[^0-9]/g, ''); 
+              readOnly={loading}
+              onChangeText={text => {
+                const numericValue = text.replace(/[^0-9]/g, '');
                 // Nếu rỗng, set 0
                 if (numericValue === '') {
                   setDiscount(0);
@@ -995,12 +954,11 @@ const UpdateCourseScreen = ({
             <Text style={styles.label}>Trạng thái hoạt động</Text>
             <Switch
               disabled={loading}
-              value={status == 1}
-              onValueChange={(active) => {
+              value={status === 1}
+              onValueChange={active => {
                 if (active) {
                   setStatus(1);
-                }
-                else {
+                } else {
                   setStatus(0);
                 }
               }}
@@ -1008,9 +966,7 @@ const UpdateCourseScreen = ({
               thumbColor={status ? '#4CAF50' : '#f4f3f4'}
             />
           </View>
-          <Text style={styles.statusText}>
-            {status ? 'Hoạt động' : 'Không hoạt động'}
-          </Text>
+          <Text style={styles.statusText}>{status ? 'Hoạt động' : 'Không hoạt động'}</Text>
         </View>
       </View>
     </ScrollView>
@@ -1018,24 +974,30 @@ const UpdateCourseScreen = ({
 
   const renderContentTab = () => (
     <ScrollView style={styles.tabContent}>
-      <TouchableOpacity style={styles.addSectionButton} onPress={handleAddSection}>
+      <TouchableOpacity
+        style={styles.addSectionButton}
+        onPress={handleAddSection}
+        disabled={loading}
+      >
         <Ionicons name="add-circle-outline" size={24} color="#007AFF" />
         <Text style={styles.addSectionButtonText}>Thêm Section Mới</Text>
       </TouchableOpacity>
 
-      {sections?.map((section) => (
+      {sections?.map(section => (
         <View key={section.id} style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{section.name}</Text>
             <View style={styles.sectionActions}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.actionButton}
+                disabled={loading}
                 onPress={() => handleEditSection(section)}
               >
                 <Ionicons name="pencil-outline" size={20} color="#007AFF" />
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.actionButton}
+                disabled={loading}
                 onPress={() => handleDeleteSection(section.id)}
               >
                 <Ionicons name="trash-outline" size={20} color="#FF3B30" />
@@ -1044,21 +1006,23 @@ const UpdateCourseScreen = ({
           </View>
 
           <View style={styles.lessonsContainer}>
-            {section.lessons?.map((lesson) => (
+            {section.lessons?.map(lesson => (
               <View key={lesson.id} style={styles.lessonItem}>
                 <View style={styles.lessonInfo}>
                   <Text style={styles.lessonTitle}>{lesson.title}</Text>
-                  <Text style={styles.lessonDuration}>{lesson.video_url ? "Video" : ""}</Text>
+                  <Text style={styles.lessonDuration}>{lesson.video_url ? 'Video' : ''}</Text>
                 </View>
                 <View style={styles.lessonActions}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.actionButton}
+                    disabled={loading}
                     onPress={() => handleEditLesson(section, lesson)}
                   >
                     <Ionicons name="pencil-outline" size={20} color="#007AFF" />
                   </TouchableOpacity>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.actionButton}
+                    disabled={loading}
                     onPress={() => handleDeleteLesson(section.id, lesson.id)}
                   >
                     <Ionicons name="trash-outline" size={20} color="#FF3B30" />
@@ -1068,8 +1032,9 @@ const UpdateCourseScreen = ({
             ))}
           </View>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.addLessonButton}
+            disabled={loading}
             onPress={() => handleAddLesson(section)}
           >
             <Ionicons name="add-circle-outline" size={20} color="#007AFF" />
@@ -1083,8 +1048,8 @@ const UpdateCourseScreen = ({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
+        <TouchableOpacity
+          style={styles.backButton}
           disabled={loading}
           onPress={() => navigation.goBack()}
         >
@@ -1094,7 +1059,7 @@ const UpdateCourseScreen = ({
       </View>
 
       <View style={styles.tabs}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'info' && styles.activeTab]}
           disabled={loading}
           onPress={() => setActiveTab('info')}
@@ -1103,7 +1068,7 @@ const UpdateCourseScreen = ({
             Thông tin chung
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'content' && styles.activeTab]}
           disabled={loading}
           onPress={() => setActiveTab('content')}
@@ -1117,16 +1082,16 @@ const UpdateCourseScreen = ({
       {activeTab === 'info' ? renderInfoTab() : renderContentTab()}
 
       <View style={styles.footer}>
-        <TouchableOpacity 
-          style={[styles.footerButton, styles.resetButton]} 
+        <TouchableOpacity
+          style={[styles.footerButton, styles.resetButton]}
           disabled={loading}
           onPress={handleReset}
         >
           <Ionicons name="refresh" size={20} color="#666" />
           <Text style={styles.resetButtonText}>Khôi phục</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.footerButton, styles.updateButton]} 
+        <TouchableOpacity
+          style={[styles.footerButton, styles.updateButton]}
           disabled={loading}
           onPress={handleUpdate}
         >
@@ -1138,9 +1103,11 @@ const UpdateCourseScreen = ({
       <DeleteModal
         visible={deleteModalVisible}
         title="Xác nhận xóa"
-        message={itemToDelete?.type === 'section' 
-          ? "Bạn có chắc chắn muốn xóa section này? Hành động này không thể hoàn tác."
-          : "Bạn có chắc chắn muốn xóa lesson này? Hành động này không thể hoàn tác."}
+        message={
+          itemToDelete?.type === 'section'
+            ? 'Bạn có chắc chắn muốn xóa section này?'
+            : 'Bạn có chắc chắn muốn xóa lesson này?'
+        }
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
       />
@@ -1351,7 +1318,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 14,
     color: '#555',
-  },  
+  },
   addLessonButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1495,7 +1462,7 @@ const styles = StyleSheet.create({
 //         <NavigationIndependentTree>
 //           <Stack.Navigator initialRouteName='UpdateCourse' screenOptions={{ headerShown: false }}>
 //             <Stack.Screen name='UpdateCourse' component={UpdateCourse} options={{ headerShown: false }} />
-            
+
 //           </Stack.Navigator>
 //         </NavigationIndependentTree>
 //     )

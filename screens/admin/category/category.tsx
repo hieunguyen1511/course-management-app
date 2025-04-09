@@ -1,36 +1,41 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Alert } from 'react-native'
-import React, { useState, useEffect } from 'react'
-import { Ionicons } from '@expo/vector-icons'
-import { Strings } from "@/constants/Strings";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+  Alert,
+} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { Strings } from '@/constants/Strings';
 import axiosInstance from '@/api/axiosInstance';
 import { useFocusEffect } from '@react-navigation/native';
 import AddCategory from '@/screens/admin/category/addCategory';
 import UpdateCategory from '@/screens/admin/category/updateCategory';
 
-import {
-  NavigationIndependentTree,
-} from "@react-navigation/native";
-import {
-  createNativeStackNavigator,
-  NativeStackScreenProps,
-} from "@react-navigation/native-stack";
+import { NavigationIndependentTree } from '@react-navigation/native';
+import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { RootStackParamList } from "@/types/RootStackParamList";
-const Stack = createNativeStackNavigator<RootStackParamList>();
-type CategoryScreenProps = NativeStackScreenProps<RootStackParamList, "Category">;
+import { RootStackParamList } from '@/types/RootStackParamList';
 import { Category } from '@/types/category';
+import DeleteModal from '@/components/deleteModal';
 
-
+const Stack = createNativeStackNavigator<RootStackParamList>();
+type CategoryScreenProps = NativeStackScreenProps<RootStackParamList, 'Category'>;
 
 const CategoryScreen: React.FC<CategoryScreenProps> = ({ navigation, route }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
-  const [searchText, setSearchText] = useState("");
+  const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(true);
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
-  
+  // State for delete modal
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ category: Category } | undefined>(undefined);
+
   useFocusEffect(
     React.useCallback(() => {
       fetchCategories();
@@ -45,16 +50,15 @@ const CategoryScreen: React.FC<CategoryScreenProps> = ({ navigation, route }) =>
         setFilteredCategories(response.data.categories);
         filter(searchText, response.data.categories);
       } else {
-        Alert.alert("Lỗi", `Failed to fetch. Status: ${response.status}`, [{ text: "OK" }]);
+        Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
       }
     } catch (error) {
-      Alert.alert("Lỗi", `Failed fetching categories: ${error}`, [{ text: "OK" }]);
+      Alert.alert('Lỗi', `Failed fetching categories: ${error}`, [{ text: 'OK' }]);
     } finally {
       setLoading(false);
     }
   };
 
-  
   const filter = (text: string, categories: Category[]) => {
     let filtered = categories;
     if (searchText.trim() === '') {
@@ -62,14 +66,15 @@ const CategoryScreen: React.FC<CategoryScreenProps> = ({ navigation, route }) =>
       return;
     }
     if (text.trim() !== '') {
-      filtered = filtered.filter(category => 
-        category.id.toString().includes(text) ||
-        category.name.toLowerCase().includes(text.toLowerCase()) ||
-        category.description.toLowerCase().includes(text.toLowerCase())
+      filtered = filtered.filter(
+        category =>
+          category.id.toString().includes(text) ||
+          category.name.toLowerCase().includes(text.toLowerCase()) ||
+          category.description.toLowerCase().includes(text.toLowerCase())
       );
     }
     setFilteredCategories(filtered);
-  }
+  };
 
   const handleSearch = (text: string) => {
     setSearchText(text);
@@ -77,52 +82,60 @@ const CategoryScreen: React.FC<CategoryScreenProps> = ({ navigation, route }) =>
       setFilteredCategories(categories);
       return;
     }
-    filter(text, categories)
+    filter(text, categories);
   };
 
-  const handleDeleteCategory = async () => {
-    if (selectedCategory) {
-      setLoading(true);
-      try {
-        const response = await axiosInstance.delete(
-          `${process.env.EXPO_PUBLIC_API_DELETE_CATEGORY}`.replace(":id", String(selectedCategory.id))
-        );
-        
-        if (response.status === 200) {
-          const updatedCategories = categories.filter(cat => cat.id !== selectedCategory.id);
-          setCategories(updatedCategories);
-          
-          if (searchText.trim() === '') {
-            setFilteredCategories(updatedCategories);
-          } else {
-            const filtered = updatedCategories.filter(category => 
+  const handleDelete = (category: Category) => {
+    setItemToDelete({ category: category });
+    setDeleteModalVisible(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+    setLoading(true);
+    try {
+      const response = await axiosInstance.delete(
+        `${process.env.EXPO_PUBLIC_API_DELETE_CATEGORY}`.replace(
+          ':id',
+          String(itemToDelete.category.id)
+        )
+      );
+
+      if (response.status === 200) {
+        const updatedCategories = categories.filter(cat => cat.id !== itemToDelete.category.id);
+        setCategories(updatedCategories);
+
+        if (searchText.trim() === '') {
+          setFilteredCategories(updatedCategories);
+        } else {
+          const filtered = updatedCategories.filter(
+            category =>
               category.id.toString().includes(searchText) ||
               category.name.toLowerCase().includes(searchText.toLowerCase()) ||
               category.description.toLowerCase().includes(searchText.toLowerCase())
-            );
-            setFilteredCategories(filtered);
-          }
-          
-          setDeleteModalVisible(false);
-          setSelectedCategory(null);
-          Alert.alert("Thành công", Strings.categories.deleteSuccess, [{ text: "OK" }]);
-        } else {
-          console.error(`Failed to delete item. Status: ${response.status}`);
-          Alert.alert("Lỗi", `Failed to delete item. Status: ${response.status}`, [{ text: "OK" }]);
+          );
+          setFilteredCategories(filtered);
         }
-      } catch (error) {
-        console.error('Failed to delete item:', error);
-        Alert.alert("Lỗi", Strings.categories.deleteError, [{ text: "OK" }]);
+
+        setDeleteModalVisible(false);
+        Alert.alert('Thành công', Strings.categories.deleteSuccess, [{ text: 'OK' }]);
+      } else {
+        console.error(`Failed to delete item. Status: ${response.status}`);
+        Alert.alert('Lỗi', `Failed to delete item. Status: ${response.status}`, [{ text: 'OK' }]);
       }
-      finally {
-        setLoading(false);
-      }
+    } catch (error) {
+      console.error('Failed to delete item:', error);
+      Alert.alert('Lỗi', Strings.categories.deleteError, [{ text: 'OK' }]);
+    } finally {
+      setLoading(false);
+      setDeleteModalVisible(false);
+      setItemToDelete(undefined);
     }
   };
 
-  const confirmDelete = (category: Category) => {
-    setSelectedCategory(category);
-    setDeleteModalVisible(true);
+  const handleCancelDelete = () => {
+    setDeleteModalVisible(false);
+    setItemToDelete(undefined);
   };
 
   const handleEditCategory = (category: Category) => {
@@ -132,22 +145,24 @@ const CategoryScreen: React.FC<CategoryScreenProps> = ({ navigation, route }) =>
   const renderCategoryItem = ({ item }: { item: Category }) => (
     <View style={styles.categoryItem}>
       <View style={styles.categoryInfo}>
-        <Text style={styles.categoryName}>ID: {item.id} - {item.name}</Text>
+        <Text style={styles.categoryName}>
+          ID: {item.id} - {item.name}
+        </Text>
         <Text style={styles.categoryDescription}>{item.description}</Text>
         <Text style={styles.courseCount}>{item.courseCount} courses</Text>
       </View>
-      
+
       <View style={styles.actions}>
-        <TouchableOpacity 
-          style={[styles.iconButton, styles.editButton]} 
+        <TouchableOpacity
+          style={[styles.iconButton, styles.editButton]}
           onPress={() => handleEditCategory(item)}
         >
           <Ionicons name="create-outline" size={20} color="#4a6ee0" />
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.iconButton, styles.deleteButton]} 
-          onPress={() => confirmDelete(item)}
+
+        <TouchableOpacity
+          style={[styles.iconButton, styles.deleteButton]}
+          onPress={() => handleDelete(item)}
         >
           <Ionicons name="trash-outline" size={20} color="#e04a4a" />
         </TouchableOpacity>
@@ -158,22 +173,16 @@ const CategoryScreen: React.FC<CategoryScreenProps> = ({ navigation, route }) =>
   const handleAddCategory = () => {
     console.log(navigation.getState());
     navigation.navigate('AddCategory', {});
-
   };
 
   const AddCategoryButton = () => (
-    <TouchableOpacity 
-      style={styles.addButton} 
-      onPress={handleAddCategory}
-    >
+    <TouchableOpacity style={styles.addButton} onPress={handleAddCategory}>
       <Ionicons name="add" size={24} color="white" />
     </TouchableOpacity>
   );
 
   return (
-    
     <View style={styles.container}>
-
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{Strings.categories.title}</Text>
         <AddCategoryButton />
@@ -193,7 +202,6 @@ const CategoryScreen: React.FC<CategoryScreenProps> = ({ navigation, route }) =>
           </TouchableOpacity>
         )}
       </View>
-      
 
       {loading ? (
         <Text style={styles.loadingText}>{Strings.categories.loading}...</Text>
@@ -201,48 +209,21 @@ const CategoryScreen: React.FC<CategoryScreenProps> = ({ navigation, route }) =>
         <FlatList
           data={filteredCategories}
           renderItem={renderCategoryItem}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
         />
       )}
-      
-
-      <Modal
-        animationType="fade"
-        transparent={true}
+      <DeleteModal
         visible={deleteModalVisible}
-        onRequestClose={() => setDeleteModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>{Strings.categories.confirmDelete}</Text>
-            <Text style={styles.modalMessage}>
-              {Strings.categories.questionConfirmDelete} "{selectedCategory?.name}"?
-              {Strings.categories.warningConfirmDelete}
-            </Text>
-            
-            <View style={styles.modalButtons}>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.cancelButton]} 
-                onPress={() => setDeleteModalVisible(false)}
-              >
-                <Text style={styles.cancelButtonText}>{Strings.categories.cancelButton}</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.deleteConfirmButton]} 
-                onPress={handleDeleteCategory}
-              >
-                <Text style={styles.deleteButtonText}>{Strings.categories.deleteButton}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        title={Strings.categories.confirmDelete}
+        message={`${Strings.categories.questionConfirmDelete} ${itemToDelete?.category?.name}? ${Strings.categories.warningConfirmDelete}`}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -422,27 +403,16 @@ const styles = StyleSheet.create({
   },
 });
 
-
-
 const CategoryTabLayout = () => {
   return (
     <NavigationIndependentTree>
       <Stack.Navigator initialRouteName="Category" screenOptions={{ headerShown: false }}>
-        <Stack.Screen 
-            name="Category" 
-            component={CategoryScreen} 
-          />
-        <Stack.Screen 
-          name="AddCategory" 
-          component={AddCategory} 
-        />
-        <Stack.Screen 
-          name="UpdateCategory" 
-          component={UpdateCategory} 
-        />
+        <Stack.Screen name="Category" component={CategoryScreen} />
+        <Stack.Screen name="AddCategory" component={AddCategory} />
+        <Stack.Screen name="UpdateCategory" component={UpdateCategory} />
       </Stack.Navigator>
-  </NavigationIndependentTree>
+    </NavigationIndependentTree>
   );
-}
+};
 
-export default CategoryTabLayout
+export default CategoryTabLayout;

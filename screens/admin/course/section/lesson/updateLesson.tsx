@@ -1,12 +1,22 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, Switch } from 'react-native'
-import React, { useState, useEffect } from 'react'
-import { MyScreenProps } from '@/types/MyScreenProps'
-import { Ionicons } from '@expo/vector-icons'
-import { Lesson, Question } from '@/types/course'
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  Alert,
+  Switch,
+} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { MyScreenProps } from '@/types/MyScreenProps';
+import { Ionicons } from '@expo/vector-icons';
+import { Lesson, Question } from '@/types/course';
+import DeleteModal from '@/components/deleteModal';
 
-const UpdateLessonScreen: React.FC<MyScreenProps['UpdateLessonScreenProps']> = ({ 
-  navigation, 
-  route 
+const UpdateLessonScreen: React.FC<MyScreenProps['UpdateLessonScreenProps']> = ({
+  navigation,
+  route,
 }) => {
   const { sectionData, lessonData, onLessonUpdated } = route.params;
 
@@ -20,10 +30,18 @@ const UpdateLessonScreen: React.FC<MyScreenProps['UpdateLessonScreenProps']> = (
   const [questions, setQuestions] = useState<Question[]>(lessonData.questions);
   const [newIdQuestion, setNewIdQuestion] = useState(lessonData.newIdQuestion);
 
+  const [loading, setLoading] = useState(false);
+
+  // State for delete modal
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<
+    { type: 'question' | 'answer'; answer_id: number; question_id: number } | undefined
+  >(undefined);
+
   const handleInputChange = (name: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -33,13 +51,15 @@ const UpdateLessonScreen: React.FC<MyScreenProps['UpdateLessonScreenProps']> = (
       lesson_id: sectionData.newIdLesson,
       content: '',
       note: '',
-      answers: [{
-        id: 1,
-        question_id: newIdQuestion,
-        content: '',
-        is_correct: true,
-        save: false,
-      }],
+      answers: [
+        {
+          id: 1,
+          question_id: newIdQuestion,
+          content: '',
+          is_correct: true,
+          save: false,
+        },
+      ],
       newIdAnswer: 2,
       save: false,
     };
@@ -48,72 +68,98 @@ const UpdateLessonScreen: React.FC<MyScreenProps['UpdateLessonScreenProps']> = (
   };
 
   const addNewAnswer = (questionId: number) => {
-    setQuestions(questions.map(q => {
-      if (q.id === questionId) {
-        return {
-          ...q,
-          newIdAnswer: q.newIdAnswer + 1,
-          answers: [...q.answers, {
-            id: q.newIdAnswer,
-            question_id: q.id,
-            content: '',
-            is_correct: false,
-            save: false,
-          }]
-        };
-      }
-      return q;
-    }));
+    setQuestions(
+      questions.map(q => {
+        if (q.id === questionId) {
+          return {
+            ...q,
+            newIdAnswer: q.newIdAnswer + 1,
+            answers: [
+              ...q.answers,
+              {
+                id: q.newIdAnswer,
+                question_id: q.id,
+                content: '',
+                is_correct: false,
+                save: false,
+              },
+            ],
+          };
+        }
+        return q;
+      })
+    );
   };
 
   const handleQuestionChange = (questionId: number, field: 'content' | 'note', value: string) => {
-    setQuestions(questions.map(q => 
-      q.id === questionId ? { ...q, [field]: value } : q
-    ));
+    setQuestions(questions.map(q => (q.id === questionId ? { ...q, [field]: value } : q)));
   };
 
   const handleAnswerChange = (questionId: number, answerId: number, content: string) => {
-    setQuestions(questions.map(q => {
-      if (q.id === questionId) {
-        return {
-          ...q,
-          answers: q.answers.map(a => 
-            a.id === answerId ? { ...a, content } : a
-          )
-        };
-      }
-      return q;
-    }));
+    setQuestions(
+      questions.map(q => {
+        if (q.id === questionId) {
+          return {
+            ...q,
+            answers: q.answers.map(a => (a.id === answerId ? { ...a, content } : a)),
+          };
+        }
+        return q;
+      })
+    );
   };
 
   const toggleAnswerCorrect = (questionId: number, answerId: number) => {
-    setQuestions(questions.map(q => {
-      if (q.id === questionId) {
-        return {
-          ...q,
-          answers: q.answers.map(a => 
-            a.id === answerId ? { ...a, is_correct: !a.is_correct } : a
-          )
-        };
-      }
-      return q;
-    }));
+    setQuestions(
+      questions.map(q => {
+        if (q.id === questionId) {
+          return {
+            ...q,
+            answers: q.answers.map(a =>
+              a.id === answerId ? { ...a, is_correct: !a.is_correct } : a
+            ),
+          };
+        }
+        return q;
+      })
+    );
   };
 
-  const handleDeleteAnswer = (questionId: number, answerId: number) => {
-    setQuestions(questions.map(q => {
-      if (q.id === questionId) {
-        return {
-          ...q,
-          answers: q.answers.filter(a => a.id !== answerId)
-        };
-      }
-      return q;
-    }));
+  const handleDeleteQuestion = (id: number) => {
+    setItemToDelete({ type: 'question', question_id: id, answer_id: 0 });
+    setDeleteModalVisible(true);
   };
 
-  const handleDeleteQuestion = (questionId: number) => {
-    setQuestions(questions.filter(q => q.id !== questionId));
+  const handleDeleteAnswer = (answer_id: number, question_id: number) => {
+    setItemToDelete({ type: 'answer', question_id: question_id, answer_id: answer_id });
+    setDeleteModalVisible(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!itemToDelete) return;
+
+    if (itemToDelete.type === 'question') {
+      setQuestions(questions.filter(q => q.id !== itemToDelete.question_id));
+    } else {
+      setQuestions(
+        questions.map(q => {
+          if (q.id === itemToDelete.question_id) {
+            return {
+              ...q,
+              answers: q.answers.filter(a => a.id !== itemToDelete.answer_id),
+            };
+          }
+          return q;
+        })
+      );
+    }
+    setDeleteModalVisible(false);
+    setItemToDelete(undefined);
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteModalVisible(false);
+    setItemToDelete(undefined);
   };
 
   const handleSubmit = () => {
@@ -126,6 +172,8 @@ const UpdateLessonScreen: React.FC<MyScreenProps['UpdateLessonScreenProps']> = (
       Alert.alert('Lỗi', 'Vui lòng thêm ít nhất một câu hỏi');
       return;
     }
+
+    setLoading(true);
 
     const lessonToSave: Lesson = {
       id: lessonData.id,
@@ -150,10 +198,7 @@ const UpdateLessonScreen: React.FC<MyScreenProps['UpdateLessonScreenProps']> = (
       <View style={styles.questionsContainer}>
         <View style={styles.questionHeader}>
           <Text style={styles.sectionTitle}>Câu hỏi</Text>
-          <TouchableOpacity 
-            style={styles.addButton}
-            onPress={addNewQuestion}
-          >
+          <TouchableOpacity style={styles.addButton} disabled={loading} onPress={addNewQuestion}>
             <Ionicons name="add-circle-outline" size={24} color="#007AFF" />
             <Text style={styles.addButtonText}>Thêm câu hỏi</Text>
           </TouchableOpacity>
@@ -163,8 +208,9 @@ const UpdateLessonScreen: React.FC<MyScreenProps['UpdateLessonScreenProps']> = (
           <View key={question.id} style={styles.questionBox}>
             <View style={styles.questionHeader}>
               <Text style={styles.questionLabel}>Câu hỏi {qIndex + 1}</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.deleteButton}
+                disabled={loading}
                 onPress={() => handleDeleteQuestion(question.id)}
               >
                 <Ionicons name="trash-outline" size={20} color="#FF3B30" />
@@ -173,15 +219,17 @@ const UpdateLessonScreen: React.FC<MyScreenProps['UpdateLessonScreenProps']> = (
             <TextInput
               style={styles.input}
               value={question.content}
-              onChangeText={(value) => handleQuestionChange(question.id, 'content', value)}
+              readOnly={loading}
+              onChangeText={value => handleQuestionChange(question.id, 'content', value)}
               placeholder="Nhập nội dung câu hỏi"
             />
 
             <View style={styles.answersContainer}>
               <View style={styles.answerHeader}>
                 <Text style={styles.answerLabel}>Đáp án</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.addButton}
+                  disabled={loading}
                   onPress={() => addNewAnswer(question.id)}
                 >
                   <Ionicons name="add-circle-outline" size={20} color="#007AFF" />
@@ -193,17 +241,20 @@ const UpdateLessonScreen: React.FC<MyScreenProps['UpdateLessonScreenProps']> = (
                 <View key={answer.id} style={styles.answerRow}>
                   <Switch
                     value={answer.is_correct}
+                    disabled={loading}
                     onValueChange={() => toggleAnswerCorrect(question.id, answer.id)}
                   />
                   <TextInput
                     style={[styles.input, styles.answerInput]}
                     value={answer.content}
-                    onChangeText={(value) => handleAnswerChange(question.id, answer.id, value)}
+                    readOnly={loading}
+                    onChangeText={value => handleAnswerChange(question.id, answer.id, value)}
                     placeholder={`Đáp án ${aIndex + 1}`}
                   />
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.deleteButton}
-                    onPress={() => handleDeleteAnswer(question.id, answer.id)}
+                    disabled={loading}
+                    onPress={() => handleDeleteAnswer(answer.id, question.id)}
                   >
                     <Ionicons name="trash-outline" size={20} color="#FF3B30" />
                   </TouchableOpacity>
@@ -216,7 +267,8 @@ const UpdateLessonScreen: React.FC<MyScreenProps['UpdateLessonScreenProps']> = (
               <TextInput
                 style={[styles.input, styles.noteInput]}
                 value={question.note}
-                onChangeText={(value) => handleQuestionChange(question.id, 'note', value)}
+                readOnly={loading}
+                onChangeText={value => handleQuestionChange(question.id, 'note', value)}
                 placeholder="Nhập giải thích cho đáp án đúng"
                 multiline
                 numberOfLines={3}
@@ -232,8 +284,9 @@ const UpdateLessonScreen: React.FC<MyScreenProps['UpdateLessonScreenProps']> = (
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
+        <TouchableOpacity
+          style={styles.backButton}
+          disabled={loading}
           onPress={() => navigation.goBack()}
         >
           <Ionicons name="arrow-back" size={24} color="#333" />
@@ -246,8 +299,9 @@ const UpdateLessonScreen: React.FC<MyScreenProps['UpdateLessonScreenProps']> = (
           <Text style={styles.label}>Tên bài học</Text>
           <TextInput
             style={styles.input}
+            readOnly={loading}
             value={formData.title}
-            onChangeText={(value) => handleInputChange('title', value)}
+            onChangeText={value => handleInputChange('title', value)}
             placeholder="Nhập tên bài học"
           />
         </View>
@@ -257,7 +311,8 @@ const UpdateLessonScreen: React.FC<MyScreenProps['UpdateLessonScreenProps']> = (
           <TextInput
             style={[styles.input, styles.textArea]}
             value={formData.content}
-            onChangeText={(value) => handleInputChange('content', value)}
+            readOnly={loading}
+            onChangeText={value => handleInputChange('content', value)}
             placeholder="Nhập nội dung bài học"
             multiline
             numberOfLines={4}
@@ -269,8 +324,9 @@ const UpdateLessonScreen: React.FC<MyScreenProps['UpdateLessonScreenProps']> = (
           <Text style={styles.label}>Đường dẫn video (tùy chọn)</Text>
           <TextInput
             style={styles.input}
+            readOnly={loading}
             value={formData.video_url}
-            onChangeText={(value) => handleInputChange('video_url', value)}
+            onChangeText={value => handleInputChange('video_url', value)}
             placeholder="Nhập đường dẫn video"
           />
         </View>
@@ -280,7 +336,8 @@ const UpdateLessonScreen: React.FC<MyScreenProps['UpdateLessonScreenProps']> = (
             <Text style={styles.label}>Bài kiểm tra</Text>
             <Switch
               value={formData.is_quizz}
-              onValueChange={(value) => handleInputChange('is_quizz', value)}
+              disabled={loading}
+              onValueChange={value => handleInputChange('is_quizz', value)}
             />
           </View>
         </View>
@@ -289,19 +346,32 @@ const UpdateLessonScreen: React.FC<MyScreenProps['UpdateLessonScreenProps']> = (
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity 
-          style={[styles.button, styles.cancelButton]} 
+        <TouchableOpacity
+          style={[styles.button, styles.cancelButton]}
+          disabled={loading}
           onPress={() => navigation.goBack()}
         >
           <Text style={styles.cancelButtonText}>Hủy</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.button, styles.submitButton]} 
+        <TouchableOpacity
+          style={[styles.button, styles.submitButton]}
+          disabled={loading}
           onPress={handleSubmit}
         >
           <Text style={styles.submitButtonText}>Cập nhật</Text>
         </TouchableOpacity>
       </View>
+      <DeleteModal
+        visible={deleteModalVisible}
+        title="Xác nhận xóa"
+        message={
+          itemToDelete?.type === 'question'
+            ? 'Bạn có chắc chắn muốn xóa câu hỏi này?'
+            : 'Bạn có chắc chắn muốn xóa đáp án này?'
+        }
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </View>
   );
 };

@@ -1,5 +1,17 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Switch, Image, Alert, Platform, ActivityIndicator } from 'react-native'
-import React, { useState, useEffect } from 'react'
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Switch,
+  Image,
+  Alert,
+  Platform,
+  ActivityIndicator,
+} from 'react-native';
+import React, { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
@@ -10,9 +22,7 @@ import * as FileSystem from 'expo-file-system';
 import { Strings } from '@/constants/Strings';
 import { MyScreenProps } from '@/types/MyScreenProps';
 
-const AddCourseScreen = ({
-  navigation,
-}: MyScreenProps["AddCourseScreenProps"]) => {
+const AddCourseScreen = ({ navigation }: MyScreenProps['AddCourseScreenProps']) => {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [name, setName] = useState('');
@@ -27,7 +37,6 @@ const AddCourseScreen = ({
   const [isFree, setIsFree] = useState(true);
   const [loading, setLoading] = useState(true);
 
-
   const fetchCategories = async () => {
     try {
       const response = await axiosInstance.get(`${process.env.EXPO_PUBLIC_API_GET_ALL_CATEGORIES}`);
@@ -38,13 +47,12 @@ const AddCourseScreen = ({
         }
       } else {
         console.log(`Failed to fetch. Status: ${response.status}`);
-        Alert.alert("Lỗi", `Failed to fetch. Status: ${response.status}`, [{ text: "OK" }]);
+        Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
-      Alert.alert("Lỗi", `Error fetching categories: ${error}`, [{ text: "OK" }]);
-    }
-    finally {
+      Alert.alert('Lỗi', `Error fetching categories: ${error}`, [{ text: 'OK' }]);
+    } finally {
       setLoading(false);
     }
   };
@@ -53,7 +61,6 @@ const AddCourseScreen = ({
     fetchCategories();
   }, []); // Chỉ gọi một lần khi component mount
 
-  
   // ********Show danh sách ảnh local
   // const listStoredImages = async () => {
   //   try {
@@ -66,18 +73,18 @@ const AddCourseScreen = ({
   //     return [];
   //   }
   // };
-  
+
   // ********Xóa tất cả ảnh local
   // const deleteAllImages = async () => {
   //   try {
   //     const courseDir = `${FileSystem.documentDirectory}courses/`;
   //     const files = await FileSystem.readDirectoryAsync(courseDir);
-      
+
   //     for (const file of files) {
   //       await FileSystem.deleteAsync(courseDir + file);
   //       console.log(`Deleted: ${file}`);
   //     }
-      
+
   //     console.log("All images deleted successfully!");
   //   } catch (error) {
   //     console.error("Error deleting all images:", error);
@@ -113,45 +120,42 @@ const AddCourseScreen = ({
       const upload_preset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_COURSE_PRESET;
       const cloud_name = process.env.EXPO_PUBLIC_CLOUDINARY_COURSE_CLOUD_NAME;
       const upload_url = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_COURSE_API_URL;
-      
+
       if (!upload_preset || !cloud_name || !upload_url) {
         throw new Error('Cloudinary configuration is missing');
       }
-      
+
       const formData = new FormData();
-      
+
       const uriParts = imageUri.split('.');
       const fileType = uriParts[uriParts.length - 1];
-      
+
       formData.append('file', {
         uri: imageUri,
         type: `image/${fileType}`,
-        name: `photo.${fileType}`
+        name: `photo.${fileType}`,
       } as any);
-      
+
       formData.append('upload_preset', upload_preset);
       formData.append('cloud_name', cloud_name);
-  
-      const response = await fetch(
-        `${upload_url}`,
-        {
-          method: 'POST',
-          body: formData,
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-  
+
+      const response = await fetch(`${upload_url}`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
       if (!response.ok) {
         throw new Error('Upload failed');
       }
-  
+
       const result = await response.json();
       return result.secure_url;
     } catch (error) {
       console.error('Error uploading image:', error);
-      Alert.alert("Lỗi", `Error uploading image: ${error}`, [{ text: "OK" }]);
+      Alert.alert('Lỗi', `Error uploading image: ${error}`, [{ text: 'OK' }]);
       return null;
     }
   };
@@ -159,7 +163,7 @@ const AddCourseScreen = ({
   const uploadImage = async (uri: string) => {
     const imageUrl = await uploadToCloudinary(uri);
     if (!imageUrl) {
-      Alert.alert("Lỗi", Strings.courses.uploadError, [{ text: "OK" }]);
+      Alert.alert('Lỗi', Strings.courses.uploadError, [{ text: 'OK' }]);
       return;
     }
     return imageUrl;
@@ -167,37 +171,43 @@ const AddCourseScreen = ({
 
   const pickImage = async (useCamera = false) => {
     try {
-      const { status } = useCamera 
+      const { status } = useCamera
         ? await ImagePicker.requestCameraPermissionsAsync()
         : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (status !== 'granted') {
-        Alert.alert("Cần quyền truy cập", "Vui lòng cấp quyền truy cập để tiếp tục.", [{ text: "OK" }]);
+        Alert.alert('Cần quyền truy cập', 'Vui lòng cấp quyền truy cập để tiếp tục.', [
+          { text: 'OK' },
+        ]);
         return;
       }
 
       const result = useCamera
         ? await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [16, 9], quality: 1 })
-        : await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, aspect: [16, 9], quality: 1 });
+        : await ImagePicker.launchImageLibraryAsync({
+            allowsEditing: true,
+            aspect: [16, 9],
+            quality: 1,
+          });
 
       if (!result.canceled) {
         setImage(result.assets[0].uri);
       }
     } catch (error) {
-      console.error("Error in pickImage:", error);
-      Alert.alert("Lỗi", Strings.courses.pickImageError, [{ text: "OK" }]);
+      console.error('Error in pickImage:', error);
+      Alert.alert('Lỗi', Strings.courses.pickImageError, [{ text: 'OK' }]);
     }
   };
 
   const handleCreateCourse = async () => {
     try {
       if (!name.trim()) {
-        Alert.alert("Lỗi", Strings.courses.nameRequired, [{ text: "OK" }]);
+        Alert.alert('Lỗi', Strings.courses.nameRequired, [{ text: 'OK' }]);
         return;
       }
 
       if (!categoryId) {
-        Alert.alert("Lỗi", Strings.courses.categoryRequired, [{ text: "OK" }]);
+        Alert.alert('Lỗi', Strings.courses.categoryRequired, [{ text: 'OK' }]);
         return;
       }
 
@@ -214,38 +224,41 @@ const AddCourseScreen = ({
         discount: hasDiscount ? discount : 0,
       });
 
-
       if (response.status === 201) {
-
         if (image) {
           const savedPath = await uploadImage(image);
           if (savedPath) {
-            const responseUp = await axiosInstance.put(`${process.env.EXPO_PUBLIC_API_UPDATE_COURSE}`.replace(":id", String(response.data.course.id)),
-            {
-              category_id: categoryId,
-              name: name.trim(),
-              description: description.trim(),
-              status: status,
-              total_rating: total_rating,
-              image: savedPath,
-              price: isFree ? 0 : price,
-              discount: hasDiscount ? discount : 0,
-            });
+            const responseUp = await axiosInstance.put(
+              `${process.env.EXPO_PUBLIC_API_UPDATE_COURSE}`.replace(
+                ':id',
+                String(response.data.course.id)
+              ),
+              {
+                category_id: categoryId,
+                name: name.trim(),
+                description: description.trim(),
+                status: status,
+                total_rating: total_rating,
+                image: savedPath,
+                price: isFree ? 0 : price,
+                discount: hasDiscount ? discount : 0,
+              }
+            );
             if (responseUp.status === 200) {
-              console.log("Thành công lưu ảnh")
-            }
-            else {
-              console.error("Thất bại lưu ảnh");
+              console.log('Thành công lưu ảnh');
+            } else {
+              console.error('Thất bại lưu ảnh');
             }
           }
         }
-        Alert.alert("Thành công", `${Strings.courses.addSuccess} ${response.data.course.id}`, [{ text: "OK", onPress: () => router.back() }]);
+        Alert.alert('Thành công', `${Strings.courses.addSuccess} ${response.data.course.id}`, [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
       }
     } catch (error: any) {
-      console.error("Error creating course:", error);
-      Alert.alert("Lỗi", error.response?.data?.message || "Có lỗi xảy ra.", [{ text: "OK" }]);
-    }
-    finally {
+      console.error('Error creating course:', error);
+      Alert.alert('Lỗi', error.response?.data?.message || 'Có lỗi xảy ra.', [{ text: 'OK' }]);
+    } finally {
       setLoading(false);
     }
   };
@@ -253,27 +266,25 @@ const AddCourseScreen = ({
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
+        <TouchableOpacity
+          style={styles.backButton}
           disabled={loading}
           onPress={() => router.back()}
         >
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{Strings.courses.addNew}
+        <Text style={styles.headerTitle}>
+          {Strings.courses.addNew}
           {'    '}
         </Text>
-        {loading && (
-          <ActivityIndicator size="large" color="#4a6ee0" />
-        )}
+        {loading && <ActivityIndicator size="large" color="#4a6ee0" />}
       </View>
 
       <View style={styles.formContainer}>
-
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Ảnh Khóa Học</Text>
-          <TouchableOpacity 
-            style={styles.imagePreview} 
+          <TouchableOpacity
+            style={styles.imagePreview}
             onPress={() => pickImage(false)}
             disabled={loading}
           >
@@ -288,17 +299,16 @@ const AddCourseScreen = ({
           </TouchableOpacity>
         </View>
 
-
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Tên Khóa Học</Text>
           <TextInput
             style={styles.input}
             value={name}
+            readOnly={loading}
             onChangeText={setName}
             placeholder="Nhập tên khóa học"
           />
         </View>
-
 
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Danh Mục</Text>
@@ -309,19 +319,19 @@ const AddCourseScreen = ({
               style={styles.picker}
               enabled={!loading}
             >
-              {categories.map((cat) => (
+              {categories.map(cat => (
                 <Picker.Item key={cat.id} label={cat.name} value={cat.id} />
               ))}
             </Picker>
           </View>
         </View>
 
-
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Mô Tả</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
             value={description}
+            readOnly={loading}
             onChangeText={setDescription}
             placeholder="Nhập mô tả khóa học"
             multiline
@@ -329,12 +339,11 @@ const AddCourseScreen = ({
           />
         </View>
 
-
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Giá Khóa Học</Text>
           <View style={styles.priceContainer}>
             <View style={styles.radioGroup}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.radioButton}
                 disabled={loading}
                 onPress={() => setIsFree(true)}
@@ -345,7 +354,7 @@ const AddCourseScreen = ({
                 <Text style={styles.radioLabel}>Miễn phí</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.radioButton}
                 disabled={loading}
                 onPress={() => setIsFree(false)}
@@ -362,8 +371,9 @@ const AddCourseScreen = ({
                 <TextInput
                   style={styles.input}
                   value={price.toString()}
-                  onChangeText={(text) => {
-                    const numericValue = text.replace(/[^0-9]/g, ''); 
+                  readOnly={loading}
+                  onChangeText={text => {
+                    const numericValue = text.replace(/[^0-9]/g, '');
                     // Nếu rỗng, set 0
                     if (numericValue === '') {
                       setPrice(0);
@@ -382,7 +392,6 @@ const AddCourseScreen = ({
           </View>
         </View>
 
-
         <View style={styles.inputGroup}>
           <View style={styles.discountHeader}>
             <Text style={styles.label}>Giảm Giá</Text>
@@ -394,28 +403,29 @@ const AddCourseScreen = ({
               disabled={loading}
             />
           </View>
-          
+
           {hasDiscount && (
             <View style={styles.priceInputContainer}>
               <TextInput
                 style={styles.input}
                 value={discount.toString()}
-                onChangeText={(text) => {
-                  const numericValue = text.replace(/[^0-9]/g, ''); 
+                readOnly={loading}
+                onChangeText={text => {
+                  const numericValue = text.replace(/[^0-9]/g, '');
                   // Nếu rỗng, set 0
                   if (numericValue === '') {
                     setDiscount(0);
                     return;
                   }
-  
+
                   // Chuyển thành số
                   let value = parseInt(numericValue, 10);
-  
+
                   // Nếu giá trị ngoài khoảng 0 - 100, điều chỉnh lại
                   if (value > 100) {
                     value = 100;
                   }
-  
+
                   setDiscount(value);
                 }}
                 placeholder="Nhập % giảm giá (0-100)"
@@ -427,8 +437,7 @@ const AddCourseScreen = ({
           )}
         </View>
 
-
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.submitButton}
           disabled={loading}
           onPress={handleCreateCourse}
@@ -437,8 +446,8 @@ const AddCourseScreen = ({
         </TouchableOpacity>
       </View>
     </ScrollView>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -583,4 +592,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AddCourseScreen
+export default AddCourseScreen;

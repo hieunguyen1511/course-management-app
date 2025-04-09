@@ -1,15 +1,25 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native'
-import React, { useState, useEffect } from 'react'
-import { MyScreenProps } from '@/types/MyScreenProps'
-import { Ionicons } from '@expo/vector-icons'
-import { Section } from '@/types/course'
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  Alert,
+} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { MyScreenProps } from '@/types/MyScreenProps';
+import { Ionicons } from '@expo/vector-icons';
+import { Section } from '@/types/course';
 
-const UpdateSectionScreen: React.FC<MyScreenProps['UpdateSectionScreenProps']> = ({ 
-  navigation, 
-  route 
+const UpdateSectionScreen: React.FC<MyScreenProps['UpdateSectionScreenProps']> = ({
+  navigation,
+  route,
 }) => {
   const { courseId, sectionData, onSectionUpdated } = route.params;
-  
+
+  const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     name: sectionData.name,
     description: sectionData.description,
@@ -18,7 +28,7 @@ const UpdateSectionScreen: React.FC<MyScreenProps['UpdateSectionScreenProps']> =
   const handleInputChange = (name: string, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -28,14 +38,16 @@ const UpdateSectionScreen: React.FC<MyScreenProps['UpdateSectionScreenProps']> =
       return;
     }
 
+    setLoading(true);
+
     const sectionToSave: Section = {
-        id: sectionData.id,
-        course_id: courseId,
-        name: formData.name,
-        description: formData.description?.trim(),
-        lessons: sectionData.lessons,
-        save: false,
-        newIdLesson: sectionData.newIdLesson,
+      id: sectionData.id,
+      course_id: courseId,
+      name: formData.name,
+      description: formData.description?.trim(),
+      lessons: sectionData.lessons,
+      save: false,
+      newIdLesson: sectionData.newIdLesson,
     };
 
     onSectionUpdated?.(sectionToSave);
@@ -45,8 +57,9 @@ const UpdateSectionScreen: React.FC<MyScreenProps['UpdateSectionScreenProps']> =
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
+        <TouchableOpacity
+          style={styles.backButton}
+          disabled={loading}
           onPress={() => navigation.goBack()}
         >
           <Ionicons name="arrow-back" size={24} color="#333" />
@@ -59,8 +72,9 @@ const UpdateSectionScreen: React.FC<MyScreenProps['UpdateSectionScreenProps']> =
           <Text style={styles.label}>Tên chương</Text>
           <TextInput
             style={styles.input}
+            readOnly={loading}
             value={formData.name}
-            onChangeText={(value) => handleInputChange('name', value)}
+            onChangeText={value => handleInputChange('name', value)}
             placeholder="Nhập tên chương"
           />
         </View>
@@ -70,7 +84,8 @@ const UpdateSectionScreen: React.FC<MyScreenProps['UpdateSectionScreenProps']> =
           <TextInput
             style={[styles.input, styles.textArea]}
             value={formData.description}
-            onChangeText={(value) => handleInputChange('description', value)}
+            readOnly={loading}
+            onChangeText={value => handleInputChange('description', value)}
             placeholder="Nhập mô tả chương"
             multiline
             numberOfLines={4}
@@ -80,14 +95,16 @@ const UpdateSectionScreen: React.FC<MyScreenProps['UpdateSectionScreenProps']> =
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity 
-          style={[styles.button, styles.cancelButton]} 
+        <TouchableOpacity
+          style={[styles.button, styles.cancelButton]}
+          disabled={loading}
           onPress={() => navigation.goBack()}
         >
           <Text style={styles.cancelButtonText}>Hủy</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.button, styles.submitButton]} 
+        <TouchableOpacity
+          style={[styles.button, styles.submitButton]}
+          disabled={loading}
           onPress={handleSubmit}
         >
           <Text style={styles.submitButtonText}>Cập nhật</Text>
