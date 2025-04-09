@@ -67,7 +67,14 @@ const UpdateCategoryScreen = ({
       );
 
       if (response.status === 200) {
-        navigation.navigate('Category', { message: Strings.categories.updateSuccess });
+        Alert.alert(
+          'Thành công',
+          `${Strings.categories.updateSuccess} ${response.data.category.id}`,
+          [{ text: 'OK' }]
+        );
+        navigation.navigate('Category', {
+          message: `${Strings.categories.updateSuccess} ${response.data.category.id}`,
+        });
       }
     } catch (error) {
       Alert.alert('Lỗi', `Error updating category: ${error}`, [{ text: 'OK' }]);
@@ -100,7 +107,7 @@ const UpdateCategoryScreen = ({
         setName(category.name);
         setDescription(category.description);
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Lỗi', Strings.categories.resetError, [{ text: 'OK' }]);
     } finally {
       setLoading(false);

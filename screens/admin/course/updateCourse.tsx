@@ -82,124 +82,124 @@ const UpdateCourseScreen = ({ navigation, route }: MyScreenProps['UpdateCourseSc
   const [oldNewIdSection, setOldNewIdSection] = useState(1);
   const [newIdSection, setNewIdSection] = useState(1);
 
-  const fetchCategories = async () => {
-    try {
-      const response = await axiosInstance.get(`${process.env.EXPO_PUBLIC_API_GET_ALL_CATEGORIES}`);
-      if (response.status === 200) {
-        setCategories(response.data.categories);
-        if (response.data.categories && response.data.categories.length > 0) {
-          setCategoryId(response.data.categories[0].id);
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axiosInstance.get(
+          `${process.env.EXPO_PUBLIC_API_GET_ALL_CATEGORIES}`
+        );
+        if (response.status === 200) {
+          setCategories(response.data.categories);
+          if (response.data.categories && response.data.categories.length > 0) {
+            setCategoryId(response.data.categories[0].id);
+          }
+        } else {
+          console.log(`Failed to fetch. Status: ${response.status}`);
+          Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
         }
-      } else {
-        console.log(`Failed to fetch. Status: ${response.status}`);
-        Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        Alert.alert('Lỗi', `Error fetching categories: ${error}`, [{ text: 'OK' }]);
       }
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      Alert.alert('Lỗi', `Error fetching categories: ${error}`, [{ text: 'OK' }]);
-    }
-  };
-
-  const fetchCourseById = async () => {
-    try {
-      const response = await axiosInstance.get(
-        `${process.env.EXPO_PUBLIC_API_GET_COURSE_BY_ID}`.replace(':id', String(courseId))
-      );
-      if (response.status === 200) {
-        const course = response.data.course;
-        setName(course.name);
-        setCategoryId(course.category_id);
-        setDescription(course.description);
-        setPrice(course.price);
-        setIsFree(course.price === 0);
-        setDiscount(course.discount);
-        setHasDiscount(course.discount !== 0);
-        setStatus(course.status);
-        setTotalRating(course.total_rating);
-        setImage(course.image);
-        setOldImage(course.image);
+    };
+    const fetchCourseById = async () => {
+      try {
+        const response = await axiosInstance.get(
+          `${process.env.EXPO_PUBLIC_API_GET_COURSE_BY_ID}`.replace(':id', String(courseId))
+        );
+        if (response.status === 200) {
+          const course = response.data.course;
+          setName(course.name);
+          setCategoryId(course.category_id);
+          setDescription(course.description);
+          setPrice(course.price);
+          setIsFree(course.price === 0);
+          setDiscount(course.discount);
+          setHasDiscount(course.discount !== 0);
+          setStatus(course.status);
+          setTotalRating(course.total_rating);
+          setImage(course.image);
+          setOldImage(course.image);
+        }
+      } catch (error) {
+        console.error('Error fetching course:', error);
+        Alert.alert('Lỗi', Strings.courses.loadError, [{ text: 'OK' }]);
       }
-    } catch (error) {
-      console.error('Error fetching course:', error);
-      Alert.alert('Lỗi', Strings.courses.loadError, [{ text: 'OK' }]);
-    }
-  };
+    };
 
-  const fetchSectionsByCourseId = async () => {
-    try {
-      const response = await axiosInstance.get(
-        `${process.env.EXPO_PUBLIC_API_GET_SECTION_BY_COURSE_ID}`.replace(':id', String(courseId))
-      );
-      if (response.status === 200) {
-        const tempSections = response.data.sections;
-        tempSections.sort((a: Section, b: Section) => a.id - b.id);
-        tempSections.forEach((section: Section) => {
-          section.lessons.sort((a, b) => a.id - b.id);
-          section.lessons.forEach(lesson => {
-            lesson.questions.sort((a, b) => a.id - b.id);
-            lesson.questions.forEach(question => {
-              question.answers.sort((a, b) => a.id - b.id);
+    const fetchSectionsByCourseId = async () => {
+      try {
+        const response = await axiosInstance.get(
+          `${process.env.EXPO_PUBLIC_API_GET_SECTION_BY_COURSE_ID}`.replace(':id', String(courseId))
+        );
+        if (response.status === 200) {
+          const tempSections = response.data.sections;
+          tempSections.sort((a: Section, b: Section) => a.id - b.id);
+          tempSections.forEach((section: Section) => {
+            section.lessons.sort((a, b) => a.id - b.id);
+            section.lessons.forEach(lesson => {
+              lesson.questions.sort((a, b) => a.id - b.id);
+              lesson.questions.forEach(question => {
+                question.answers.sort((a, b) => a.id - b.id);
+              });
             });
           });
-        });
 
-        const lenSections = tempSections.length;
-        for (let index = 0; index < lenSections; index++) {
-          const lenLessons = tempSections[index].lessons.length;
-          tempSections[index].save = true;
-          for (let j = 0; j < lenLessons; j++) {
-            const lenQuestions = tempSections[index].lessons[j].questions.length;
-            tempSections[index].lessons[j].save = true;
-            if (lenQuestions !== 0) {
-              tempSections[index].lessons[j].newIdQuestion =
-                tempSections[index].lessons[j].questions[lenQuestions - 1].id + 1;
-            } else {
-              tempSections[index].lessons[j].newIdQuestion = 1;
-            }
-            for (let k = 0; k < lenQuestions; k++) {
-              const lenAnswers = tempSections[index].lessons[j].questions[k].answers.length;
-              tempSections[index].lessons[j].questions[k].save = true;
-              if (lenAnswers !== 0) {
-                tempSections[index].lessons[j].questions[k].newIdAnswer =
-                  tempSections[index].lessons[j].questions[k].answers[lenAnswers - 1].id + 1;
+          const lenSections = tempSections.length;
+          for (let index = 0; index < lenSections; index++) {
+            const lenLessons = tempSections[index].lessons.length;
+            tempSections[index].save = true;
+            for (let j = 0; j < lenLessons; j++) {
+              const lenQuestions = tempSections[index].lessons[j].questions.length;
+              tempSections[index].lessons[j].save = true;
+              if (lenQuestions !== 0) {
+                tempSections[index].lessons[j].newIdQuestion =
+                  tempSections[index].lessons[j].questions[lenQuestions - 1].id + 1;
               } else {
-                tempSections[index].lessons[j].questions[k].newIdAnswer = 1;
+                tempSections[index].lessons[j].newIdQuestion = 1;
               }
-              for (let l = 0; l < lenAnswers; l++) {
-                tempSections[index].lessons[j].questions[k].answers[l].save = true;
+              for (let k = 0; k < lenQuestions; k++) {
+                const lenAnswers = tempSections[index].lessons[j].questions[k].answers.length;
+                tempSections[index].lessons[j].questions[k].save = true;
+                if (lenAnswers !== 0) {
+                  tempSections[index].lessons[j].questions[k].newIdAnswer =
+                    tempSections[index].lessons[j].questions[k].answers[lenAnswers - 1].id + 1;
+                } else {
+                  tempSections[index].lessons[j].questions[k].newIdAnswer = 1;
+                }
+                for (let l = 0; l < lenAnswers; l++) {
+                  tempSections[index].lessons[j].questions[k].answers[l].save = true;
+                }
               }
             }
-          }
 
-          if (lenLessons !== 0) {
-            tempSections[index].newIdLesson = tempSections[index].lessons[lenLessons - 1].id + 1;
-          } else {
-            tempSections[index].newIdLesson = 1;
+            if (lenLessons !== 0) {
+              tempSections[index].newIdLesson = tempSections[index].lessons[lenLessons - 1].id + 1;
+            } else {
+              tempSections[index].newIdLesson = 1;
+            }
           }
+          if (lenSections !== 0) {
+            setOldNewIdSection(tempSections[lenSections - 1].id + 1);
+            setNewIdSection(tempSections[lenSections - 1].id + 1);
+          }
+          setOldSections(tempSections);
+          setSections(tempSections);
+        } else {
+          console.log(`Failed to fetch. Status: ${response.status}`);
+          Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
         }
-        if (lenSections !== 0) {
-          setOldNewIdSection(tempSections[lenSections - 1].id + 1);
-          setNewIdSection(tempSections[lenSections - 1].id + 1);
-        }
-        setOldSections(tempSections);
-        setSections(tempSections);
-      } else {
-        console.log(`Failed to fetch. Status: ${response.status}`);
-        Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
+      } catch (error) {
+        console.error('Error fetching sections:', error);
+        Alert.alert('Lỗi', `Error fetching sections: ${error}`, [{ text: 'OK' }]);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching sections:', error);
-      Alert.alert('Lỗi', `Error fetching sections: ${error}`, [{ text: 'OK' }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
+    };
     fetchCategories();
     fetchCourseById();
     fetchSectionsByCourseId();
-  }, []); // Chỉ gọi một lần khi component mount
+  }, [courseId]); // Chỉ gọi một lần khi component mount
 
   // State for delete modal
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);

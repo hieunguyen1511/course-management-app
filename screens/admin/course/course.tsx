@@ -4,21 +4,16 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Modal,
   Image,
   TextInput,
   ScrollView,
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 
-import {
-  NavigationContainer,
-  NavigationIndependentTree,
-  useFocusEffect,
-} from '@react-navigation/native';
+import { NavigationIndependentTree, useFocusEffect } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/types/RootStackParamList';
 import axiosInstance from '@/api/axiosInstance';
@@ -52,76 +47,82 @@ const CourseScreen: React.FC<CourseScreenProps> = ({ navigation, route }) => {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ course: Course } | undefined>(undefined);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      fetchCategories();
-      fetchCourses();
-    }, [])
+  const filter = useCallback(
+    (categoryId: number, text: string, courses: Course[]) => {
+      let filtered = courses;
+
+      if (searchText.trim() === '' && categoryId === 0) {
+        setFilteredCourses(courses);
+        return;
+      }
+      if (categoryId !== 0) {
+        filtered = filtered.filter(course => course.category.id === categoryId);
+      }
+
+      if (text.trim() !== '') {
+        filtered = filtered.filter(
+          course =>
+            course.id.toString().includes(text) ||
+            course.name.toLowerCase().includes(text.toLowerCase()) ||
+            course.description.toLowerCase().includes(text.toLowerCase())
+        );
+      }
+
+      setFilteredCourses(filtered);
+    },
+    [searchText]
   );
 
-  const fetchCategories = async () => {
-    try {
-      const response = await axiosInstance.get(`${process.env.EXPO_PUBLIC_API_GET_ALL_CATEGORIES}`);
-      if (response.status === 200) {
-        const allCategory: Category = {
-          id: 0,
-          name: 'Tất cả',
-          description: 'Hiển thị tất cả khóa học',
-          courseCount: 0,
-        };
-        setCategories([allCategory, ...response.data.categories]);
-      } else {
-        console.log(`Failed to fetch. Status: ${response.status}`);
-        Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      Alert.alert('Lỗi', `Failed fetching categories: ${error}`, [{ text: 'OK' }]);
-    }
-  };
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchCategories = async () => {
+        try {
+          const response = await axiosInstance.get(
+            `${process.env.EXPO_PUBLIC_API_GET_ALL_CATEGORIES}`
+          );
+          if (response.status === 200) {
+            const allCategory: Category = {
+              id: 0,
+              name: 'Tất cả',
+              description: 'Hiển thị tất cả khóa học',
+              courseCount: 0,
+            };
+            setCategories([allCategory, ...response.data.categories]);
+          } else {
+            console.log(`Failed to fetch. Status: ${response.status}`);
+            Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
+          }
+        } catch (error) {
+          console.error('Error fetching categories:', error);
+          Alert.alert('Lỗi', `Failed fetching categories: ${error}`, [{ text: 'OK' }]);
+        }
+      };
 
-  const fetchCourses = async () => {
-    try {
-      const response = await axiosInstance.get(`${process.env.EXPO_PUBLIC_API_GET_ALL_COURSES}`);
-      if (response.status === 200) {
-        console.log('fetch data cources successfull!');
-        setCourses(response.data.courses);
-        setFilteredCourses(response.data.courses);
-        filter(selectedCategory, searchText, response.data.courses);
-      } else {
-        console.log(`Failed to fetch. Status: ${response.status}`);
-        Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
-      }
-    } catch (error) {
-      console.error('Error fetching courses:', error);
-      Alert.alert('Lỗi', `Failed fetching courses: ${error}`, [{ text: 'OK' }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filter = (categoryId: number, text: string, courses: Course[]) => {
-    let filtered = courses;
-
-    if (searchText.trim() === '' && categoryId === 0) {
-      setFilteredCourses(courses);
-      return;
-    }
-    if (categoryId !== 0) {
-      filtered = filtered.filter(course => course.category.id === categoryId);
-    }
-
-    if (text.trim() !== '') {
-      filtered = filtered.filter(
-        course =>
-          course.id.toString().includes(text) ||
-          course.name.toLowerCase().includes(text.toLowerCase()) ||
-          course.description.toLowerCase().includes(text.toLowerCase())
-      );
-    }
-
-    setFilteredCourses(filtered);
-  };
+      const fetchCourses = async () => {
+        try {
+          const response = await axiosInstance.get(
+            `${process.env.EXPO_PUBLIC_API_GET_ALL_COURSES}`
+          );
+          if (response.status === 200) {
+            console.log('fetch data cources successfull!');
+            setCourses(response.data.courses);
+            setFilteredCourses(response.data.courses);
+            filter(selectedCategory, searchText, response.data.courses);
+          } else {
+            console.log(`Failed to fetch. Status: ${response.status}`);
+            Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
+          }
+        } catch (error) {
+          console.error('Error fetching courses:', error);
+          Alert.alert('Lỗi', `Failed fetching courses: ${error}`, [{ text: 'OK' }]);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchCategories();
+      fetchCourses();
+    }, [filter, searchText, selectedCategory])
+  );
 
   const filterCategory = (categoryId: number) => {
     setSelectedCategory(categoryId);

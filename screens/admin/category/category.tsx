@@ -1,14 +1,5 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Modal,
-  TextInput,
-  Alert,
-} from 'react-native';
-import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert } from 'react-native';
+import React, { useCallback, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Strings } from '@/constants/Strings';
 import axiosInstance from '@/api/axiosInstance';
@@ -36,45 +27,49 @@ const CategoryScreen: React.FC<CategoryScreenProps> = ({ navigation, route }) =>
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ category: Category } | undefined>(undefined);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      fetchCategories();
-    }, [])
+  const filter = useCallback(
+    (text: string, categories: Category[]) => {
+      let filtered = categories;
+      if (searchText.trim() === '') {
+        setFilteredCategories(categories);
+        return;
+      }
+      if (text.trim() !== '') {
+        filtered = filtered.filter(
+          category =>
+            category.id.toString().includes(text) ||
+            category.name.toLowerCase().includes(text.toLowerCase()) ||
+            category.description.toLowerCase().includes(text.toLowerCase())
+        );
+      }
+      setFilteredCategories(filtered);
+    },
+    [searchText]
   );
 
-  const fetchCategories = async () => {
-    try {
-      const response = await axiosInstance.get(`${process.env.EXPO_PUBLIC_API_GET_ALL_CATEGORIES}`);
-      if (response.status === 200) {
-        setCategories(response.data.categories);
-        setFilteredCategories(response.data.categories);
-        filter(searchText, response.data.categories);
-      } else {
-        Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
-      }
-    } catch (error) {
-      Alert.alert('Lỗi', `Failed fetching categories: ${error}`, [{ text: 'OK' }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filter = (text: string, categories: Category[]) => {
-    let filtered = categories;
-    if (searchText.trim() === '') {
-      setFilteredCategories(categories);
-      return;
-    }
-    if (text.trim() !== '') {
-      filtered = filtered.filter(
-        category =>
-          category.id.toString().includes(text) ||
-          category.name.toLowerCase().includes(text.toLowerCase()) ||
-          category.description.toLowerCase().includes(text.toLowerCase())
-      );
-    }
-    setFilteredCategories(filtered);
-  };
+  useFocusEffect(
+    useCallback(() => {
+      const fetchCategories = async () => {
+        try {
+          const response = await axiosInstance.get(
+            `${process.env.EXPO_PUBLIC_API_GET_ALL_CATEGORIES}`
+          );
+          if (response.status === 200) {
+            setCategories(response.data.categories);
+            setFilteredCategories(response.data.categories);
+            filter(searchText, response.data.categories);
+          } else {
+            Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
+          }
+        } catch (error) {
+          Alert.alert('Lỗi', `Failed fetching categories: ${error}`, [{ text: 'OK' }]);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchCategories();
+    }, [filter, searchText])
+  );
 
   const handleSearch = (text: string) => {
     setSearchText(text);

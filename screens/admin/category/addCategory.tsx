@@ -10,10 +10,8 @@ import {
 } from 'react-native';
 import React from 'react';
 
-import LoadingSpinner from '@/components/Loading';
-
 import { MyScreenProps } from '@/types/MyScreenProps';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import axiosInstance from '@/api/axiosInstance';
 import { Strings } from '@/constants/Strings';
@@ -37,6 +35,9 @@ const AddCategoryScreen = ({ navigation }: MyScreenProps['AddCategoryScreenProps
       });
 
       if (response.status === 201) {
+        Alert.alert('Thành công', `${Strings.categories.addSuccess} ${response.data.category.id}`, [
+          { text: 'OK' },
+        ]);
         navigation.navigate('Category', {
           message: `${Strings.categories.addSuccess} ${response.data.category.id}`,
         });
