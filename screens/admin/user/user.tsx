@@ -32,7 +32,9 @@ const UserScreen: React.FC<UserScreenProps> = ({ navigation }) => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`${process.env.EXPO_PUBLIC_API_GET_ALL_USERS}`);
+      const response = await axiosInstance.get(
+        `${process.env.EXPO_PUBLIC_API_GET_ALL_USERS_WITHOUT_ADMIN}`
+      );
       setUsers(response.data.users);
       setFilteredUsers(response.data.users);
     } catch (error) {
