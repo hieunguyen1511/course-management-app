@@ -1,7 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-
 import tokenStorageManager from '@/storage/tokenStorage/tokenStorageManager';
+import { navigate } from '@/services/NavigationService';
 
 interface ExtendAxiosRequestConfig extends InternalAxiosRequestConfig {
   _retry: boolean;
@@ -51,7 +51,8 @@ axiosInstance.interceptors.response.use(
       } catch (refreshError) {
         await tokenStorageManager.deleteRefreshToken();
         processQueue(refreshError);
-        //router.replace('/login');
+        console.log('Session expired. Please log in again.');
+        //navigate('Login', { message: 'Session expired. Please log in again.' });
         return Promise.reject(refreshError);
       } finally {
         tokenRefreshing = false;

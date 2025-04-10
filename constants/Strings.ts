@@ -54,7 +54,7 @@ export const Strings = {
     suggest_courses: 'Gợi ý cho bạn',
     no_enrolled_courses: 'Bạn chưa tham gia khóa học nào',
     complete: 'Hoàn thành',
-    last_accessed: 'Lần truy cập gần nhất',
+    last_accessed: 'Truy cập gần nhất',
     loading_your_courses: 'Đang tải khóa học...',
   },
   course_section: {

@@ -41,24 +41,21 @@ interface Course {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-async function getAllPopularCourses() {
+const getAllPopularCourses = async (): Promise<CourseCard[]> => {
   try {
-    let url = `${process.env.EXPO_PUBLIC_API_GET_ALL_COURSES}`;
+    let url = `${process.env.EXPO_PUBLIC_API_GET_ALL_COURSES_FOR_USER_LIMIT_INFO}`;
     const response = await axiosInstance.get(url);
     if (response.status === 200) {
-      return response.data.courses.sort((a: Course, b: Course) => {
-        if (a.total_rating > b.total_rating) return -1;
-        if (a.total_rating < b.total_rating) return 1;
-        return 0;
-      });
+      return response.data.courses.slice(0, 10) as CourseCard[];
     }
+    return [] as CourseCard[];
   } catch (error) {
     console.error('Error fetching courses:', error);
-    return [];
+    return [] as CourseCard[];
   }
-}
+};
 
-async function getAllCategories() {
+const getAllCategories = async (): Promise<Category[]> => {
   try {
     let url = `${process.env.EXPO_PUBLIC_API_GET_ALL_CATEGORIES}`;
     const response = await axiosInstance.get(url);
@@ -68,23 +65,23 @@ async function getAllCategories() {
         if (a.name < b.name) return -1;
         return 0;
       });
-    } else {
-      throw new Error('Failed to fetch categories');
     }
+    return [] as Category[];
   } catch (error) {
     console.error('Error fetching categories:', error);
-    return [];
+    return [] as Category[];
   }
-}
+};
 
 // components
 import SearchHeader from '@/components/user/SearchHeader';
 import CategoryList from '@/components/user/CategoryList';
 import CourseList from '@/components/user/CourseList';
+import { CourseCard } from '@/types/MyInterfaces';
 
 const useExploreData = () => {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [popularCourses, setPopularCourses] = useState<Course[]>([]);
+  const [popularCourses, setPopularCourses] = useState<CourseCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -145,9 +142,9 @@ const Explore: React.FC<MyScreenProps['ExploreScreenProps']> = ({ navigation, ro
     });
   };
 
-  const handleCoursePress = (course: Course) => {
+  const handleCoursePress = (course: CourseCard) => {
     navigation.navigate('DetailCourseScreen', {
-      courseId: course.id,
+      courseId: course.courseId,
       message: '',
     });
   };

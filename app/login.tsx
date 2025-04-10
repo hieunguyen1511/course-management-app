@@ -84,9 +84,8 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
 
         if (res.status === 200) {
           console.log('Login successful');
-
+          tokenStorageManager.setAccessToken(res.data.access_token);
           if (isRemmebermeChecked) {
-            tokenStorageManager.setAccessToken(res.data.access_token);
             await tokenStorageManager.setRefreshToken(res.data.refresh_token, !isRemmebermeChecked);
           }
 

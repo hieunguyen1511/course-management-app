@@ -2,31 +2,15 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 
 import { Strings } from '@/constants/Strings';
-
-interface Course {
-  id: number;
-  category_id: number;
-  name: string;
-  description: string;
-  status: number;
-  price: number;
-  discount: number;
-  image: string;
-  total_rating: number;
-  enrollment_count: number;
-  category: {
-    id: number;
-    name: string;
-  };
-}
+import { CourseCard } from '@/types/MyInterfaces';
 
 interface CourseCardProps {
-  course: Course;
-  onPress?: (course: Course) => void;
+  course: CourseCard;
+  onPress?: (course: CourseCard) => void;
   renderRatingStars?: (rating: number) => React.ReactNode;
 }
 
-const CourseCard: React.FC<CourseCardProps> = ({ course, onPress, renderRatingStars }) => {
+const CourseCardComponent: React.FC<CourseCardProps> = ({ course, onPress, renderRatingStars }) => {
   const formatPrice = (price: number): string => {
     if (price === 0) return 'Miễn phí';
     return `${price.toLocaleString('vi-VN')}đ`;
@@ -46,7 +30,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onPress, renderRatingSt
           {course.description.substring(0, 25) + '...'}
         </Text>
 
-        <Text style={styles.categoryText}>{course.category?.name}</Text>
+        <Text style={styles.categoryText}>{course.categoryName}</Text>
         <View style={styles.courseCardFooter}>
           <View>
             {course.price === 0 ? (
@@ -75,17 +59,15 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onPress, renderRatingSt
         </View>
         <View style={styles.ratingContainer}>
           {renderRatingStars ? (
-            renderRatingStars(course.total_rating)
+            renderRatingStars(course.rating)
           ) : (
             <>
               {[1, 2, 3, 4, 5].map(star => (
                 <Text key={star} style={styles.starIcon}>
-                  {course.total_rating >= star ? '★' : '☆'}
+                  {course.rating >= star ? '★' : '☆'}
                 </Text>
               ))}
-              <Text style={styles.ratingText}>
-                {course.total_rating ? course.total_rating.toFixed(1) : 0}
-              </Text>
+              <Text style={styles.ratingText}>{course.rating?.toFixed(1)}</Text>
             </>
           )}
         </View>
@@ -163,4 +145,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CourseCard;
+export default CourseCardComponent;

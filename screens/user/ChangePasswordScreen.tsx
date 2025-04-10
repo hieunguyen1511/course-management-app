@@ -48,13 +48,18 @@ const ChangePassword: React.FC<MyScreenProps['ChangePasswordScreenProps']> = ({
   const handleLogout = async () => {
     await SecureStore.deleteItemAsync('user');
     await tokenStorageManager.deleteRefreshToken();
+    // navigation.reset({
+    //   index: 0,
+    //   routes: [{ name: 'Login' }],
+    // });
     navigation.reset({
       index: 0,
-      routes: [{ name: 'Login' }],
+      routes: [{ name: 'Login', params: { message: 'Đăng xuất thành công' } }],
     });
-    navigation.navigate('Login', {
-      message: 'Đăng xuất thành công',
-    });
+    //navigation.goBack();
+    // navigation.navigate('Login', {
+    //   message: 'Đăng xuất thành công',
+    // });
     // In a real app, you would clear tokens, user data, etc.
   };
 
