@@ -237,9 +237,9 @@ const UserViewAllCourseScreen: React.FC<UserViewAllCourseScreenProps> = ({
   const { is_suggested, is_popular, category_id } = useLocalSearchParams();
 
   // State để xác định loại hiển thị
-  const [isSuggested, setIsSuggested] = useState<boolean>(false);
-  const [isPopular, setIsPopular] = useState<boolean>(false);
-  const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
+  const [isSuggested, setIsSuggested] = useState<boolean>(is_suggested === '1');
+  const [isPopular, setIsPopular] = useState<boolean>(is_popular === '1');
+  const [categoryId, setCategoryId] = useState<number | undefined>(parseInt(category_id as string));
 
   // Thêm state để lưu tên danh mục hiện tại
   const [currentCategoryName, setCurrentCategoryName] = useState<string>('');
@@ -290,10 +290,7 @@ const UserViewAllCourseScreen: React.FC<UserViewAllCourseScreenProps> = ({
     }
   };
   const loadData = async () => {
-    const isSuggested = is_suggested === '1';
-    const isPopular = is_popular === '1';
-    const categoryId = parseInt(category_id as string);
-    if (category_id && (isSuggested || isPopular)) {
+    if (categoryId || isSuggested || isPopular) {
       setIsSuggested(isSuggested);
       setIsPopular(isPopular);
       setCategoryId(categoryId);
@@ -301,7 +298,7 @@ const UserViewAllCourseScreen: React.FC<UserViewAllCourseScreenProps> = ({
       let fetchedCourses: Course[] = [];
 
       if (isSuggested) {
-        fetchedCourses = await getAllSuggestedCourses(categoryId);
+        fetchedCourses = await getAllSuggestedCourses(categoryId || 'NaN');
       } else if (isPopular) {
         fetchedCourses = (await getAllPopularCourses()) || [];
       } else if (categoryId) {
@@ -327,7 +324,7 @@ const UserViewAllCourseScreen: React.FC<UserViewAllCourseScreenProps> = ({
       setCourses(fetchedCourses);
 
       // Chỉ fetch categories khi không phải suggested và không có category_id
-      if (!is_suggested && !category_id) {
+      if (!isSuggested && !categoryId) {
         fetchCategories();
       }
     } else {
@@ -342,7 +339,7 @@ const UserViewAllCourseScreen: React.FC<UserViewAllCourseScreenProps> = ({
 
   // Cập nhật useEffect cho việc thay đổi category
   useEffect(() => {
-    if (is_suggested) {
+    if (isSuggested) {
       return;
     }
     // Chỉ fetch lại khi thay đổi category trong trường hợp popular hoặc mặc định
