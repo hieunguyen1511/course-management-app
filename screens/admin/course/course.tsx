@@ -1,199 +1,211 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Image, TextInput, ScrollView, ActivityIndicator, Alert } from 'react-native'
-import React, { useState, useEffect } from 'react'
-import { Ionicons } from '@expo/vector-icons'
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  TextInput,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 
-import {
-  NavigationContainer,
-  NavigationIndependentTree,
-  useFocusEffect,
-} from "@react-navigation/native";
-import {
-  createNativeStackNavigator,
-  NativeStackScreenProps,
-} from "@react-navigation/native-stack";
-import { RootStackParamList } from "@/types/RootStackParamList";
+import { NavigationIndependentTree, useFocusEffect } from '@react-navigation/native';
+import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/types/RootStackParamList';
 import axiosInstance from '@/api/axiosInstance';
 import { Strings } from '@/constants/Strings';
 import AddCourse from '@/screens/admin/course/addCourse';
 import UpdateCourse from '@/screens/admin/course/updateCourse';
-import ViewCourse from '@/screens/admin/course/viewCourse'
+import ViewCourse from '@/screens/admin/course/viewCourse';
+import AddSection from './section/addSection';
+import UpdateSection from './section/updateSection';
+import AddLesson from './section/lesson/addLesson';
+import UpdateLesson from './section/lesson/updateLesson';
+
+import { Category, Course } from '@/types/apiModels';
+import { deleteImagefromCloudinary } from '@/components/Cloudinary';
+import DeleteModal from '@/components/deleteModal';
+
 const Stack = createNativeStackNavigator<RootStackParamList>();
-type CourseScreenProps = NativeStackScreenProps<RootStackParamList, "Course">;
-import AddSection from "./section/addSection";
-import UpdateSection from "./section/updateSection";
-import AddLesson from "./section/lesson/addLesson";
-import UpdateLesson from "./section/lesson/updateLesson";
+type CourseScreenProps = NativeStackScreenProps<RootStackParamList, 'CourseScreen'>;
 
-import { Category } from '@/types/category';
-import { Course } from '@/types/course';
-
-const CourseScreen: React.FC<CourseScreenProps> = ({ navigation, route }) => {
-
+const CourseScreen: React.FC<CourseScreenProps> = ({ navigation }) => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState(0);
   const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
-  const [searchText, setSearchText] = useState("");
+  const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(true);
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [loadingMap, setLoadingMap] = useState<{ [key: string]: boolean }>({});
+  const [refreshing, setRefreshing] = useState(false);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      fetchCategories();
-      fetchCourses();
-    }, [])
+  // State for delete modal
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ course: Course } | undefined>(undefined);
+
+  const filter = useCallback(
+    (categoryId: number, text: string, courses: Course[]) => {
+      let filtered = courses;
+
+      if (searchText.trim() === '' && categoryId === 0) {
+        setFilteredCourses(courses);
+        return;
+      }
+      if (categoryId !== 0) {
+        filtered = filtered.filter(course => course.category.id === categoryId);
+      }
+
+      if (text.trim() !== '') {
+        filtered = filtered.filter(
+          course =>
+            course.id.toString().includes(text) ||
+            course.name.toLowerCase().includes(text.toLowerCase()) ||
+            course.description.toLowerCase().includes(text.toLowerCase())
+        );
+      }
+
+      setFilteredCourses(filtered);
+    },
+    [searchText]
   );
-
 
   const fetchCategories = async () => {
     try {
       const response = await axiosInstance.get(`${process.env.EXPO_PUBLIC_API_GET_ALL_CATEGORIES}`);
       if (response.status === 200) {
-
         const allCategory: Category = {
           id: 0,
-          name: "Tất cả",
-          description: "Hiển thị tất cả khóa học",
-          courseCount: 0
+          name: 'Tất cả',
+          description: 'Hiển thị tất cả khóa học',
+          courseCount: 0,
         };
         setCategories([allCategory, ...response.data.categories]);
       } else {
         console.log(`Failed to fetch. Status: ${response.status}`);
-        Alert.alert("Lỗi", `Failed to fetch. Status: ${response.status}`, [{ text: "OK" }]);
+        Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
-      Alert.alert("Lỗi", `Failed fetching categories: ${error}`, [{ text: "OK" }]);
+      Alert.alert('Lỗi', `Failed fetching categories: ${error}`, [{ text: 'OK' }]);
     }
   };
 
-  const fetchCourses = async () => {
+  const fetchCourses = useCallback(async () => {
     try {
       const response = await axiosInstance.get(`${process.env.EXPO_PUBLIC_API_GET_ALL_COURSES}`);
       if (response.status === 200) {
-        console.log('fetch data cources successfull!');
-        setCourses(response.data.courses);
-        setFilteredCourses(response.data.courses);
-        filter(selectedCategory, searchText, response.data.courses);
+        const data = response.data.courses;
+        setCourses(data);
+        setFilteredCourses(data);
+        filter(selectedCategory, searchText, data);
       } else {
         console.log(`Failed to fetch. Status: ${response.status}`);
-        Alert.alert("Lỗi", `Failed to fetch. Status: ${response.status}`, [{ text: "OK" }]);
+        Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
       }
     } catch (error) {
       console.error('Error fetching courses:', error);
-      Alert.alert("Lỗi", `Failed fetching courses: ${error}`, [{ text: "OK" }]);
+      Alert.alert('Lỗi', `Failed fetching courses: ${error}`, [{ text: 'OK' }]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  };
+  }, [filter, searchText, selectedCategory]);
 
-  const filter = (categoryId: number, text: string, courses: Course[]) => {
-    let filtered = courses;
-
-    if (searchText.trim() === '' && categoryId === 0) {
-      setFilteredCourses(courses);
-      return;
-    }
-    if (categoryId !== 0) {
-      filtered = filtered.filter(course => course.category.id === categoryId);
-    }
-    
-    if (text.trim() !== '') {
-      filtered = filtered.filter(course => 
-        course.id.toString().includes(text) ||
-        course.name.toLowerCase().includes(text.toLowerCase()) ||
-        course.description.toLowerCase().includes(text.toLowerCase())
-      );
-    }
-  
-    setFilteredCourses(filtered);
-  }
+  useFocusEffect(
+    useCallback(() => {
+      fetchCategories();
+      fetchCourses();
+    }, [fetchCourses])
+  );
 
   const filterCategory = (categoryId: number) => {
     setSelectedCategory(categoryId);
     filter(categoryId, searchText, courses);
-  }
-
-  const handleSearch = (text: string) => {
-    setSearchText(text);
-    if (text.trim() === '') {
-      setFilteredCourses(courses);
-      return;
-    }
-    filter(selectedCategory, text, courses);
   };
 
-  
-  const handleDeleteCourse = async ()  => {
-    if (selectedCourse) {
-      setLoading(true);
-      try {
-        const response = await axiosInstance.delete(
-          `${process.env.EXPO_PUBLIC_API_DELETE_COURSE}`.replace(":id", String(selectedCourse.id))
-        );
-        
-        if (response.status === 200) {
-          await removeCloudinary(selectedCourse.image);
-          console.log('Delete item course successful!');
-          const updatedCourses = courses.filter(cat => cat.id !== selectedCourse.id);
-          setCourses(updatedCourses);
-          filter(selectedCategory, searchText, updatedCourses);
-          setDeleteModalVisible(false);
-          setSelectedCourse(null);
-          Alert.alert("Thành công", Strings.courses.deleteSuccess, [{ text: "OK" }]);
-        } else {
-          console.log(`Failed to delete item. Status: ${response.status}`);
-          Alert.alert("Lỗi", `Failed to delete item. Status: ${response.status}`, [{ text: "OK" }]);
-        }
-      } catch (error) {
-        console.error('Failed to delete item:', error);
-        Alert.alert("Lỗi", Strings.courses.deleteError, [{ text: "OK" }]);
-      }
-      finally {
-        setLoading(false);
-      }
-    }
+  // Handle refresh
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchCategories();
+    fetchCourses();
   };
 
-
-  const confirmDelete = (course: Course) => {
-    setSelectedCourse(course);
+  const handleDelete = (course: Course) => {
+    setItemToDelete({ course: course });
     setDeleteModalVisible(true);
   };
 
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
 
-  const removeCloudinary = async (imageUri: string) => {
-    
+    setLoading(true);
+    try {
+      const response = await axiosInstance.delete(
+        `${process.env.EXPO_PUBLIC_API_DELETE_COURSE}`.replace(
+          ':id',
+          String(itemToDelete.course.id)
+        )
+      );
+      if (response.status === 200) {
+        if (itemToDelete.course.image) {
+          const response = await deleteImagefromCloudinary(itemToDelete.course.image);
+          if (!response) {
+            Alert.alert('Lỗi', 'Không thể xoá ảnh khỏi Cloudinary');
+          }
+        }
+        const updatedCourses = courses.filter(cat => cat.id !== itemToDelete.course.id);
+        setCourses(updatedCourses);
+        filter(selectedCategory, searchText, updatedCourses);
+        setDeleteModalVisible(false);
+        Alert.alert('Thành công', Strings.courses.deleteSuccess, [{ text: 'OK' }]);
+      } else {
+        console.log(`Failed to delete item. Status: ${response.status}`);
+        Alert.alert('Lỗi', `Failed to delete item. Status: ${response.status}`, [{ text: 'OK' }]);
+      }
+    } catch (error) {
+      console.error('Failed to delete item:', error);
+      Alert.alert('Lỗi', Strings.courses.deleteError, [{ text: 'OK' }]);
+    } finally {
+      setLoading(false);
+      setDeleteModalVisible(false);
+      setItemToDelete(undefined);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteModalVisible(false);
+    setItemToDelete(undefined);
   };
 
   const handleEditCourse = (course: Course) => {
-    navigation.navigate('UpdateCourse', { courseId: course.id });
+    navigation.navigate('UpdateCourseScreen', { courseId: course.id });
   };
-
 
   const renderCourseItem = ({ item }: { item: Course }) => {
     return (
       <View style={styles.courseCard}>
-        <View style={{ position: "relative", justifyContent: "center", alignItems: "center" }}>
-        {loadingMap[item.id] && (
-          <ActivityIndicator 
-            size="small" 
-            color="#4a6ee0" 
-            style={{ position: "absolute", zIndex: 1 }} 
-          />
-        )}
+        <View style={{ position: 'relative', justifyContent: 'center', alignItems: 'center' }}>
+          {loadingMap[item.id] && (
+            <ActivityIndicator
+              size="small"
+              color="#4a6ee0"
+              style={{ position: 'absolute', zIndex: 1 }}
+            />
+          )}
 
-        {item.image && (
-          <Image
-            source={{ uri: item.image }}
-            style={styles.courseImage}
-            onLoadStart={() => setLoadingMap((prev) => ({ ...prev, [item.id]: true }))}
-            onLoad={() => setLoadingMap((prev) => ({ ...prev, [item.id]: false }))}
-            onError={() => setLoadingMap((prev) => ({ ...prev, [item.id]: false }))}
-          />
-        )}
+          {item.image && (
+            <Image
+              source={{ uri: item.image }}
+              style={styles.courseImage}
+              onLoadStart={() => setLoadingMap(prev => ({ ...prev, [item.id]: true }))}
+              onLoad={() => setLoadingMap(prev => ({ ...prev, [item.id]: false }))}
+              onError={() => setLoadingMap(prev => ({ ...prev, [item.id]: false }))}
+            />
+          )}
         </View>
         <View style={styles.courseInfo}>
           <Text style={styles.courseTitle}>{item.name}</Text>
@@ -201,19 +213,18 @@ const CourseScreen: React.FC<CourseScreenProps> = ({ navigation, route }) => {
           <Text style={styles.courseDescription} numberOfLines={3}>
             {item.description}
           </Text>
-  
 
           <View style={styles.statusContainer}>
             <Ionicons
-              name={item.status === 0 ? "close-circle" : "checkmark-circle"}
+              name={item.status === 0 ? 'close-circle' : 'checkmark-circle'}
               size={16}
-              color={item.status === 0 ? "red" : "green"}
+              color={item.status === 0 ? 'red' : 'green'}
             />
-            <Text style={[styles.courseStatus, { color: item.status === 0 ? "red" : "green" }]}>
-              {item.status === 0 ? "Không hoạt động" : "Hoạt động"}
+            <Text style={[styles.courseStatus, { color: item.status === 0 ? 'red' : 'green' }]}>
+              {item.status === 0 ? 'Không hoạt động' : 'Hoạt động'}
             </Text>
           </View>
-  
+
           <View style={styles.courseDetails}>
             {item.discount !== 0 ? (
               <Text style={styles.coursePrice}>
@@ -222,8 +233,8 @@ const CourseScreen: React.FC<CourseScreenProps> = ({ navigation, route }) => {
                 </Text>{' '}
                 <Text style={styles.discountedPrice}>
                   {(item.price * (1 - item.discount / 100)).toLocaleString('vi-VN')}đ
-                </Text>
-                {' '}<Text style={styles.discountText}>(-{item.discount}%)</Text>{' '}
+                </Text>{' '}
+                <Text style={styles.discountText}>(-{item.discount}%)</Text>{' '}
               </Text>
             ) : (
               <Text style={styles.coursePrice}>
@@ -233,33 +244,31 @@ const CourseScreen: React.FC<CourseScreenProps> = ({ navigation, route }) => {
 
             <Text style={styles.courseStudents}>{`${item.enrollment_count} học viên`}</Text>
 
-            {(item.total_rating != null && item.total_rating !== 0) && (
+            {item.total_rating != null && item.total_rating !== 0 && (
               <View style={styles.ratingContainer}>
                 <Ionicons name="star" size={16} color="#FFD700" style={styles.starIcon} />
                 <Text style={styles.courseRating}>{item.total_rating}</Text>
               </View>
             )}
           </View>
-
-
         </View>
-  
+
         <View style={styles.actionButtons}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionButton, styles.viewButton]}
-            onPress={() => navigation.navigate('ViewCourse', { courseId: Number(item.id)})}
+            onPress={() => navigation.navigate('ViewCourseScreen', { courseId: Number(item.id) })}
           >
             <Ionicons name="eye" size={20} color="#fff" />
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionButton, styles.editButton]}
             onPress={() => handleEditCourse(item)}
           >
             <Ionicons name="pencil" size={20} color="#fff" />
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionButton, styles.deleteButton]}
-            onPress={() => confirmDelete(item)}
+            onPress={() => handleDelete(item)}
           >
             <Ionicons name="trash" size={20} color="#fff" />
           </TouchableOpacity>
@@ -267,47 +276,53 @@ const CourseScreen: React.FC<CourseScreenProps> = ({ navigation, route }) => {
       </View>
     );
   };
-  
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search courses..."
-            value={searchText}
-            onChangeText={handleSearch}
-          />
-        </View>
-        <TouchableOpacity 
+        <Text style={styles.headerTitle}>Danh sách người dùng</Text>
+        <TouchableOpacity
           style={styles.addButton}
-          onPress={() => navigation.navigate('AddCourse', { message: 'Hello' })}
+          onPress={() => navigation.navigate('AddCourseScreen', { message: 'Hello' })}
         >
           <Ionicons name="add" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
-
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder={Strings.courses.searchPlaceholder}
+          value={searchText}
+          onChangeText={setSearchText}
+        />
+        {searchText.length > 0 && (
+          <TouchableOpacity style={styles.clearButton} onPress={() => setSearchText('')}>
+            <Ionicons name="close-circle" size={20} color="#666" />
+          </TouchableOpacity>
+        )}
+      </View>
       <View style={styles.categoryWrapper}>
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.categoryContainer}
         >
-          {categories.map((category) => (
+          {categories.map(category => (
             <TouchableOpacity
               key={category.id}
               style={[
                 styles.categoryButton,
-                selectedCategory === category.id && styles.selectedCategory
+                selectedCategory === category.id && styles.selectedCategory,
               ]}
               onPress={() => filterCategory(category.id)}
             >
-              <Text style={[
-                styles.categoryText,
-                selectedCategory === category.id && styles.selectedCategoryText
-              ]}>
+              <Text
+                style={[
+                  styles.categoryText,
+                  selectedCategory === category.id && styles.selectedCategoryText,
+                ]}
+              >
                 {category.name}
               </Text>
             </TouchableOpacity>
@@ -315,55 +330,38 @@ const CourseScreen: React.FC<CourseScreenProps> = ({ navigation, route }) => {
         </ScrollView>
       </View>
 
-      {loading ? (
-        <Text style={styles.loadingText}>{Strings.courses.loading}...</Text>
+      {loading && !refreshing ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4a6ee0" />
+          <Text style={styles.loadingText}>{Strings.courses.loading}...</Text>
+        </View>
       ) : (
         <FlatList
           data={filteredCourses}
           renderItem={renderCourseItem}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.courseList}
           showsVerticalScrollIndicator={false}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="school-outline" size={50} color="#ccc" />
+              <Text style={styles.emptyText}>Không tìm thấy khóa học nào</Text>
+            </View>
+          }
         />
       )}
-
-      <Modal
-        animationType="fade"
-        transparent={true}
+      <DeleteModal
         visible={deleteModalVisible}
-        onRequestClose={() => setDeleteModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Ionicons name="warning" size={32} color="#F44336" />
-              <Text style={styles.modalTitle}>Xác nhận xóa</Text>
-            </View>
-            <Text style={styles.modalMessage}>
-              Bạn có chắc chắn muốn xóa khóa học "{selectedCourse?.name}" không?
-              Hành động này không thể hoàn tác.
-            </Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setDeleteModalVisible(false)}
-              >
-                <Text style={styles.cancelButtonText}>Hủy</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.confirmButton]}
-                onPress={handleDeleteCourse}
-              >
-                <Text style={styles.confirmButtonText}>Xóa</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        title="Xác nhận xóa"
+        message={`Bạn có chắc chắn muốn xóa khóa học "${itemToDelete?.course.name}" không? Hành động này không thể hoàn tác.`}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </View>
-
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -372,28 +370,41 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    padding: 16,
-    backgroundColor: '#fff',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: 'white',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
   },
   searchContainer: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
+    backgroundColor: 'white',
+    margin: 16,
     paddingHorizontal: 12,
-    marginRight: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   searchIcon: {
     marginRight: 8,
   },
   searchInput: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 12,
     fontSize: 16,
+  },
+  clearButton: {
+    padding: 4,
   },
   addButton: {
     backgroundColor: '#007AFF',
@@ -403,11 +414,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   loadingText: {
-    textAlign: 'center',
-    marginTop: 20,
+    marginTop: 12,
     fontSize: 16,
     color: '#666',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 12,
+    textAlign: 'center',
   },
   categoryWrapper: {
     backgroundColor: '#fff',
@@ -493,7 +519,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   discountedPrice: {
-    color: 'red', 
+    color: 'red',
   },
   discountText: {
     color: 'green',
@@ -503,7 +529,7 @@ const styles = StyleSheet.create({
   courseStudents: {
     marginRight: 8,
   },
-  
+
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -513,7 +539,7 @@ const styles = StyleSheet.create({
     color: '#666',
     marginLeft: 4,
   },
-  
+
   actionButtons: {
     flexDirection: 'row',
     padding: 16,
@@ -537,120 +563,37 @@ const styles = StyleSheet.create({
   deleteButton: {
     backgroundColor: '#F44336',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 24,
-    width: '80%',
-    maxWidth: 400,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginLeft: 12,
-  },
-  modalMessage: {
-    fontSize: 16,
-    color: '#444',
-    lineHeight: 24,
-    marginBottom: 24,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 12,
-  },
-  modalButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#f5f5f5',
-  },
-  confirmButton: {
-    backgroundColor: '#F44336',
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  confirmButtonText: {
-    fontSize: 16,
-    color: '#fff',
-    fontWeight: '600',
-  },
   statusContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 5,
   },
   courseStatus: {
     fontSize: 14,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginLeft: 5,
   },
-  
+
   starIcon: {
     marginRight: 4,
   },
-  
 });
-
 
 const CourseTabLayout = () => {
   return (
     <NavigationIndependentTree>
-      <Stack.Navigator initialRouteName="Course" screenOptions={{ headerShown: false }}>
-        <Stack.Screen 
-            name="Course" 
-            component={CourseScreen} 
-          />
-        <Stack.Screen 
-          name="AddCourse" 
-          component={AddCourse} 
-        />
-        <Stack.Screen 
-          name="UpdateCourse" 
-          component={UpdateCourse} 
-        />
-        <Stack.Screen 
-          name="ViewCourse" 
-          component={ViewCourse} 
-        />
-        <Stack.Screen 
-          name='AddSection' 
-          component={AddSection}
-        />
-        <Stack.Screen 
-          name='UpdateSection' 
-          component={UpdateSection}
-        />
-        <Stack.Screen 
-          name='AddLesson' 
-          component={AddLesson} 
-        />
-        <Stack.Screen 
-          name='UpdateLesson' 
-          component={UpdateLesson}
-        />
+      <Stack.Navigator initialRouteName="CourseScreen" screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="CourseScreen" component={CourseScreen} />
+        <Stack.Screen name="AddCourseScreen" component={AddCourse} />
+        <Stack.Screen name="UpdateCourseScreen" component={UpdateCourse} />
+        <Stack.Screen name="ViewCourseScreen" component={ViewCourse} />
+        <Stack.Screen name="AddSectionScreen" component={AddSection} />
+        <Stack.Screen name="UpdateSectionScreen" component={UpdateSection} />
+        <Stack.Screen name="AddLessonScreen" component={AddLesson} />
+        <Stack.Screen name="UpdateLessonScreen" component={UpdateLesson} />
       </Stack.Navigator>
-  </NavigationIndependentTree>
+    </NavigationIndependentTree>
   );
-}
+};
 
-export default CourseTabLayout
+export default CourseTabLayout;

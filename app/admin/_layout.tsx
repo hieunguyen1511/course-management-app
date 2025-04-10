@@ -6,7 +6,7 @@ import SCREENS from '@/screens/admin/screens';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import DashboardScreen from '@/screens/admin/dashboard';
-import NotificationsScreen from '@/screens/admin/notifications';
+import UserScreen from '@/screens/admin/user/user';
 import SettingScreen from '@/screens/admin/setting';
 import CourseScreen from '@/screens/admin/course/course';
 import CategoryScreen from '@/screens/admin/category/category';
@@ -41,7 +41,7 @@ export default function AdminLayout() {
           //   }}
         >
           <Drawer.Screen name={SCREENS.DASHBOARD} component={DashboardScreen} />
-          <Drawer.Screen name={SCREENS.NOTIFICATIONS} component={NotificationsScreen} />
+          <Drawer.Screen name={SCREENS.USER} component={UserScreen} />
           <Drawer.Screen name={SCREENS.CATEGORY} component={CategoryScreen} />
           <Drawer.Screen name={SCREENS.COURSE} component={CourseScreen} />
           <Drawer.Screen name={SCREENS.SETTING} component={SettingScreen} />

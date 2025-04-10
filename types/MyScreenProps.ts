@@ -31,16 +31,19 @@ export type MyScreenProps = {
   UserRatingScreenProps: NativeStackScreenProps<RootStackParamList, 'UserRatingScreen'>;
   PaymentCheckoutScreenProps: NativeStackScreenProps<RootStackParamList, 'PaymentCheckoutScreen'>;
 
-  CategoryScreenProps: NativeStackScreenProps<RootStackParamList, 'Category'>;
-  AddCategoryScreenProps: NativeStackScreenProps<RootStackParamList, 'AddCategory'>;
-  UpdateCategoryScreenProps: NativeStackScreenProps<RootStackParamList, 'UpdateCategory'>;
-  CourseScreenProps: NativeStackScreenProps<RootStackParamList, 'Course'>;
-  AddCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'AddCourse'>;
-  ViewCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'ViewCourse'>;
-  UpdateCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'UpdateCourse'>;
+  CategoryScreenProps: NativeStackScreenProps<RootStackParamList, 'CategoryScreen'>;
+  AddCategoryScreenProps: NativeStackScreenProps<RootStackParamList, 'AddCategoryScreen'>;
+  UpdateCategoryScreenProps: NativeStackScreenProps<RootStackParamList, 'UpdateCategoryScreen'>;
+  CourseScreenProps: NativeStackScreenProps<RootStackParamList, 'CourseScreen'>;
+  AddCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'AddCourseScreen'>;
+  ViewCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'ViewCourseScreen'>;
+  UpdateCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'UpdateCourseScreen'>;
 
-  AddSectionScreenProps: NativeStackScreenProps<RootStackParamList, 'AddSection'>;
-  UpdateSectionScreenProps: NativeStackScreenProps<RootStackParamList, 'UpdateSection'>;
-  AddLessonScreenProps: NativeStackScreenProps<RootStackParamList, 'AddLesson'>;
-  UpdateLessonScreenProps: NativeStackScreenProps<RootStackParamList, 'UpdateLesson'>;
+  AddSectionScreenProps: NativeStackScreenProps<RootStackParamList, 'AddSectionScreen'>;
+  UpdateSectionScreenProps: NativeStackScreenProps<RootStackParamList, 'UpdateSectionScreen'>;
+  AddLessonScreenProps: NativeStackScreenProps<RootStackParamList, 'AddLessonScreen'>;
+  UpdateLessonScreenProps: NativeStackScreenProps<RootStackParamList, 'UpdateLessonScreen'>;
+
+  UserScreenProps: NativeStackScreenProps<RootStackParamList, 'UserScreen'>;
+  ViewUserScreenProps: NativeStackScreenProps<RootStackParamList, 'ViewUserScreen'>;
 };

@@ -1,68 +1,26 @@
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, TextInput, FlatList, Alert, Modal } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  TextInput,
+  FlatList,
+  Alert,
+  RefreshControl,
+} from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { Enrollment, Section, Comment, User } from '@/types/course';
 import { MyScreenProps } from '@/types/MyScreenProps';
-import { Category } from '@/types/category';
+import { Category, Enrollment, Section, Comment, User } from '@/types/apiModels';
 import axiosInstance from '@/api/axiosInstance';
 import { Strings } from '@/constants/Strings';
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from 'expo-secure-store';
+import DeleteModal from '@/components/deleteModal';
+import { formatDate } from '@/components/formatDate';
 
-
-interface DeleteModalProps {
-  visible: boolean;
-  title: string;
-  message: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-}
-
-const DeleteModal: React.FC<DeleteModalProps> = ({
-  visible,
-  title,
-  message,
-  onConfirm,
-  onCancel,
-}) => {
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onCancel}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Ionicons name="warning-outline" size={32} color="#FF3B30" />
-            <Text style={styles.modalTitle}>{title}</Text>
-          </View>
-          <Text style={styles.modalMessage}>{message}</Text>
-          <View style={styles.modalButtons}>
-            <TouchableOpacity 
-              style={[styles.modalButton, styles.cancelButton]} 
-              onPress={onCancel}
-            >
-              <Text style={styles.cancelButtonText}>Hủy</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.modalButton, styles.deleteButtonModal]} 
-              onPress={onConfirm}
-            >
-              <Text style={styles.deleteButtonText}>Xóa</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-};
-
-const ViewCourseScreen = ({
-  navigation,
-  route,
-}: MyScreenProps["ViewCourseScreenProps"]) =>  {
+const ViewCourseScreen = ({ navigation, route }: MyScreenProps['ViewCourseScreenProps']) => {
   const courseId = route.params.courseId;
   const [name, setName] = useState('');
   const [category, setCategory] = useState<Category>();
@@ -77,21 +35,28 @@ const ViewCourseScreen = ({
 
   const [sections, setSections] = useState<Section[]>([]);
 
-  const [activeTab, setActiveTab] = useState('content');
+  const [activeTab, setActiveTab] = useState<'content' | 'students' | 'reviews' | 'comments'>(
+    'content'
+  );
   const [newComment, setNewComment] = useState('');
 
-  const[enrollments, setEnrollments] = useState<Enrollment[]>([]);
-  const[comments, setComments] = useState<Comment[]>([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
 
-  const [countLessons, setCountLessons] = useState(0);
-  
+  // const [countLessons, setCountLessons] = useState(0);
+
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<{id: number} | undefined>(undefined);
+  const [itemToDelete, setItemToDelete] = useState<{ id: number } | undefined>(undefined);
 
-  const fetchCourseById = async () => {
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchCourseById = useCallback(async () => {
     try {
       const response = await axiosInstance.get(
-        `${process.env.EXPO_PUBLIC_API_GET_COURSE_BY_ID_WITH_COUNT_ENROLLMENT}`.replace(":id", String(courseId))
+        `${process.env.EXPO_PUBLIC_API_GET_COURSE_BY_ID_WITH_COUNT_ENROLLMENT}`.replace(
+          ':id',
+          String(courseId)
+        )
       );
       if (response.status === 200) {
         const course = response.data.course;
@@ -107,13 +72,17 @@ const ViewCourseScreen = ({
       }
     } catch (error) {
       console.error('Error fetching course:', error);
-      Alert.alert("Lỗi", Strings.courses.loadError, [{ text: "OK" }]);
+      Alert.alert('Lỗi', Strings.courses.loadError, [{ text: 'OK' }]);
     }
-  };
-  const fetchSectionsByCourseId = async () => {
+  }, [courseId]);
+
+  const fetchSectionsByCourseId = useCallback(async () => {
     try {
       const response = await axiosInstance.get(
-        `${process.env.EXPO_PUBLIC_API_GET_SECTION_BY_COURSE_ID_WITH_LESSONS}`.replace(":id", String(courseId))
+        `${process.env.EXPO_PUBLIC_API_GET_SECTION_BY_COURSE_ID_WITH_LESSONS}`.replace(
+          ':id',
+          String(courseId)
+        )
       );
       if (response.status === 200) {
         response.data.sections.sort((a: Section, b: Section) => a.id - b.id);
@@ -121,135 +90,97 @@ const ViewCourseScreen = ({
           section.lessons.sort((a, b) => a.id - b.id);
         });
         setSections(response.data.sections);
-        setCountLessons(response.data.sections.reduce((count: number, section: Section) => {
-          return count + section.lessons.length;
-        }, 0));
-
+        // setCountLessons(
+        //   response.data.sections.reduce((count: number, section: Section) => {
+        //     return count + section.lessons.length;
+        //   }, 0)
+        // );
       } else {
         console.log(`Failed to fetch. Status: ${response.status}`);
-        Alert.alert("Lỗi", `Failed to fetch. Status: ${response.status}`, [{ text: "OK" }]);
+        Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
       }
     } catch (error) {
       console.error('Error fetching sections:', error);
-      Alert.alert("Lỗi", `Error fetching sections: ${error}`, [{ text: "OK" }]);
+      Alert.alert('Lỗi', `Error fetching sections: ${error}`, [{ text: 'OK' }]);
     }
-  };
+  }, [courseId]);
 
-  const fetchEnrollmentsByCourseId = async () => {
+  const fetchEnrollmentsByCourseId = useCallback(async () => {
     try {
       const response = await axiosInstance.get(
-        `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_COURSE_ID_WITH_USER_ENROLLMENT_LESSONS}`.replace(":id", String(courseId))
+        `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_COURSE_ID_WITH_USER_ENROLLMENT_LESSONS}`.replace(
+          ':course_id',
+          String(courseId)
+        )
       );
       if (response.status === 200) {
         setEnrollments(response.data.enrollments);
       } else {
         console.log(`Failed to fetch. Status: ${response.status}`);
-        Alert.alert("Lỗi", `Failed to fetch. Status: ${response.status}`, [{ text: "OK" }]);
+        Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
       }
     } catch (error) {
       console.error('Error fetching enrollments:', error);
-      Alert.alert("Lỗi", `Error fetching sections: ${error}`, [{ text: "OK" }]);
+      Alert.alert('Lỗi', `Error fetching sections: ${error}`, [{ text: 'OK' }]);
     }
-  };
+  }, [courseId]);
 
-  
-  const fetchCommentsByCourseId = async () => {
+  const fetchCommentsByCourseId = useCallback(async () => {
     try {
       const response = await axiosInstance.get(
-        `${process.env.EXPO_PUBLIC_API_GET_COMMENT_BY_COURSE_ID_WITH_USER}`.replace(":course_id", String(courseId))
+        `${process.env.EXPO_PUBLIC_API_GET_COMMENT_BY_COURSE_ID_WITH_USER}`.replace(
+          ':course_id',
+          String(courseId)
+        )
       );
       if (response.status === 200) {
         setComments(response.data.comments);
-
       } else {
         console.log(`Failed to fetch. Status: ${response.status}`);
-        Alert.alert("Lỗi", `Failed to fetch. Status: ${response.status}`, [{ text: "OK" }]);
+        Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
       }
     } catch (error) {
       console.error('Error fetching comments:', error);
-      Alert.alert("Lỗi", `Error fetching comments: ${error}`, [{ text: "OK" }]);
+      Alert.alert('Lỗi', `Error fetching comments: ${error}`, [{ text: 'OK' }]);
     } finally {
       setLoading(false);
     }
-  };
-
-  const getUserInformation = async (): Promise<User | null> => {
-    try {
-      const user = await SecureStore.getItemAsync('user');
-      return user ? JSON.parse(user) : null;
-    }
-    catch (error) {
-      console.error('Error getting user:', error);
-      return null;
-    }
-  }
+  }, [courseId]);
 
   useEffect(() => {
     fetchCourseById();
     fetchSectionsByCourseId();
     fetchEnrollmentsByCourseId();
     fetchCommentsByCourseId();
-  }, []); // Chỉ gọi một lần khi component mount
+  }, [
+    fetchCommentsByCourseId,
+    fetchCourseById,
+    fetchEnrollmentsByCourseId,
+    fetchSectionsByCourseId,
+  ]); // Chỉ gọi một lần khi component mount
 
+  const getUserInformation = async (): Promise<User | null> => {
+    try {
+      const user = await SecureStore.getItemAsync('user');
+      return user ? JSON.parse(user) : null;
+    } catch (error) {
+      console.error('Error getting user:', error);
+      return null;
+    }
+  };
 
-  const renderContent = () => (
-    <ScrollView style={styles.tabContent}>
-      {sections.map(section => (
-        <View key={section.id} style={styles.section}>
-          <Text style={styles.sectionTitle}>{section.name}</Text>
-          {section.lessons.map(lesson => (
-            <View key={lesson.id} style={styles.lesson}>
-              <Ionicons name="play-circle-outline" size={24} color="#007AFF" />
-              <Text style={styles.lessonTitle}>{lesson.title}</Text>
-            </View>
-          ))}
-        </View>
-      ))}
-    </ScrollView>
-  );
+  const handleRefresh = () => {
+    setRefreshing(true);
+    if (activeTab === 'content') {
+      fetchSectionsByCourseId();
+    } else if (activeTab === 'students' || activeTab === 'reviews') {
+      fetchEnrollmentsByCourseId();
+    } else {
+      fetchCommentsByCourseId();
+    }
+    setRefreshing(false);
+  };
 
-  
-  const renderReviews = () => (
-    <ScrollView style={styles.tabContent}>
-      {enrollments.map(enroll => (
-        enroll.rating && (
-          <View key={enroll.id} style={styles.review}>
-            <View style={styles.reviewHeader}>
-              {/* Avatar */}
-              <View style={styles.reviewAvatar}>
-                {enroll.user.avatar ? (
-                  <Image
-                    source={{ uri: enroll.user.avatar }}
-                    style={styles.avatarImage}
-                  />
-                ) : (
-                  <Text style={styles.avatarText}>
-                    {enroll.user.fullname.split(' ').map(n => n[0]).join('')}
-                  </Text>
-                )}
-              </View>
-  
-              <View style={styles.ratingInfo}>
-                <Text style={styles.userName}>
-                  {enroll.user.fullname} {`(${enroll.user.username})`}
-                </Text>
-                <View style={styles.ratingContainer}>
-                  <Ionicons name="star" size={16} color="#FFD700" />
-                  <Text style={styles.rating}>{enroll.rating}</Text>
-                </View>
-              </View>
-            </View>
-  
-            <Text style={styles.reviewComment}>{enroll.review}</Text>
-            <Text style={styles.date}>
-              {new Date(enroll.updatedAt).toLocaleDateString('vi-VN')}
-            </Text>
-          </View>
-        )
-      ))}
-    </ScrollView>
-  );
-  
   // Hàm xử lý xóa bình luận
   const handleDeleteComment = (commentId: number) => {
     setItemToDelete({ id: commentId });
@@ -259,7 +190,7 @@ const ViewCourseScreen = ({
     if (!itemToDelete) return;
     try {
       const response = await axiosInstance.delete(
-        `${process.env.EXPO_PUBLIC_API_DELETE_COMMENT}`.replace(":id", String(itemToDelete.id))
+        `${process.env.EXPO_PUBLIC_API_DELETE_COMMENT}`.replace(':id', String(itemToDelete.id))
       );
       if (response.status === 200) {
         setComments(comments.filter(comment => comment.id !== itemToDelete.id));
@@ -276,83 +207,172 @@ const ViewCourseScreen = ({
     setItemToDelete(undefined);
   };
 
-  const postComment = async() => {
-    if (!newComment || newComment.length == 0)
-      return;
+  const postComment = async () => {
+    if (!newComment || newComment.length === 0) return;
     try {
       const user = await getUserInformation();
       if (user) {
-        const response = await axiosInstance.post(
-          `${process.env.EXPO_PUBLIC_API_CREATE_COMMENT}`, {
-            user_id: user?.id,
-            course_id: courseId,
-            content: newComment,
-          }
-        );
+        const response = await axiosInstance.post(`${process.env.EXPO_PUBLIC_API_CREATE_COMMENT}`, {
+          user_id: user?.id,
+          course_id: courseId,
+          content: newComment,
+        });
         if (response.status === 201) {
           const res = await axiosInstance.get(
-            `${process.env.EXPO_PUBLIC_API_GET_COMMENT_BY_ID_WITH_USER}`.replace(':id', String(response.data.comment.id))
+            `${process.env.EXPO_PUBLIC_API_GET_COMMENT_BY_ID_WITH_USER}`.replace(
+              ':id',
+              String(response.data.comment.id)
+            )
           );
           if (res.status === 200) {
             setComments(comments => [res.data.comment, ...comments]);
             setNewComment('');
-          }
-          else {
+          } else {
             console.log(`Failed to get new comment. Status: ${res.status}`);
-            Alert.alert("Lỗi", `Failed to get new comment. Status: ${res.status}`, [{ text: "OK" }]);
+            Alert.alert('Lỗi', `Failed to get new comment. Status: ${res.status}`, [
+              { text: 'OK' },
+            ]);
           }
-        }
-        else {
+        } else {
           console.log(`Failed to post new comment. Status: ${response.status}`);
-          Alert.alert("Lỗi", `Failed to post new comment. Status: ${response.status}`, [{ text: "OK" }]);
+          Alert.alert('Lỗi', `Failed to post new comment. Status: ${response.status}`, [
+            { text: 'OK' },
+          ]);
         }
-      }
-      else {
+      } else {
         console.error('You are not logging');
       }
     } catch (error: any) {
       console.error('Error creating comment:', error);
     }
-  }
+  };
+
+  const renderContent = () => (
+    <ScrollView
+      style={styles.tabContent}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#4a6ee0']} />
+      }
+    >
+      {sections.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="book-outline" size={50} color="#ccc" />
+          <Text style={styles.emptyText}>Chưa có nội dung bài học</Text>
+        </View>
+      ) : (
+        sections.map(section => (
+          <View key={section.id} style={styles.section}>
+            <Text style={styles.sectionTitle}>{section.name}</Text>
+            {section.lessons.map(lesson => (
+              <View key={lesson.id} style={styles.lesson}>
+                <Ionicons name="play-circle-outline" size={24} color="#007AFF" />
+                <Text style={styles.lessonTitle}>{lesson.title}</Text>
+              </View>
+            ))}
+          </View>
+        ))
+      )}
+    </ScrollView>
+  );
+
+  const renderReviews = () => (
+    <ScrollView
+      style={styles.tabContent}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#4a6ee0']} />
+      }
+    >
+      {enrollment_count === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="happy-outline" size={50} color="#ccc" />
+          <Text style={styles.emptyText}>Chưa có đánh giá nào</Text>
+        </View>
+      ) : (
+        enrollments.map(
+          enroll =>
+            enroll.rating && (
+              <View key={enroll.id} style={styles.review}>
+                <View style={styles.reviewHeader}>
+                  {/* Avatar */}
+                  <View style={styles.reviewAvatar}>
+                    {enroll.user.avatar ? (
+                      <Image source={{ uri: enroll.user.avatar }} style={styles.avatarImage} />
+                    ) : (
+                      <Text style={styles.avatarText}>
+                        {enroll.user.fullname
+                          .split(' ')
+                          .map(n => n[0])
+                          .join('')}
+                      </Text>
+                    )}
+                  </View>
+
+                  <View style={styles.ratingInfo}>
+                    <Text style={styles.userName}>
+                      {enroll.user.fullname} {`@${enroll.user.username}`}
+                    </Text>
+                    <View style={styles.ratingContainer}>
+                      <Ionicons name="star" size={16} color="#FFD700" />
+                      <Text style={styles.rating}>{enroll.rating}</Text>
+                    </View>
+                  </View>
+                </View>
+
+                <Text style={styles.reviewComment}>{enroll.review}</Text>
+                <Text style={styles.date}>{formatDate(enroll.updatedAt)}</Text>
+              </View>
+            )
+        )
+      )}
+    </ScrollView>
+  );
 
   const renderComments = () => (
     <View style={styles.tabContent}>
       <FlatList
         data={comments}
         keyExtractor={item => String(item.id)}
+        showsVerticalScrollIndicator={false}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Ionicons name="chatbubble-ellipses-outline" size={50} color="#ccc" />
+            <Text style={styles.emptyText}>Chưa có bình luận nào</Text>
+          </View>
+        }
         renderItem={({ item }) => (
           <View style={[styles.comment, item.user.role === 0 && styles.adminComment]}>
             <View style={styles.commentHeader}>
               {/* Avatar */}
               <View style={styles.commentAvatar}>
                 {item.user.avatar ? (
-                  <Image
-                    source={{ uri: item.user.avatar }}
-                    style={styles.avatarImage}
-                  />
+                  <Image source={{ uri: item.user.avatar }} style={styles.avatarImage} />
                 ) : (
                   <Text style={styles.avatarText}>
-                    {item.user.fullname.split(' ').map(n => n[0]).join('')}
+                    {item.user.fullname
+                      .split(' ')
+                      .map(n => n[0])
+                      .join('')}
                   </Text>
                 )}
               </View>
-  
+
               <View style={styles.commentDetails}>
                 <Text style={styles.userName}>
-                  {item.user.username} {`(${item.user.fullname})`}
+                  {item.user.username} {`@${item.user.fullname}`}
                 </Text>
-                <Text style={styles.date}>
-                  {new Date(item.createdAt).toLocaleDateString('vi-VN')}
-                </Text>
+                <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
               </View>
-              <TouchableOpacity 
-                  style={styles.deleteButton} 
-                  onPress={() => handleDeleteComment(item.id)}
-                >
-                  <Ionicons name="trash-outline" size={20} color="#FF4D4D" />
-                </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                disabled={loading}
+                onPress={() => handleDeleteComment(item.id)}
+              >
+                <Ionicons name="trash-outline" size={20} color="#FF4D4D" />
+              </TouchableOpacity>
             </View>
-  
+
             <Text style={styles.commentContent}>{item.content}</Text>
           </View>
         )}
@@ -361,11 +381,12 @@ const ViewCourseScreen = ({
         <TextInput
           style={styles.input}
           value={newComment}
+          readOnly={loading}
           onChangeText={setNewComment}
           placeholder="Nhập bình luận..."
           multiline
         />
-        <TouchableOpacity style={styles.sendButton} onPress={postComment}>
+        <TouchableOpacity style={styles.sendButton} disabled={loading} onPress={postComment}>
           <Ionicons name="send" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -381,20 +402,21 @@ const ViewCourseScreen = ({
         </View>
         <View style={styles.statsItem}>
           <Text style={styles.statsValue}>
-            {
-              Math.round(
-                enrollments.reduce((acc, student) => {
-                  // Kiểm tra để đảm bảo enrollment_lessons là mảng hợp lệ và có độ dài hợp lý
-                  const lessonsLength = Array.isArray(student.enrollment_lessons) ? student.enrollment_lessons.length : 0;
-                  
-                  // Kiểm tra countLessons và đảm bảo không chia cho 0
-                  const validCountLessons = countLessons > 0 ? countLessons : 1;  // Nếu countLessons = 0, sử dụng 1 để tránh chia cho 0.
-              
-                  // Tính toán tổng, đảm bảo không có NaN
-                  return acc + (lessonsLength * 100) / validCountLessons;
-                }, 0) / (enrollment_count > 0 ? enrollment_count : 1)  // Đảm bảo không chia cho 0
-              )
-            }%
+            {Math.round(
+              enrollments.reduce((acc, student) => {
+                // Kiểm tra để đảm bảo enrollment_lessons là mảng hợp lệ và có độ dài hợp lý
+                const lessonsLength = Array.isArray(student.enrollment_lessons)
+                  ? student.enrollment_lessons.length
+                  : 0;
+
+                // Kiểm tra countLessons và đảm bảo không chia cho 0
+                const validCountLessons = student.total_lesson > 0 ? student.total_lesson : 1; // Nếu countLessons = 0, sử dụng 1 để tránh chia cho 0.
+
+                // Tính toán tổng, đảm bảo không có NaN
+                return acc + (lessonsLength * 100) / validCountLessons;
+              }, 0) / (enrollment_count > 0 ? enrollment_count : 1) // Đảm bảo không chia cho 0
+            )}
+            %
           </Text>
           <Text style={styles.statsLabel}>Tiến độ trung bình</Text>
         </View>
@@ -403,41 +425,62 @@ const ViewCourseScreen = ({
       <FlatList
         data={enrollments}
         keyExtractor={item => String(item.id)}
+        showsVerticalScrollIndicator={false}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Ionicons name="people-outline" size={50} color="#ccc" />
+            <Text style={styles.emptyText}>Chưa có học viên nào</Text>
+          </View>
+        }
         renderItem={({ item }) => (
           <View style={styles.studentCard}>
             <View style={styles.studentInfo}>
               <View style={styles.studentAvatar}>
                 <Text style={styles.avatarText}>
-                {item.user.avatar ? (
-                  <Image
-                    source={{ uri: item.user.avatar }}
-                    style={styles.courseImage}
-                  />
-                ) : (item.user.fullname.split(' ').map(n => n[0]).join(''))}
-                  
+                  {item.user.avatar ? (
+                    <Image source={{ uri: item.user.avatar }} style={styles.courseImage} />
+                  ) : (
+                    item.user.fullname
+                      .split(' ')
+                      .map(n => n[0])
+                      .join('')
+                  )}
                 </Text>
               </View>
               <View style={styles.studentDetails}>
-                <Text style={styles.studentName}>{item.user.fullname} {`(${item.user.username})`}</Text>
+                <Text style={styles.studentName}>
+                  {item.user.fullname} {`@${item.user.username}`}
+                </Text>
                 <Text style={styles.studentEmail}>{item.user.email}</Text>
               </View>
             </View>
-            
+
             <View style={styles.studentProgress}>
               <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: `${Math.round(((item.enrollment_lessons.length * 100 /  countLessons), 0))}%` }]} />
+                <View
+                  style={[
+                    styles.progressFill,
+                    {
+                      width: `${Math.round((item.enrollment_lessons.length / item.total_lesson, 0))}%`,
+                    },
+                  ]}
+                />
               </View>
-              <Text style={styles.progressText}>{Math.round(((item.enrollment_lessons.length * 100 /  countLessons), 0))}%</Text>
+              <Text style={styles.progressText}>
+                {Math.round(((item.enrollment_lessons.length * 100) / item.total_lesson, 0))}%
+              </Text>
             </View>
 
             <View style={styles.studentMeta}>
               <View style={styles.metaItem}>
                 <Ionicons name="calendar-outline" size={16} color="#666" />
-                <Text style={styles.metaText}>Đăng ký: {new Date(item.createdAt).toLocaleDateString('vi-VN')}</Text>
+                <Text style={styles.metaText}>Đăng ký: {formatDate(item.createdAt)}</Text>
               </View>
               <View style={styles.metaItem}>
                 <Ionicons name="time-outline" size={16} color="#666" />
-                <Text style={styles.metaText}>Truy cập: {new Date(item.last_access).toLocaleDateString('vi-VN')}</Text>
+                <Text style={styles.metaText}>Truy cập: {formatDate(item.last_access)}</Text>
               </View>
             </View>
           </View>
@@ -449,42 +492,42 @@ const ViewCourseScreen = ({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
+        <TouchableOpacity
+          style={styles.backButton}
           disabled={loading}
           onPress={() => navigation.goBack()}
         >
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         {image ? (
-          <Image
-            source={{ uri: image }}
-            style={styles.courseImage}
-          />
-        ) : (<Image style={styles.courseImage}/>)}
+          <Image source={{ uri: image }} style={styles.courseImage} />
+        ) : (
+          <Image style={styles.courseImage} />
+        )}
         <View style={styles.courseInfo}>
           <Text style={styles.courseTitle}>{name}</Text>
           <Text style={styles.courseCategory}>{category?.name}</Text>
-          <Text style={styles.courseDescription} numberOfLines={2}>{description}</Text>
+          <Text style={styles.courseDescription} numberOfLines={2}>
+            {description}
+          </Text>
           <View style={styles.statusContainer}>
             <Ionicons
-              name={status === 0 ? "close-circle" : "checkmark-circle"}
+              name={status === 0 ? 'close-circle' : 'checkmark-circle'}
               size={16}
-              color={status === 0 ? "red" : "green"}
+              color={status === 0 ? 'red' : 'green'}
             />
-            <Text style={[styles.courseStatus, { color: status === 0 ? "red" : "green" }]}>
-                {status === 0 ? "Không hoạt động" : "Hoạt động"}
+            <Text style={[styles.courseStatus, { color: status === 0 ? 'red' : 'green' }]}>
+              {status === 0 ? 'Không hoạt động' : 'Hoạt động'}
             </Text>
           </View>
           <View style={styles.courseStats}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>
-                
-                {discount !== 0 ? (
-                  `${(price * (1 - discount / 100)).toLocaleString('vi-VN')}đ`
-                ) : (
-                  price === 0 ? 'Miễn phí' : `${price.toLocaleString()}đ`
-                )}
+                {discount !== 0
+                  ? `${(price * (1 - discount / 100)).toLocaleString('vi-VN')}đ`
+                  : price === 0
+                    ? 'Miễn phí'
+                    : `${price.toLocaleString()}đ`}
               </Text>
               <Text style={styles.statLabel}>Giá</Text>
             </View>
@@ -495,41 +538,48 @@ const ViewCourseScreen = ({
             {total_rating != null && total_rating !== 0 && (
               <View style={styles.statItem}>
                 <View style={styles.ratingContainer}>
-                    <Ionicons name="star" size={16} color="#FFD700" />
-                    <Text style={styles.statValue}>{total_rating}</Text>
-                  </View>
-                  <Text style={styles.statLabel}>Đánh giá</Text>
+                  <Ionicons name="star" size={16} color="#FFD700" />
+                  <Text style={styles.statValue}>{total_rating}</Text>
+                </View>
+                <Text style={styles.statLabel}>Đánh giá</Text>
               </View>
             )}
-            
           </View>
         </View>
       </View>
 
       <View style={styles.tabs}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'content' && styles.activeTab]}
           onPress={() => setActiveTab('content')}
         >
-          <Text style={[styles.tabText, activeTab === 'content' && styles.activeTabText]}>Nội dung</Text>
+          <Text style={[styles.tabText, activeTab === 'content' && styles.activeTabText]}>
+            Nội dung
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'students' && styles.activeTab]}
           onPress={() => setActiveTab('students')}
         >
-          <Text style={[styles.tabText, activeTab === 'students' && styles.activeTabText]}>Học viên</Text>
+          <Text style={[styles.tabText, activeTab === 'students' && styles.activeTabText]}>
+            Học viên
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'reviews' && styles.activeTab]}
           onPress={() => setActiveTab('reviews')}
         >
-          <Text style={[styles.tabText, activeTab === 'reviews' && styles.activeTabText]}>Đánh giá</Text>
+          <Text style={[styles.tabText, activeTab === 'reviews' && styles.activeTabText]}>
+            Đánh giá
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'comments' && styles.activeTab]}
           onPress={() => setActiveTab('comments')}
         >
-          <Text style={[styles.tabText, activeTab === 'comments' && styles.activeTabText]}>Bình luận</Text>
+          <Text style={[styles.tabText, activeTab === 'comments' && styles.activeTabText]}>
+            Bình luận
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -537,7 +587,7 @@ const ViewCourseScreen = ({
       {activeTab === 'students' && renderEnrolledStudents()}
       {activeTab === 'reviews' && renderReviews()}
       {activeTab === 'comments' && renderComments()}
-      
+
       <DeleteModal
         visible={deleteModalVisible}
         title="Xác nhận xóa"
@@ -547,7 +597,7 @@ const ViewCourseScreen = ({
       />
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -869,13 +919,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statusContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 5,
   },
   courseStatus: {
     fontSize: 14,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginLeft: 5,
   },
   deleteButton: {
@@ -941,6 +991,17 @@ const styles = StyleSheet.create({
   deleteButtonModal: {
     backgroundColor: '#FF3B30',
   },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 12,
+    textAlign: 'center',
+  },
 });
 
-export default ViewCourseScreen
+export default ViewCourseScreen;
