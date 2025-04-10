@@ -4,11 +4,12 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   ActivityIndicator,
   Alert,
+  ScrollView,
+  RefreshControl,
 } from 'react-native';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { MyScreenProps } from '@/types/MyScreenProps';
 import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,28 +28,34 @@ const UpdateCategoryScreen = ({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    const fetchCategoryById = async () => {
-      try {
-        const response = await axiosInstance.get(
-          `${process.env.EXPO_PUBLIC_API_GET_CATEGORY_BY_ID}`.replace(':id', String(categoryId))
-        );
-        if (response.status === 200) {
-          const category = response.data.category;
-          setName(category.name);
-          setDescription(category.description);
-        }
-      } catch (error) {
-        console.error('Error fetching category:', error);
-        Alert.alert('Lỗi', Strings.categories.loadError, [{ text: 'OK' }]);
-      } finally {
-        setLoading(false);
+  const fetchCategoryById = useCallback(async () => {
+    try {
+      const response = await axiosInstance.get(
+        `${process.env.EXPO_PUBLIC_API_GET_CATEGORY_BY_ID}`.replace(':id', String(categoryId))
+      );
+      if (response.status === 200) {
+        const category = response.data.category;
+        setName(category.name);
+        setDescription(category.description);
       }
-    };
-
-    fetchCategoryById();
+    } catch (error) {
+      console.error('Error fetching category:', error);
+      Alert.alert('Lỗi', Strings.categories.loadError, [{ text: 'OK' }]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [categoryId]);
+  useEffect(() => {
+    fetchCategoryById();
+  }, [fetchCategoryById]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchCategoryById();
+  };
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -72,7 +79,7 @@ const UpdateCategoryScreen = ({
           `${Strings.categories.updateSuccess} ${response.data.category.id}`,
           [{ text: 'OK' }]
         );
-        navigation.navigate('Category', {
+        navigation.navigate('CategoryScreen', {
           message: `${Strings.categories.updateSuccess} ${response.data.category.id}`,
         });
       }
@@ -83,39 +90,13 @@ const UpdateCategoryScreen = ({
     }
   };
 
-  const handleReset = async () => {
-    Alert.alert('Xác nhận khôi phục', 'Bạn có chắc chắn muốn khôi phục về trạng thái ban đầu?', [
-      { text: 'Hủy', style: 'cancel' },
-      {
-        text: 'Khôi phục',
-        style: 'destructive',
-        onPress: () => {
-          resetButton();
-        },
-      },
-    ]);
-  };
-
-  const resetButton = async () => {
-    setLoading(true);
-    try {
-      const response = await axiosInstance.get(
-        `${process.env.EXPO_PUBLIC_API_GET_CATEGORY_BY_ID}`.replace(':id', String(categoryId))
-      );
-      if (response.status === 200) {
-        const category = response.data.category;
-        setName(category.name);
-        setDescription(category.description);
-      }
-    } catch {
-      Alert.alert('Lỗi', Strings.categories.resetError, [{ text: 'OK' }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <SafeAreaView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#4a6ee0']} />
+      }
+    >
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -132,11 +113,6 @@ const UpdateCategoryScreen = ({
       </View>
 
       <View style={styles.formContainer}>
-        <Text style={styles.label}>{Strings.categories.idLabel}</Text>
-        <TextInput
-          value={categoryId.toString()}
-          style={[styles.input, styles.disabledInput, { pointerEvents: 'none' }]}
-        />
         <Text style={styles.label}>{Strings.categories.nameLabel}</Text>
         <TextInput
           value={name}
@@ -155,20 +131,11 @@ const UpdateCategoryScreen = ({
           numberOfLines={4}
           placeholder={Strings.categories.descriptionLabel}
         />
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button} onPress={handleSave} disabled={loading}>
-            <Text style={styles.buttonText}>{Strings.categories.saveButton}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, styles.resetButton]}
-            onPress={handleReset}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>{Strings.categories.resetButton}</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.submitButton} onPress={handleSave} disabled={loading}>
+          <Text style={styles.submitButtonText}>{Strings.categories.saveButton}</Text>
+        </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </ScrollView>
   );
 };
 
@@ -212,38 +179,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#f8f9fa',
   },
-  disabledInput: {
-    backgroundColor: '#e9ecef',
-    color: '#6c757d',
-  },
   textArea: {
     height: 100,
     textAlignVertical: 'top',
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  submitButton: {
+    backgroundColor: '#007AFF',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
     marginTop: 20,
   },
-  button: {
-    flex: 1,
-    backgroundColor: '#4a6ee0',
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
-    marginHorizontal: 5,
-  },
-  resetButton: {
-    backgroundColor: '#dc3545',
-  },
-  buttonText: {
+  submitButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',

@@ -1,9 +1,10 @@
 const SCREENS = {
   PROFILE: 'Profile',
-  DASHBOARD: 'Home',
+  DASHBOARD: 'Trang chủ',
   NOTIFICATIONS: 'Notifications',
   SETTING: 'Setting',
-  COURSE: 'Course',
-  CATEGORY: 'Category',
+  COURSE: 'Khóa học',
+  CATEGORY: 'Chủ đề',
+  USER: 'Người dùng',
 } as const;
 export default SCREENS;

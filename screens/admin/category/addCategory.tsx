@@ -38,7 +38,7 @@ const AddCategoryScreen = ({ navigation }: MyScreenProps['AddCategoryScreenProps
         Alert.alert('Thành công', `${Strings.categories.addSuccess} ${response.data.category.id}`, [
           { text: 'OK' },
         ]);
-        navigation.navigate('Category', {
+        navigation.navigate('CategoryScreen', {
           message: `${Strings.categories.addSuccess} ${response.data.category.id}`,
         });
       }
@@ -47,11 +47,6 @@ const AddCategoryScreen = ({ navigation }: MyScreenProps['AddCategoryScreenProps
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleReset = () => {
-    setName('');
-    setDescription('');
   };
   return (
     <SafeAreaView style={styles.container}>
@@ -89,18 +84,9 @@ const AddCategoryScreen = ({ navigation }: MyScreenProps['AddCategoryScreenProps
           numberOfLines={4}
           placeholder={Strings.categories.descriptionLabel}
         />
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button} onPress={handleSave} disabled={loading}>
-            <Text style={styles.buttonText}>{Strings.categories.saveButton}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, styles.resetButton]}
-            onPress={handleReset}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>{Strings.categories.resetButton}</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.submitButton} onPress={handleSave} disabled={loading}>
+          <Text style={styles.submitButtonText}>{Strings.categories.saveButton}</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -150,30 +136,14 @@ const styles = StyleSheet.create({
     height: 100,
     textAlignVertical: 'top',
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  submitButton: {
+    backgroundColor: '#007AFF',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
     marginTop: 20,
   },
-  button: {
-    flex: 1,
-    backgroundColor: '#4a6ee0',
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
-    marginHorizontal: 5,
-  },
-  resetButton: {
-    backgroundColor: '#dc3545',
-  },
-  buttonText: {
+  submitButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',

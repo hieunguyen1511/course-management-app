@@ -9,15 +9,15 @@ import {
   TextInput,
   Image,
   Switch,
+  RefreshControl,
 } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { MyScreenProps } from '@/types/MyScreenProps';
 import * as ImagePicker from 'expo-image-picker';
 import { Picker } from '@react-native-picker/picker';
 import axiosInstance from '@/api/axiosInstance';
-import { Category } from '@/types/category';
-import { Section, Lesson, Question, Answer } from '@/types/course';
+import { Category, Section, Lesson, Question, Answer } from '@/types/apiModels';
 import { Strings } from '@/constants/Strings';
 import { uploadToCloudinary, deleteImagefromCloudinary } from '@/components/Cloudinary';
 
@@ -79,127 +79,124 @@ const UpdateCourseScreen = ({ navigation, route }: MyScreenProps['UpdateCourseSc
 
   const [oldSections, setOldSections] = useState<Section[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
-  const [oldNewIdSection, setOldNewIdSection] = useState(1);
   const [newIdSection, setNewIdSection] = useState(1);
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await axiosInstance.get(
-          `${process.env.EXPO_PUBLIC_API_GET_ALL_CATEGORIES}`
-        );
-        if (response.status === 200) {
-          setCategories(response.data.categories);
-          if (response.data.categories && response.data.categories.length > 0) {
-            setCategoryId(response.data.categories[0].id);
-          }
-        } else {
-          console.log(`Failed to fetch. Status: ${response.status}`);
-          Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
+  const [refreshing, setRefreshing] = useState(false);
+  const fetchCategories = async () => {
+    try {
+      const response = await axiosInstance.get(`${process.env.EXPO_PUBLIC_API_GET_ALL_CATEGORIES}`);
+      if (response.status === 200) {
+        setCategories(response.data.categories);
+        if (response.data.categories && response.data.categories.length > 0) {
+          setCategoryId(response.data.categories[0].id);
         }
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-        Alert.alert('Lỗi', `Error fetching categories: ${error}`, [{ text: 'OK' }]);
+      } else {
+        console.log(`Failed to fetch. Status: ${response.status}`);
+        Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
       }
-    };
-    const fetchCourseById = async () => {
-      try {
-        const response = await axiosInstance.get(
-          `${process.env.EXPO_PUBLIC_API_GET_COURSE_BY_ID}`.replace(':id', String(courseId))
-        );
-        if (response.status === 200) {
-          const course = response.data.course;
-          setName(course.name);
-          setCategoryId(course.category_id);
-          setDescription(course.description);
-          setPrice(course.price);
-          setIsFree(course.price === 0);
-          setDiscount(course.discount);
-          setHasDiscount(course.discount !== 0);
-          setStatus(course.status);
-          setTotalRating(course.total_rating);
-          setImage(course.image);
-          setOldImage(course.image);
-        }
-      } catch (error) {
-        console.error('Error fetching course:', error);
-        Alert.alert('Lỗi', Strings.courses.loadError, [{ text: 'OK' }]);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      Alert.alert('Lỗi', `Error fetching categories: ${error}`, [{ text: 'OK' }]);
+    }
+  };
+  const fetchCourseById = useCallback(async () => {
+    try {
+      const response = await axiosInstance.get(
+        `${process.env.EXPO_PUBLIC_API_GET_COURSE_BY_ID}`.replace(':id', String(courseId))
+      );
+      if (response.status === 200) {
+        const course = response.data.course;
+        setName(course.name);
+        setCategoryId(course.category_id);
+        setDescription(course.description);
+        setPrice(course.price);
+        setIsFree(course.price === 0);
+        setDiscount(course.discount);
+        setHasDiscount(course.discount !== 0);
+        setStatus(course.status);
+        setTotalRating(course.total_rating);
+        setImage(course.image);
+        setOldImage(course.image);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching course:', error);
+      Alert.alert('Lỗi', Strings.courses.loadError, [{ text: 'OK' }]);
+    }
+  }, [courseId]);
 
-    const fetchSectionsByCourseId = async () => {
-      try {
-        const response = await axiosInstance.get(
-          `${process.env.EXPO_PUBLIC_API_GET_SECTION_BY_COURSE_ID}`.replace(':id', String(courseId))
-        );
-        if (response.status === 200) {
-          const tempSections = response.data.sections;
-          tempSections.sort((a: Section, b: Section) => a.id - b.id);
-          tempSections.forEach((section: Section) => {
-            section.lessons.sort((a, b) => a.id - b.id);
-            section.lessons.forEach(lesson => {
-              lesson.questions.sort((a, b) => a.id - b.id);
-              lesson.questions.forEach(question => {
-                question.answers.sort((a, b) => a.id - b.id);
-              });
+  const fetchSectionsByCourseId = useCallback(async () => {
+    try {
+      const response = await axiosInstance.get(
+        `${process.env.EXPO_PUBLIC_API_GET_SECTION_BY_COURSE_ID}`.replace(':id', String(courseId))
+      );
+      if (response.status === 200) {
+        const tempSections = response.data.sections;
+        tempSections.sort((a: Section, b: Section) => a.id - b.id);
+        tempSections.forEach((section: Section) => {
+          section.lessons.sort((a, b) => a.id - b.id);
+          section.lessons.forEach(lesson => {
+            lesson.questions.sort((a, b) => a.id - b.id);
+            lesson.questions.forEach(question => {
+              question.answers.sort((a, b) => a.id - b.id);
             });
           });
+        });
 
-          const lenSections = tempSections.length;
-          for (let index = 0; index < lenSections; index++) {
-            const lenLessons = tempSections[index].lessons.length;
-            tempSections[index].save = true;
-            for (let j = 0; j < lenLessons; j++) {
-              const lenQuestions = tempSections[index].lessons[j].questions.length;
-              tempSections[index].lessons[j].save = true;
-              if (lenQuestions !== 0) {
-                tempSections[index].lessons[j].newIdQuestion =
-                  tempSections[index].lessons[j].questions[lenQuestions - 1].id + 1;
-              } else {
-                tempSections[index].lessons[j].newIdQuestion = 1;
-              }
-              for (let k = 0; k < lenQuestions; k++) {
-                const lenAnswers = tempSections[index].lessons[j].questions[k].answers.length;
-                tempSections[index].lessons[j].questions[k].save = true;
-                if (lenAnswers !== 0) {
-                  tempSections[index].lessons[j].questions[k].newIdAnswer =
-                    tempSections[index].lessons[j].questions[k].answers[lenAnswers - 1].id + 1;
-                } else {
-                  tempSections[index].lessons[j].questions[k].newIdAnswer = 1;
-                }
-                for (let l = 0; l < lenAnswers; l++) {
-                  tempSections[index].lessons[j].questions[k].answers[l].save = true;
-                }
-              }
-            }
-
-            if (lenLessons !== 0) {
-              tempSections[index].newIdLesson = tempSections[index].lessons[lenLessons - 1].id + 1;
+        const lenSections = tempSections.length;
+        for (let index = 0; index < lenSections; index++) {
+          const lenLessons = tempSections[index].lessons.length;
+          tempSections[index].save = true;
+          for (let j = 0; j < lenLessons; j++) {
+            const lenQuestions = tempSections[index].lessons[j].questions.length;
+            tempSections[index].lessons[j].save = true;
+            if (lenQuestions !== 0) {
+              tempSections[index].lessons[j].newIdQuestion =
+                tempSections[index].lessons[j].questions[lenQuestions - 1].id + 1;
             } else {
-              tempSections[index].newIdLesson = 1;
+              tempSections[index].lessons[j].newIdQuestion = 1;
+            }
+            for (let k = 0; k < lenQuestions; k++) {
+              const lenAnswers = tempSections[index].lessons[j].questions[k].answers.length;
+              tempSections[index].lessons[j].questions[k].save = true;
+              if (lenAnswers !== 0) {
+                tempSections[index].lessons[j].questions[k].newIdAnswer =
+                  tempSections[index].lessons[j].questions[k].answers[lenAnswers - 1].id + 1;
+              } else {
+                tempSections[index].lessons[j].questions[k].newIdAnswer = 1;
+              }
+              for (let l = 0; l < lenAnswers; l++) {
+                tempSections[index].lessons[j].questions[k].answers[l].save = true;
+              }
             }
           }
-          if (lenSections !== 0) {
-            setOldNewIdSection(tempSections[lenSections - 1].id + 1);
-            setNewIdSection(tempSections[lenSections - 1].id + 1);
+
+          if (lenLessons !== 0) {
+            tempSections[index].newIdLesson = tempSections[index].lessons[lenLessons - 1].id + 1;
+          } else {
+            tempSections[index].newIdLesson = 1;
           }
-          setOldSections(tempSections);
-          setSections(tempSections);
-        } else {
-          console.log(`Failed to fetch. Status: ${response.status}`);
-          Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
         }
-      } catch (error) {
-        console.error('Error fetching sections:', error);
-        Alert.alert('Lỗi', `Error fetching sections: ${error}`, [{ text: 'OK' }]);
-      } finally {
-        setLoading(false);
+        if (lenSections !== 0) {
+          setNewIdSection(tempSections[lenSections - 1].id + 1);
+        }
+        setOldSections(tempSections);
+        setSections(tempSections);
+      } else {
+        console.log(`Failed to fetch. Status: ${response.status}`);
+        Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching sections:', error);
+      Alert.alert('Lỗi', `Error fetching sections: ${error}`, [{ text: 'OK' }]);
+    } finally {
+      setLoading(false);
+    }
+  }, [courseId]);
+  useEffect(() => {
     fetchCategories();
     fetchCourseById();
     fetchSectionsByCourseId();
-  }, [courseId]); // Chỉ gọi một lần khi component mount
+  }, [fetchCourseById, fetchSectionsByCourseId]); // Chỉ gọi một lần khi component mount
 
   // State for delete modal
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -208,7 +205,7 @@ const UpdateCourseScreen = ({ navigation, route }: MyScreenProps['UpdateCourseSc
   >(undefined);
 
   const handleAddSection = () => {
-    navigation.navigate('AddSection', {
+    navigation.navigate('AddSectionScreen', {
       courseId: 1,
       newId: newIdSection,
       onSectionAdded: (newSection: Section) => {
@@ -219,7 +216,7 @@ const UpdateCourseScreen = ({ navigation, route }: MyScreenProps['UpdateCourseSc
   };
 
   const handleEditSection = (sectionData: Section) => {
-    navigation.navigate('UpdateSection', {
+    navigation.navigate('UpdateSectionScreen', {
       courseId: 1,
       sectionData,
       onSectionUpdated: (updatedSection: Section) => {
@@ -236,7 +233,7 @@ const UpdateCourseScreen = ({ navigation, route }: MyScreenProps['UpdateCourseSc
   };
 
   const handleAddLesson = (section: Section) => {
-    navigation.navigate('AddLesson', {
+    navigation.navigate('AddLessonScreen', {
       sectionData: section,
       onLessonAdded: (newLesson: Lesson) => {
         setSections(
@@ -256,7 +253,7 @@ const UpdateCourseScreen = ({ navigation, route }: MyScreenProps['UpdateCourseSc
   };
 
   const handleEditLesson = (section: Section, lessonData: Lesson) => {
-    navigation.navigate('UpdateLesson', {
+    navigation.navigate('UpdateLessonScreen', {
       sectionData: section,
       lessonData,
       onLessonUpdated: (updatedLesson: Lesson) => {
@@ -304,48 +301,16 @@ const UpdateCourseScreen = ({ navigation, route }: MyScreenProps['UpdateCourseSc
     setItemToDelete(undefined);
   };
 
-  const handleReset = async () => {
-    Alert.alert('Xác nhận khôi phục', 'Bạn có chắc chắn muốn khôi phục về trạng thái ban đầu?', [
-      { text: 'Hủy', style: 'cancel' },
-      {
-        text: 'Khôi phục',
-        style: 'destructive',
-        onPress: () => {
-          resetButton();
-        },
-      },
-    ]);
-  };
-
-  const resetButton = async () => {
+  // Handle refresh
+  const handleRefresh = () => {
+    setRefreshing(true);
     if (activeTab === 'info') {
-      setLoading(true);
-      try {
-        const response = await axiosInstance.get(
-          `${process.env.EXPO_PUBLIC_API_GET_COURSE_BY_ID}`.replace(':id', String(courseId))
-        );
-        if (response.status === 200) {
-          const course = response.data.course;
-          setName(course.name);
-          setCategoryId(course.category_id);
-          setDescription(course.description);
-          setPrice(course.price);
-          setIsFree(course.price === 0);
-          setDiscount(course.discount);
-          setHasDiscount(course.discount !== 0);
-          setStatus(course.status);
-          setTotalRating(course.total_rating);
-          setImage(course.image);
-        }
-      } catch {
-        Alert.alert('Lỗi', Strings.courses.resetError, [{ text: 'OK' }]);
-      } finally {
-        setLoading(false);
-      }
+      fetchCategories();
+      fetchCourseById();
     } else {
-      setSections(oldSections);
-      setNewIdSection(oldNewIdSection);
+      fetchSectionsByCourseId();
     }
+    setRefreshing(false);
   };
 
   const pickImage = async (useCamera = false) => {
@@ -617,7 +582,7 @@ const UpdateCourseScreen = ({ navigation, route }: MyScreenProps['UpdateCourseSc
   const addSection = async (section: Section) => {
     try {
       const response = await axiosInstance.post(`${process.env.EXPO_PUBLIC_API_CREATE_SECTION}`, {
-        course_id: section.course_id,
+        course_id: courseId,
         name: section.name,
         description: section.description,
       });
@@ -634,7 +599,7 @@ const UpdateCourseScreen = ({ navigation, route }: MyScreenProps['UpdateCourseSc
       const response = await axiosInstance.put(
         `${process.env.EXPO_PUBLIC_API_UPDATE_SECTION}`.replace(':id', String(section.id)),
         {
-          course_id: section.course_id,
+          course_id: courseId,
           name: section.name,
           description: section.description,
         }
@@ -802,7 +767,12 @@ const UpdateCourseScreen = ({ navigation, route }: MyScreenProps['UpdateCourseSc
   };
 
   const renderInfoTab = () => (
-    <ScrollView style={styles.tabContent}>
+    <ScrollView
+      style={styles.tabContent}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#4a6ee0']} />
+      }
+    >
       <TouchableOpacity
         style={styles.imageContainer}
         disabled={loading}
@@ -973,7 +943,12 @@ const UpdateCourseScreen = ({ navigation, route }: MyScreenProps['UpdateCourseSc
   );
 
   const renderContentTab = () => (
-    <ScrollView style={styles.tabContent}>
+    <ScrollView
+      style={styles.tabContent}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#4a6ee0']} />
+      }
+    >
       <TouchableOpacity
         style={styles.addSectionButton}
         onPress={handleAddSection}
@@ -983,65 +958,72 @@ const UpdateCourseScreen = ({ navigation, route }: MyScreenProps['UpdateCourseSc
         <Text style={styles.addSectionButtonText}>Thêm Section Mới</Text>
       </TouchableOpacity>
 
-      {sections?.map(section => (
-        <View key={section.id} style={styles.sectionContainer}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{section.name}</Text>
-            <View style={styles.sectionActions}>
-              <TouchableOpacity
-                style={styles.actionButton}
-                disabled={loading}
-                onPress={() => handleEditSection(section)}
-              >
-                <Ionicons name="pencil-outline" size={20} color="#007AFF" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.actionButton}
-                disabled={loading}
-                onPress={() => handleDeleteSection(section.id)}
-              >
-                <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.lessonsContainer}>
-            {section.lessons?.map(lesson => (
-              <View key={lesson.id} style={styles.lessonItem}>
-                <View style={styles.lessonInfo}>
-                  <Text style={styles.lessonTitle}>{lesson.title}</Text>
-                  <Text style={styles.lessonDuration}>{lesson.video_url ? 'Video' : ''}</Text>
-                </View>
-                <View style={styles.lessonActions}>
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    disabled={loading}
-                    onPress={() => handleEditLesson(section, lesson)}
-                  >
-                    <Ionicons name="pencil-outline" size={20} color="#007AFF" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    disabled={loading}
-                    onPress={() => handleDeleteLesson(section.id, lesson.id)}
-                  >
-                    <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
-          </View>
-
-          <TouchableOpacity
-            style={styles.addLessonButton}
-            disabled={loading}
-            onPress={() => handleAddLesson(section)}
-          >
-            <Ionicons name="add-circle-outline" size={20} color="#007AFF" />
-            <Text style={styles.addLessonButtonText}>Thêm Lesson</Text>
-          </TouchableOpacity>
+      {sections.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="book-outline" size={50} color="#ccc" />
+          <Text style={styles.emptyText}>Chưa có nội dung bài học</Text>
         </View>
-      ))}
+      ) : (
+        sections?.map(section => (
+          <View key={section.id} style={styles.sectionContainer}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{section.name}</Text>
+              <View style={styles.sectionActions}>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  disabled={loading}
+                  onPress={() => handleEditSection(section)}
+                >
+                  <Ionicons name="pencil-outline" size={20} color="#007AFF" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  disabled={loading}
+                  onPress={() => handleDeleteSection(section.id)}
+                >
+                  <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.lessonsContainer}>
+              {section.lessons?.map(lesson => (
+                <View key={lesson.id} style={styles.lessonItem}>
+                  <View style={styles.lessonInfo}>
+                    <Text style={styles.lessonTitle}>{lesson.title}</Text>
+                    <Text style={styles.lessonDuration}>{lesson.video_url ? 'Video' : ''}</Text>
+                  </View>
+                  <View style={styles.lessonActions}>
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      disabled={loading}
+                      onPress={() => handleEditLesson(section, lesson)}
+                    >
+                      <Ionicons name="pencil-outline" size={20} color="#007AFF" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      disabled={loading}
+                      onPress={() => handleDeleteLesson(section.id, lesson.id)}
+                    >
+                      <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              style={styles.addLessonButton}
+              disabled={loading}
+              onPress={() => handleAddLesson(section)}
+            >
+              <Ionicons name="add-circle-outline" size={20} color="#007AFF" />
+              <Text style={styles.addLessonButtonText}>Thêm Lesson</Text>
+            </TouchableOpacity>
+          </View>
+        ))
+      )}
     </ScrollView>
   );
 
@@ -1082,14 +1064,6 @@ const UpdateCourseScreen = ({ navigation, route }: MyScreenProps['UpdateCourseSc
       {activeTab === 'info' ? renderInfoTab() : renderContentTab()}
 
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.footerButton, styles.resetButton]}
-          disabled={loading}
-          onPress={handleReset}
-        >
-          <Ionicons name="refresh" size={20} color="#666" />
-          <Text style={styles.resetButtonText}>Khôi phục</Text>
-        </TouchableOpacity>
         <TouchableOpacity
           style={[styles.footerButton, styles.updateButton]}
           disabled={loading}
@@ -1242,19 +1216,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginHorizontal: 8,
   },
-  resetButton: {
-    backgroundColor: '#f5f5f5',
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
   updateButton: {
     backgroundColor: '#007AFF',
-  },
-  resetButtonText: {
-    color: '#666',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
   },
   updateButtonText: {
     color: '#fff',
@@ -1454,6 +1417,17 @@ const styles = StyleSheet.create({
   },
   discountInput: {
     marginTop: 12,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 12,
+    textAlign: 'center',
   },
 });
 

@@ -8,18 +8,17 @@ import {
   TextInput,
   FlatList,
   Alert,
-  Modal,
+  RefreshControl,
 } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { Enrollment, Section, Comment, User } from '@/types/course';
 import { MyScreenProps } from '@/types/MyScreenProps';
-import { Category } from '@/types/category';
+import { Category, Enrollment, Section, Comment, User } from '@/types/apiModels';
 import axiosInstance from '@/api/axiosInstance';
 import { Strings } from '@/constants/Strings';
 import * as SecureStore from 'expo-secure-store';
 import DeleteModal from '@/components/deleteModal';
+import { formatDate } from '@/components/formatDate';
 
 const ViewCourseScreen = ({ navigation, route }: MyScreenProps['ViewCourseScreenProps']) => {
   const courseId = route.params.courseId;
@@ -36,18 +35,22 @@ const ViewCourseScreen = ({ navigation, route }: MyScreenProps['ViewCourseScreen
 
   const [sections, setSections] = useState<Section[]>([]);
 
-  const [activeTab, setActiveTab] = useState('content');
+  const [activeTab, setActiveTab] = useState<'content' | 'students' | 'reviews' | 'comments'>(
+    'content'
+  );
   const [newComment, setNewComment] = useState('');
 
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
 
-  const [countLessons, setCountLessons] = useState(0);
+  // const [countLessons, setCountLessons] = useState(0);
 
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ id: number } | undefined>(undefined);
 
-  const fetchCourseById = async () => {
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchCourseById = useCallback(async () => {
     try {
       const response = await axiosInstance.get(
         `${process.env.EXPO_PUBLIC_API_GET_COURSE_BY_ID_WITH_COUNT_ENROLLMENT}`.replace(
@@ -71,8 +74,9 @@ const ViewCourseScreen = ({ navigation, route }: MyScreenProps['ViewCourseScreen
       console.error('Error fetching course:', error);
       Alert.alert('Lỗi', Strings.courses.loadError, [{ text: 'OK' }]);
     }
-  };
-  const fetchSectionsByCourseId = async () => {
+  }, [courseId]);
+
+  const fetchSectionsByCourseId = useCallback(async () => {
     try {
       const response = await axiosInstance.get(
         `${process.env.EXPO_PUBLIC_API_GET_SECTION_BY_COURSE_ID_WITH_LESSONS}`.replace(
@@ -86,11 +90,11 @@ const ViewCourseScreen = ({ navigation, route }: MyScreenProps['ViewCourseScreen
           section.lessons.sort((a, b) => a.id - b.id);
         });
         setSections(response.data.sections);
-        setCountLessons(
-          response.data.sections.reduce((count: number, section: Section) => {
-            return count + section.lessons.length;
-          }, 0)
-        );
+        // setCountLessons(
+        //   response.data.sections.reduce((count: number, section: Section) => {
+        //     return count + section.lessons.length;
+        //   }, 0)
+        // );
       } else {
         console.log(`Failed to fetch. Status: ${response.status}`);
         Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
@@ -99,13 +103,13 @@ const ViewCourseScreen = ({ navigation, route }: MyScreenProps['ViewCourseScreen
       console.error('Error fetching sections:', error);
       Alert.alert('Lỗi', `Error fetching sections: ${error}`, [{ text: 'OK' }]);
     }
-  };
+  }, [courseId]);
 
-  const fetchEnrollmentsByCourseId = async () => {
+  const fetchEnrollmentsByCourseId = useCallback(async () => {
     try {
       const response = await axiosInstance.get(
         `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_COURSE_ID_WITH_USER_ENROLLMENT_LESSONS}`.replace(
-          ':id',
+          ':course_id',
           String(courseId)
         )
       );
@@ -119,9 +123,9 @@ const ViewCourseScreen = ({ navigation, route }: MyScreenProps['ViewCourseScreen
       console.error('Error fetching enrollments:', error);
       Alert.alert('Lỗi', `Error fetching sections: ${error}`, [{ text: 'OK' }]);
     }
-  };
+  }, [courseId]);
 
-  const fetchCommentsByCourseId = async () => {
+  const fetchCommentsByCourseId = useCallback(async () => {
     try {
       const response = await axiosInstance.get(
         `${process.env.EXPO_PUBLIC_API_GET_COMMENT_BY_COURSE_ID_WITH_USER}`.replace(
@@ -141,7 +145,19 @@ const ViewCourseScreen = ({ navigation, route }: MyScreenProps['ViewCourseScreen
     } finally {
       setLoading(false);
     }
-  };
+  }, [courseId]);
+
+  useEffect(() => {
+    fetchCourseById();
+    fetchSectionsByCourseId();
+    fetchEnrollmentsByCourseId();
+    fetchCommentsByCourseId();
+  }, [
+    fetchCommentsByCourseId,
+    fetchCourseById,
+    fetchEnrollmentsByCourseId,
+    fetchSectionsByCourseId,
+  ]); // Chỉ gọi một lần khi component mount
 
   const getUserInformation = async (): Promise<User | null> => {
     try {
@@ -153,70 +169,17 @@ const ViewCourseScreen = ({ navigation, route }: MyScreenProps['ViewCourseScreen
     }
   };
 
-  useEffect(() => {
-    fetchCourseById();
-    fetchSectionsByCourseId();
-    fetchEnrollmentsByCourseId();
-    fetchCommentsByCourseId();
-  }, []); // Chỉ gọi một lần khi component mount
-
-  const renderContent = () => (
-    <ScrollView style={styles.tabContent}>
-      {sections.map(section => (
-        <View key={section.id} style={styles.section}>
-          <Text style={styles.sectionTitle}>{section.name}</Text>
-          {section.lessons.map(lesson => (
-            <View key={lesson.id} style={styles.lesson}>
-              <Ionicons name="play-circle-outline" size={24} color="#007AFF" />
-              <Text style={styles.lessonTitle}>{lesson.title}</Text>
-            </View>
-          ))}
-        </View>
-      ))}
-    </ScrollView>
-  );
-
-  const renderReviews = () => (
-    <ScrollView style={styles.tabContent}>
-      {enrollments.map(
-        enroll =>
-          enroll.rating && (
-            <View key={enroll.id} style={styles.review}>
-              <View style={styles.reviewHeader}>
-                {/* Avatar */}
-                <View style={styles.reviewAvatar}>
-                  {enroll.user.avatar ? (
-                    <Image source={{ uri: enroll.user.avatar }} style={styles.avatarImage} />
-                  ) : (
-                    <Text style={styles.avatarText}>
-                      {enroll.user.fullname
-                        .split(' ')
-                        .map(n => n[0])
-                        .join('')}
-                    </Text>
-                  )}
-                </View>
-
-                <View style={styles.ratingInfo}>
-                  <Text style={styles.userName}>
-                    {enroll.user.fullname} {`(${enroll.user.username})`}
-                  </Text>
-                  <View style={styles.ratingContainer}>
-                    <Ionicons name="star" size={16} color="#FFD700" />
-                    <Text style={styles.rating}>{enroll.rating}</Text>
-                  </View>
-                </View>
-              </View>
-
-              <Text style={styles.reviewComment}>{enroll.review}</Text>
-              <Text style={styles.date}>
-                {new Date(enroll.updatedAt).toLocaleDateString('vi-VN')}
-              </Text>
-            </View>
-          )
-      )}
-    </ScrollView>
-  );
+  const handleRefresh = () => {
+    setRefreshing(true);
+    if (activeTab === 'content') {
+      fetchSectionsByCourseId();
+    } else if (activeTab === 'students' || activeTab === 'reviews') {
+      fetchEnrollmentsByCourseId();
+    } else {
+      fetchCommentsByCourseId();
+    }
+    setRefreshing(false);
+  };
 
   // Hàm xử lý xóa bình luận
   const handleDeleteComment = (commentId: number) => {
@@ -245,7 +208,7 @@ const ViewCourseScreen = ({ navigation, route }: MyScreenProps['ViewCourseScreen
   };
 
   const postComment = async () => {
-    if (!newComment || newComment.length == 0) return;
+    if (!newComment || newComment.length === 0) return;
     try {
       const user = await getUserInformation();
       if (user) {
@@ -284,11 +247,100 @@ const ViewCourseScreen = ({ navigation, route }: MyScreenProps['ViewCourseScreen
     }
   };
 
+  const renderContent = () => (
+    <ScrollView
+      style={styles.tabContent}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#4a6ee0']} />
+      }
+    >
+      {sections.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="book-outline" size={50} color="#ccc" />
+          <Text style={styles.emptyText}>Chưa có nội dung bài học</Text>
+        </View>
+      ) : (
+        sections.map(section => (
+          <View key={section.id} style={styles.section}>
+            <Text style={styles.sectionTitle}>{section.name}</Text>
+            {section.lessons.map(lesson => (
+              <View key={lesson.id} style={styles.lesson}>
+                <Ionicons name="play-circle-outline" size={24} color="#007AFF" />
+                <Text style={styles.lessonTitle}>{lesson.title}</Text>
+              </View>
+            ))}
+          </View>
+        ))
+      )}
+    </ScrollView>
+  );
+
+  const renderReviews = () => (
+    <ScrollView
+      style={styles.tabContent}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#4a6ee0']} />
+      }
+    >
+      {enrollment_count === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="happy-outline" size={50} color="#ccc" />
+          <Text style={styles.emptyText}>Chưa có đánh giá nào</Text>
+        </View>
+      ) : (
+        enrollments.map(
+          enroll =>
+            enroll.rating && (
+              <View key={enroll.id} style={styles.review}>
+                <View style={styles.reviewHeader}>
+                  {/* Avatar */}
+                  <View style={styles.reviewAvatar}>
+                    {enroll.user.avatar ? (
+                      <Image source={{ uri: enroll.user.avatar }} style={styles.avatarImage} />
+                    ) : (
+                      <Text style={styles.avatarText}>
+                        {enroll.user.fullname
+                          .split(' ')
+                          .map(n => n[0])
+                          .join('')}
+                      </Text>
+                    )}
+                  </View>
+
+                  <View style={styles.ratingInfo}>
+                    <Text style={styles.userName}>
+                      {enroll.user.fullname} {`@${enroll.user.username}`}
+                    </Text>
+                    <View style={styles.ratingContainer}>
+                      <Ionicons name="star" size={16} color="#FFD700" />
+                      <Text style={styles.rating}>{enroll.rating}</Text>
+                    </View>
+                  </View>
+                </View>
+
+                <Text style={styles.reviewComment}>{enroll.review}</Text>
+                <Text style={styles.date}>{formatDate(enroll.updatedAt)}</Text>
+              </View>
+            )
+        )
+      )}
+    </ScrollView>
+  );
+
   const renderComments = () => (
     <View style={styles.tabContent}>
       <FlatList
         data={comments}
         keyExtractor={item => String(item.id)}
+        showsVerticalScrollIndicator={false}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Ionicons name="chatbubble-ellipses-outline" size={50} color="#ccc" />
+            <Text style={styles.emptyText}>Chưa có bình luận nào</Text>
+          </View>
+        }
         renderItem={({ item }) => (
           <View style={[styles.comment, item.user.role === 0 && styles.adminComment]}>
             <View style={styles.commentHeader}>
@@ -308,14 +360,13 @@ const ViewCourseScreen = ({ navigation, route }: MyScreenProps['ViewCourseScreen
 
               <View style={styles.commentDetails}>
                 <Text style={styles.userName}>
-                  {item.user.username} {`(${item.user.fullname})`}
+                  {item.user.username} {`@${item.user.fullname}`}
                 </Text>
-                <Text style={styles.date}>
-                  {new Date(item.createdAt).toLocaleDateString('vi-VN')}
-                </Text>
+                <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
               </View>
               <TouchableOpacity
                 style={styles.deleteButton}
+                disabled={loading}
                 onPress={() => handleDeleteComment(item.id)}
               >
                 <Ionicons name="trash-outline" size={20} color="#FF4D4D" />
@@ -330,11 +381,12 @@ const ViewCourseScreen = ({ navigation, route }: MyScreenProps['ViewCourseScreen
         <TextInput
           style={styles.input}
           value={newComment}
+          readOnly={loading}
           onChangeText={setNewComment}
           placeholder="Nhập bình luận..."
           multiline
         />
-        <TouchableOpacity style={styles.sendButton} onPress={postComment}>
+        <TouchableOpacity style={styles.sendButton} disabled={loading} onPress={postComment}>
           <Ionicons name="send" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -358,7 +410,7 @@ const ViewCourseScreen = ({ navigation, route }: MyScreenProps['ViewCourseScreen
                   : 0;
 
                 // Kiểm tra countLessons và đảm bảo không chia cho 0
-                const validCountLessons = countLessons > 0 ? countLessons : 1; // Nếu countLessons = 0, sử dụng 1 để tránh chia cho 0.
+                const validCountLessons = student.total_lesson > 0 ? student.total_lesson : 1; // Nếu countLessons = 0, sử dụng 1 để tránh chia cho 0.
 
                 // Tính toán tổng, đảm bảo không có NaN
                 return acc + (lessonsLength * 100) / validCountLessons;
@@ -373,6 +425,15 @@ const ViewCourseScreen = ({ navigation, route }: MyScreenProps['ViewCourseScreen
       <FlatList
         data={enrollments}
         keyExtractor={item => String(item.id)}
+        showsVerticalScrollIndicator={false}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Ionicons name="people-outline" size={50} color="#ccc" />
+            <Text style={styles.emptyText}>Chưa có học viên nào</Text>
+          </View>
+        }
         renderItem={({ item }) => (
           <View style={styles.studentCard}>
             <View style={styles.studentInfo}>
@@ -390,7 +451,7 @@ const ViewCourseScreen = ({ navigation, route }: MyScreenProps['ViewCourseScreen
               </View>
               <View style={styles.studentDetails}>
                 <Text style={styles.studentName}>
-                  {item.user.fullname} {`(${item.user.username})`}
+                  {item.user.fullname} {`@${item.user.username}`}
                 </Text>
                 <Text style={styles.studentEmail}>{item.user.email}</Text>
               </View>
@@ -402,28 +463,24 @@ const ViewCourseScreen = ({ navigation, route }: MyScreenProps['ViewCourseScreen
                   style={[
                     styles.progressFill,
                     {
-                      width: `${Math.round(((item.enrollment_lessons.length * 100) / countLessons, 0))}%`,
+                      width: `${Math.round((item.enrollment_lessons.length / item.total_lesson, 0))}%`,
                     },
                   ]}
                 />
               </View>
               <Text style={styles.progressText}>
-                {Math.round(((item.enrollment_lessons.length * 100) / countLessons, 0))}%
+                {Math.round(((item.enrollment_lessons.length * 100) / item.total_lesson, 0))}%
               </Text>
             </View>
 
             <View style={styles.studentMeta}>
               <View style={styles.metaItem}>
                 <Ionicons name="calendar-outline" size={16} color="#666" />
-                <Text style={styles.metaText}>
-                  Đăng ký: {new Date(item.createdAt).toLocaleDateString('vi-VN')}
-                </Text>
+                <Text style={styles.metaText}>Đăng ký: {formatDate(item.createdAt)}</Text>
               </View>
               <View style={styles.metaItem}>
                 <Ionicons name="time-outline" size={16} color="#666" />
-                <Text style={styles.metaText}>
-                  Truy cập: {new Date(item.last_access).toLocaleDateString('vi-VN')}
-                </Text>
+                <Text style={styles.metaText}>Truy cập: {formatDate(item.last_access)}</Text>
               </View>
             </View>
           </View>
@@ -933,6 +990,17 @@ const styles = StyleSheet.create({
   },
   deleteButtonModal: {
     backgroundColor: '#FF3B30',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 12,
+    textAlign: 'center',
   },
 });
 

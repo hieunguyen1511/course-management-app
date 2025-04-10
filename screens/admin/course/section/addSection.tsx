@@ -10,7 +10,7 @@ import {
 import React, { useState } from 'react';
 import { MyScreenProps } from '@/types/MyScreenProps';
 import { Ionicons } from '@expo/vector-icons';
-import { Section } from '@/types/course';
+import { Section } from '@/types/apiModels';
 
 const AddSectionScreen: React.FC<MyScreenProps['AddSectionScreenProps']> = ({
   navigation,

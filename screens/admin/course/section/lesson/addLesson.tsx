@@ -8,10 +8,10 @@ import {
   Alert,
   Switch,
 } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { MyScreenProps } from '@/types/MyScreenProps';
 import { Ionicons } from '@expo/vector-icons';
-import { Lesson, Question } from '@/types/course';
+import { Lesson, Question } from '@/types/apiModels';
 import DeleteModal from '@/components/deleteModal';
 
 const AddLessonScreen: React.FC<MyScreenProps['AddLessonScreenProps']> = ({

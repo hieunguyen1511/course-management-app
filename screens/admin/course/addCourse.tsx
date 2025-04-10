@@ -8,22 +8,18 @@ import {
   Switch,
   Image,
   Alert,
-  Platform,
   ActivityIndicator,
 } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
 import axiosInstance from '@/api/axiosInstance';
-import { Category } from '@/types/category';
-import * as FileSystem from 'expo-file-system';
+import { Category } from '@/types/apiModels';
 import { Strings } from '@/constants/Strings';
 import { MyScreenProps } from '@/types/MyScreenProps';
 
 const AddCourseScreen = ({ navigation }: MyScreenProps['AddCourseScreenProps']) => {
-  const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState(0);
@@ -252,7 +248,7 @@ const AddCourseScreen = ({ navigation }: MyScreenProps['AddCourseScreenProps']) 
           }
         }
         Alert.alert('Thành công', `${Strings.courses.addSuccess} ${response.data.course.id}`, [
-          { text: 'OK', onPress: () => router.back() },
+          { text: 'OK', onPress: () => navigation.goBack() },
         ]);
       }
     } catch (error: any) {
@@ -264,12 +260,12 @@ const AddCourseScreen = ({ navigation }: MyScreenProps['AddCourseScreenProps']) 
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
           disabled={loading}
-          onPress={() => router.back()}
+          onPress={() => navigation.goBack()}
         >
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
@@ -280,172 +276,176 @@ const AddCourseScreen = ({ navigation }: MyScreenProps['AddCourseScreenProps']) 
         {loading && <ActivityIndicator size="large" color="#4a6ee0" />}
       </View>
 
-      <View style={styles.formContainer}>
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Ảnh Khóa Học</Text>
-          <TouchableOpacity
-            style={styles.imagePreview}
-            onPress={() => pickImage(false)}
-            disabled={loading}
-          >
-            {image ? (
-              <Image source={{ uri: image }} style={styles.courseImage} />
-            ) : (
-              <View style={styles.imagePlaceholder}>
-                <Ionicons name="image-outline" size={40} color="#666" />
-                <Text style={styles.imagePlaceholderText}>Chọn ảnh khóa học</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Tên Khóa Học</Text>
-          <TextInput
-            style={styles.input}
-            value={name}
-            readOnly={loading}
-            onChangeText={setName}
-            placeholder="Nhập tên khóa học"
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Danh Mục</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={categoryId}
-              onValueChange={(itemValue: number) => setCategoryId(itemValue)}
-              style={styles.picker}
-              enabled={!loading}
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
+        <View style={styles.formContainer}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Ảnh Khóa Học</Text>
+            <TouchableOpacity
+              style={styles.imagePreview}
+              onPress={() => pickImage(false)}
+              disabled={loading}
             >
-              {categories.map(cat => (
-                <Picker.Item key={cat.id} label={cat.name} value={cat.id} />
-              ))}
-            </Picker>
+              {image ? (
+                <Image source={{ uri: image }} style={styles.courseImage} />
+              ) : (
+                <View style={styles.imagePlaceholder}>
+                  <Ionicons name="image-outline" size={40} color="#666" />
+                  <Text style={styles.imagePlaceholderText}>Chọn ảnh khóa học</Text>
+                </View>
+              )}
+            </TouchableOpacity>
           </View>
-        </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Mô Tả</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={description}
-            readOnly={loading}
-            onChangeText={setDescription}
-            placeholder="Nhập mô tả khóa học"
-            multiline
-            numberOfLines={4}
-          />
-        </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Tên Khóa Học</Text>
+            <TextInput
+              style={styles.input}
+              value={name}
+              readOnly={loading}
+              onChangeText={setName}
+              placeholder="Nhập tên khóa học"
+            />
+          </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Giá Khóa Học</Text>
-          <View style={styles.priceContainer}>
-            <View style={styles.radioGroup}>
-              <TouchableOpacity
-                style={styles.radioButton}
-                disabled={loading}
-                onPress={() => setIsFree(true)}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Danh Mục</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={categoryId}
+                onValueChange={(itemValue: number) => setCategoryId(itemValue)}
+                style={styles.picker}
+                enabled={!loading}
               >
-                <View style={styles.radioCircle}>
-                  {isFree && <View style={styles.selectedRb} />}
-                </View>
-                <Text style={styles.radioLabel}>Miễn phí</Text>
-              </TouchableOpacity>
+                {categories.map(cat => (
+                  <Picker.Item key={cat.id} label={cat.name} value={cat.id} />
+                ))}
+              </Picker>
+            </View>
+          </View>
 
-              <TouchableOpacity
-                style={styles.radioButton}
-                disabled={loading}
-                onPress={() => setIsFree(false)}
-              >
-                <View style={styles.radioCircle}>
-                  {!isFree && <View style={styles.selectedRb} />}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Mô Tả</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={description}
+              readOnly={loading}
+              onChangeText={setDescription}
+              placeholder="Nhập mô tả khóa học"
+              multiline
+              numberOfLines={4}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Giá Khóa Học</Text>
+            <View style={styles.priceContainer}>
+              <View style={styles.radioGroup}>
+                <TouchableOpacity
+                  style={styles.radioButton}
+                  disabled={loading}
+                  onPress={() => setIsFree(true)}
+                >
+                  <View style={styles.radioCircle}>
+                    {isFree && <View style={styles.selectedRb} />}
+                  </View>
+                  <Text style={styles.radioLabel}>Miễn phí</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.radioButton}
+                  disabled={loading}
+                  onPress={() => setIsFree(false)}
+                >
+                  <View style={styles.radioCircle}>
+                    {!isFree && <View style={styles.selectedRb} />}
+                  </View>
+                  <Text style={styles.radioLabel}>Có phí</Text>
+                </TouchableOpacity>
+              </View>
+
+              {!isFree && (
+                <View style={styles.priceInputContainer}>
+                  <TextInput
+                    style={styles.input}
+                    value={price.toString()}
+                    readOnly={loading}
+                    onChangeText={text => {
+                      const numericValue = text.replace(/[^0-9]/g, '');
+                      // Nếu rỗng, set 0
+                      if (numericValue === '') {
+                        setPrice(0);
+                        return;
+                      }
+                      // Chuyển thành số
+                      let value = parseInt(numericValue, 10);
+                      setPrice(value);
+                    }}
+                    placeholder="Nhập giá"
+                    keyboardType="numeric"
+                  />
+                  <Text style={styles.currency}>đ</Text>
                 </View>
-                <Text style={styles.radioLabel}>Có phí</Text>
-              </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <View style={styles.discountHeader}>
+              <Text style={styles.label}>Giảm Giá</Text>
+              <Switch
+                value={hasDiscount}
+                onValueChange={setHasDiscount}
+                trackColor={{ false: '#767577', true: '#81b0ff' }}
+                thumbColor={discount !== 0 ? '#007AFF' : '#f4f3f4'}
+                disabled={loading}
+              />
             </View>
 
-            {!isFree && (
+            {hasDiscount && (
               <View style={styles.priceInputContainer}>
                 <TextInput
                   style={styles.input}
-                  value={price.toString()}
+                  value={discount.toString()}
                   readOnly={loading}
                   onChangeText={text => {
                     const numericValue = text.replace(/[^0-9]/g, '');
                     // Nếu rỗng, set 0
                     if (numericValue === '') {
-                      setPrice(0);
+                      setDiscount(0);
                       return;
                     }
+
                     // Chuyển thành số
                     let value = parseInt(numericValue, 10);
-                    setPrice(value);
+
+                    // Nếu giá trị ngoài khoảng 0 - 100, điều chỉnh lại
+                    if (value > 100) {
+                      value = 100;
+                    }
+
+                    setDiscount(value);
                   }}
-                  placeholder="Nhập giá"
+                  placeholder="Nhập % giảm giá (0-100)"
                   keyboardType="numeric"
+                  maxLength={3}
                 />
-                <Text style={styles.currency}>đ</Text>
+                <Text style={styles.currency}>%</Text>
               </View>
             )}
           </View>
         </View>
+      </ScrollView>
 
-        <View style={styles.inputGroup}>
-          <View style={styles.discountHeader}>
-            <Text style={styles.label}>Giảm Giá</Text>
-            <Switch
-              value={hasDiscount}
-              onValueChange={setHasDiscount}
-              trackColor={{ false: '#767577', true: '#81b0ff' }}
-              thumbColor={discount !== 0 ? '#007AFF' : '#f4f3f4'}
-              disabled={loading}
-            />
-          </View>
-
-          {hasDiscount && (
-            <View style={styles.priceInputContainer}>
-              <TextInput
-                style={styles.input}
-                value={discount.toString()}
-                readOnly={loading}
-                onChangeText={text => {
-                  const numericValue = text.replace(/[^0-9]/g, '');
-                  // Nếu rỗng, set 0
-                  if (numericValue === '') {
-                    setDiscount(0);
-                    return;
-                  }
-
-                  // Chuyển thành số
-                  let value = parseInt(numericValue, 10);
-
-                  // Nếu giá trị ngoài khoảng 0 - 100, điều chỉnh lại
-                  if (value > 100) {
-                    value = 100;
-                  }
-
-                  setDiscount(value);
-                }}
-                placeholder="Nhập % giảm giá (0-100)"
-                keyboardType="numeric"
-                maxLength={3}
-              />
-              <Text style={styles.currency}>%</Text>
-            </View>
-          )}
-        </View>
-
+      <View style={styles.footer}>
         <TouchableOpacity
-          style={styles.submitButton}
+          style={[styles.footerButton, styles.addButton]}
           disabled={loading}
           onPress={handleCreateCourse}
         >
-          <Text style={styles.submitButtonText}>Tạo Khóa Học</Text>
+          <Text style={styles.addButtonText}>Tạo Khóa Học</Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+    </View>
   );
 };
 
@@ -555,17 +555,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
-  submitButton: {
-    backgroundColor: '#007AFF',
+  footer: {
+    flexDirection: 'row',
     padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 20,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
   },
-  submitButtonText: {
+  footerButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginHorizontal: 8,
+  },
+  addButton: {
+    backgroundColor: '#007AFF',
+  },
+  addButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+    marginLeft: 8,
   },
   imagePreview: {
     width: '100%',

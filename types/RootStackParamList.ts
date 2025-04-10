@@ -1,4 +1,4 @@
-import { Lesson, Section } from './course';
+import { Lesson, Section } from './apiModels';
 
 export type RootStackParamList = {
   //Main: { screen: keyof RootStackParamList };
@@ -55,37 +55,41 @@ export type RootStackParamList = {
   UserViewAllCourse: { message?: string };
   DetailCourse: { courseId: number; message?: string };
 
-  Category: { message?: string };
-  AddCategory: { message?: string };
-  UpdateCategory: { categoryId: number; message?: string };
+  CategoryScreen: { message?: string };
+  AddCategoryScreen: { message?: string };
+  UpdateCategoryScreen: { categoryId: number; message?: string };
 
-  AddCourse: { message?: string };
-  ViewCourse: { courseId: number; message?: string };
-  UpdateCourse: { courseId: number; message?: string };
+  CourseScreen: { message?: string };
+  AddCourseScreen: { message?: string };
+  ViewCourseScreen: { courseId: number; message?: string };
+  UpdateCourseScreen: { courseId: number; message?: string };
 
-  AddSection: {
+  AddSectionScreen: {
     courseId: number;
     newId: number;
     onSectionAdded?: (newSection: Section) => void;
     message?: string;
   };
-  UpdateSection: {
+  UpdateSectionScreen: {
     courseId: number;
     sectionData: Section;
     onSectionUpdated?: (updatedSection: Section) => void;
     message?: string;
   };
-  AddLesson: {
+  AddLessonScreen: {
     sectionData: Section;
     onLessonAdded?: (newLesson: Lesson) => void;
     message?: string;
   };
-  UpdateLesson: {
+  UpdateLessonScreen: {
     sectionData: Section;
     lessonData: Lesson;
     onLessonUpdated?: (updatedLesson: Lesson) => void;
     message?: string;
   };
+
+  UserScreen: { message?: string };
+  ViewUserScreen: { userId: number; message?: string };
 };
 
 // export type BottomTabParamList = {

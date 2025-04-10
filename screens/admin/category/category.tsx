@@ -1,9 +1,17 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Alert } from 'react-native';
-import React, { useCallback, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import React, { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Strings } from '@/constants/Strings';
 import axiosInstance from '@/api/axiosInstance';
-import { useFocusEffect } from '@react-navigation/native';
 import AddCategory from '@/screens/admin/category/addCategory';
 import UpdateCategory from '@/screens/admin/category/updateCategory';
 
@@ -11,73 +19,64 @@ import { NavigationIndependentTree } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { RootStackParamList } from '@/types/RootStackParamList';
-import { Category } from '@/types/category';
+import { Category } from '@/types/apiModels';
 import DeleteModal from '@/components/deleteModal';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-type CategoryScreenProps = NativeStackScreenProps<RootStackParamList, 'Category'>;
+type CategoryScreenProps = NativeStackScreenProps<RootStackParamList, 'CategoryScreen'>;
 
 const CategoryScreen: React.FC<CategoryScreenProps> = ({ navigation, route }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
   const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   // State for delete modal
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ category: Category } | undefined>(undefined);
 
-  const filter = useCallback(
-    (text: string, categories: Category[]) => {
-      let filtered = categories;
-      if (searchText.trim() === '') {
-        setFilteredCategories(categories);
-        return;
+  const fetchCategories = async () => {
+    try {
+      const response = await axiosInstance.get(`${process.env.EXPO_PUBLIC_API_GET_ALL_CATEGORIES}`);
+      if (response.status === 200) {
+        setCategories(response.data.categories);
+        setFilteredCategories(response.data.categories);
+      } else {
+        Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
       }
-      if (text.trim() !== '') {
-        filtered = filtered.filter(
-          category =>
-            category.id.toString().includes(text) ||
-            category.name.toLowerCase().includes(text.toLowerCase()) ||
-            category.description.toLowerCase().includes(text.toLowerCase())
-        );
-      }
-      setFilteredCategories(filtered);
-    },
-    [searchText]
-  );
-
-  useFocusEffect(
-    useCallback(() => {
-      const fetchCategories = async () => {
-        try {
-          const response = await axiosInstance.get(
-            `${process.env.EXPO_PUBLIC_API_GET_ALL_CATEGORIES}`
-          );
-          if (response.status === 200) {
-            setCategories(response.data.categories);
-            setFilteredCategories(response.data.categories);
-            filter(searchText, response.data.categories);
-          } else {
-            Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
-          }
-        } catch (error) {
-          Alert.alert('Lỗi', `Failed fetching categories: ${error}`, [{ text: 'OK' }]);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchCategories();
-    }, [filter, searchText])
-  );
-
-  const handleSearch = (text: string) => {
-    setSearchText(text);
-    if (text.trim() === '') {
-      setFilteredCategories(categories);
-      return;
+    } catch (error) {
+      Alert.alert('Lỗi', `Failed fetching categories: ${error}`, [{ text: 'OK' }]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-    filter(text, categories);
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  // Filter users based on search query
+  useEffect(() => {
+    if (searchText.trim() === '') {
+      setFilteredCategories(categories);
+    } else {
+      const filtered = categories.filter(
+        category =>
+          category.id.toString().includes(searchText) ||
+          category.name.toLowerCase().includes(searchText.toLowerCase()) ||
+          category.description.toLowerCase().includes(searchText.toLowerCase())
+      );
+      setFilteredCategories(filtered);
+    }
+  }, [searchText, categories]);
+
+  // Handle refresh
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchCategories();
   };
 
   const handleDelete = (category: Category) => {
@@ -134,7 +133,7 @@ const CategoryScreen: React.FC<CategoryScreenProps> = ({ navigation, route }) =>
   };
 
   const handleEditCategory = (category: Category) => {
-    navigation.navigate('UpdateCategory', { categoryId: category.id });
+    navigation.navigate('UpdateCategoryScreen', { categoryId: category.id });
   };
 
   const renderCategoryItem = ({ item }: { item: Category }) => (
@@ -167,7 +166,7 @@ const CategoryScreen: React.FC<CategoryScreenProps> = ({ navigation, route }) =>
 
   const handleAddCategory = () => {
     console.log(navigation.getState());
-    navigation.navigate('AddCategory', {});
+    navigation.navigate('AddCategoryScreen', {});
   };
 
   const AddCategoryButton = () => (
@@ -182,24 +181,27 @@ const CategoryScreen: React.FC<CategoryScreenProps> = ({ navigation, route }) =>
         <Text style={styles.headerTitle}>{Strings.categories.title}</Text>
         <AddCategoryButton />
       </View>
-
+      {/* Search Bar */}
       <View style={styles.searchContainer}>
         <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder={Strings.categories.searchPlaceholder}
           value={searchText}
-          onChangeText={handleSearch}
+          onChangeText={setSearchText}
         />
         {searchText.length > 0 && (
-          <TouchableOpacity onPress={() => handleSearch('')}>
+          <TouchableOpacity style={styles.clearButton} onPress={() => setSearchText('')}>
             <Ionicons name="close-circle" size={20} color="#666" />
           </TouchableOpacity>
         )}
       </View>
 
-      {loading ? (
-        <Text style={styles.loadingText}>{Strings.categories.loading}...</Text>
+      {loading && !refreshing ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4a6ee0" />
+          <Text style={styles.loadingText}>{Strings.categories.loading}...</Text>
+        </View>
       ) : (
         <FlatList
           data={filteredCategories}
@@ -207,6 +209,14 @@ const CategoryScreen: React.FC<CategoryScreenProps> = ({ navigation, route }) =>
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="pricetags-outline" size={50} color="#ccc" />
+              <Text style={styles.emptyText}>Không tìm thấy chủ đề nào</Text>
+            </View>
+          }
         />
       )}
       <DeleteModal
@@ -255,11 +265,26 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 1.5,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   loadingText: {
-    textAlign: 'center',
-    marginTop: 20,
+    marginTop: 12,
     fontSize: 16,
     color: '#666',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 12,
+    textAlign: 'center',
   },
   listContainer: {
     padding: 16,
@@ -313,98 +338,37 @@ const styles = StyleSheet.create({
   deleteButton: {
     backgroundColor: '#fee8e8',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    width: '80%',
-    padding: 20,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
-  },
-  modalMessage: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 20,
-    lineHeight: 20,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
-  modalButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 4,
-    marginLeft: 12,
-  },
-  cancelButton: {
-    backgroundColor: '#f0f0f0',
-  },
-  cancelButtonText: {
-    color: '#666',
-    fontWeight: '500',
-  },
-  deleteConfirmButton: {
-    backgroundColor: '#e04a4a',
-  },
-  deleteButtonText: {
-    color: 'white',
-    fontWeight: '500',
-  },
-  messageContainer: {
-    backgroundColor: '#4a6ee0',
-    padding: 12,
-    marginHorizontal: 16,
-    marginTop: 8,
-    borderRadius: 8,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
-  },
-  messageText: {
-    color: '#fff',
-    fontSize: 14,
-    textAlign: 'center',
-    fontWeight: '500',
-  },
+
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    backgroundColor: 'white',
+    margin: 16,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   searchIcon: {
     marginRight: 8,
   },
   searchInput: {
     flex: 1,
-    padding: 8,
+    paddingVertical: 12,
+    fontSize: 16,
+  },
+  clearButton: {
+    padding: 4,
   },
 });
 
 const CategoryTabLayout = () => {
   return (
     <NavigationIndependentTree>
-      <Stack.Navigator initialRouteName="Category" screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Category" component={CategoryScreen} />
-        <Stack.Screen name="AddCategory" component={AddCategory} />
-        <Stack.Screen name="UpdateCategory" component={UpdateCategory} />
+      <Stack.Navigator initialRouteName="CategoryScreen" screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="CategoryScreen" component={CategoryScreen} />
+        <Stack.Screen name="AddCategoryScreen" component={AddCategory} />
+        <Stack.Screen name="UpdateCategoryScreen" component={UpdateCategory} />
       </Stack.Navigator>
     </NavigationIndependentTree>
   );
