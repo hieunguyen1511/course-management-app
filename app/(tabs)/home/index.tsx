@@ -14,12 +14,11 @@ import {
 } from 'react-native';
 import React, { useState, useEffect, useCallback } from 'react';
 
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import axiosInstance from '@/api/axiosInstance';
 import { Strings } from '@/constants/Strings';
-import { RootStackParamList } from '../../types/RootStackParamList';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../../types/RootStackParamList';
 
 // Types for our courses data
 interface Course {
@@ -94,6 +93,7 @@ async function getUserInformation() {
 
 const getCoursesByReferenceCategory = async (categoryId: number | string): Promise<Course[]> => {
   try {
+    console.log('Category ID', categoryId);
     const url = `${process.env.EXPO_PUBLIC_API_GET_COURSES_BY_REFERENCES_CATEOGORY_ID}`.replace(
       ':category_id',
       categoryId.toString()
@@ -113,11 +113,7 @@ const getCoursesByReferenceCategory = async (categoryId: number | string): Promi
   }
 };
 
-type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Home'>;
-
-const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
-  const { tmessage } = useLocalSearchParams();
-  const [message, setMessage] = useState('');
+const Home: React.FC = ({}) => {
   const [userName, setUserName] = useState('User');
   const [inProgressCourses, setInProgressCourses] = useState<UserEnrollments>();
   const [suggestedCourses, setSuggestedCourses] = useState<Course[]>([]);
@@ -239,11 +235,8 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
   }, [fetchUserEnrollments, referenceCategoryId]);
 
   useEffect(() => {
-    if (route.params?.message) {
-      setMessage(route.params.message);
-    }
     fetchData();
-  }, [fetchData, route.params?.message]);
+  }, []);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -262,10 +255,13 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
             <InProgressCourseCard
               item={item}
               onPress={() =>
-                navigation.navigate('UserDetailCourseScreen', {
-                  courseId: item.course_id,
-                  message: '',
-                  enrollmentId: item.id,
+                router.push({
+                  pathname: '/course/detail',
+                  params: {
+                    courseId: item.course_id,
+                    message: '',
+                    enrollmentId: item.id,
+                  },
                 })
               }
               renderProgressBar={renderProgressBar}
@@ -277,7 +273,7 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
         />
       </Section>
     ),
-    [inProgressCourses, navigation, renderProgressBar]
+    [inProgressCourses, renderProgressBar]
   );
 
   const renderSuggestedCoursesSection = useCallback(
@@ -285,10 +281,13 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
       <Section
         title={Strings.user_home.suggest_courses}
         onViewAllPress={() =>
-          navigation.navigate('UserViewAllCourseScreen', {
-            message: 'Hello from Home Suggest Course',
-            is_suggested: true,
-            category_id: parseInt(referenceCategoryId.toString()),
+          router.push({
+            pathname: '/home/all',
+            params: {
+              message: 'Hello from Home Suggest Course',
+              is_suggested: 1,
+              category_id: parseInt(referenceCategoryId.toString()),
+            },
           })
         }
       >
@@ -301,9 +300,12 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
             <CourseCard
               course={item}
               onPress={() =>
-                navigation.navigate('DetailCourseScreen', {
-                  courseId: item.id,
-                  message: '',
+                router.push({
+                  pathname: '/home/detail',
+                  params: {
+                    courseId: item.id,
+                    message: '',
+                  },
                 })
               }
               renderRatingStars={renderRatingStars}
@@ -313,7 +315,7 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
         />
       </Section>
     ),
-    [suggestedCourses, navigation, renderRatingStars, referenceCategoryId]
+    [suggestedCourses, renderRatingStars, referenceCategoryId]
   );
 
   const renderPopularCoursesSection = useCallback(
@@ -321,9 +323,12 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
       <Section
         title={Strings.user_home.popular_courses}
         onViewAllPress={() =>
-          navigation.navigate('UserViewAllCourseScreen', {
-            message: 'Hello from Home Popular Course',
-            is_popular: true,
+          router.push({
+            pathname: '/home/all',
+            params: {
+              message: 'Hello from Home Popular Course',
+              is_popular: 1,
+            },
           })
         }
       >
@@ -336,9 +341,12 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
             <CourseCard
               course={item}
               onPress={() =>
-                navigation.navigate('DetailCourseScreen', {
-                  courseId: item.id,
-                  message: '',
+                router.push({
+                  pathname: '/home/detail',
+                  params: {
+                    courseId: item.id,
+                    message: '',
+                  },
                 })
               }
               renderRatingStars={renderRatingStars}
@@ -348,7 +356,7 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
         />
       </Section>
     ),
-    [popularCourses, navigation, renderRatingStars]
+    [popularCourses, renderRatingStars]
   );
 
   if (loading) {
@@ -367,7 +375,7 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
         ListHeaderComponent={
           <Header
             userName={userName}
-            onProfilePress={() => navigation.navigate('Account', { message: '' })}
+            onProfilePress={() => router.push({ pathname: '/account', params: { message: '' } })}
           />
         }
         showsVerticalScrollIndicator={false}

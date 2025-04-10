@@ -15,12 +15,15 @@ import { Course } from '@/types/apiModels';
 import { Ionicons } from '@expo/vector-icons';
 import { ToastType } from '@/components/NotificationToast';
 import NotificationToast from '@/components/NotificationToast';
+import { router, useLocalSearchParams } from 'expo-router';
 
-const PaymentCheckout: React.FC<MyScreenProps['PaymentCheckoutScreenProps']> = ({
-  navigation,
-  route,
-}) => {
-  const { courseId } = route.params;
+interface PaymentCheckoutProps {
+  segment: {
+    root: string;
+  };
+}
+const PaymentCheckout: React.FC<PaymentCheckoutProps> = ({ segment }) => {
+  const { courseId } = useLocalSearchParams();
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const [paymentLoading, setPaymentLoading] = useState(false);
@@ -50,7 +53,7 @@ const PaymentCheckout: React.FC<MyScreenProps['PaymentCheckoutScreenProps']> = (
       setCourse(response?.data?.course);
     } catch (error) {
       showToast('Không thể tải thông tin khóa học', ToastType.ERROR);
-      navigation.goBack();
+      router.back();
     } finally {
       setLoading(false);
     }
@@ -97,9 +100,8 @@ const PaymentCheckout: React.FC<MyScreenProps['PaymentCheckoutScreenProps']> = (
           paymentIntentId: paymentIntent.id,
         });
 
-        navigation.navigate('DetailCourseScreen', {
-          courseId,
-          message: `Thanh toán thành công cho khóa học ${course?.name}!`,
+        router.push({
+          pathname: '/course',
         });
       }
     } catch (error) {
@@ -131,7 +133,7 @@ const PaymentCheckout: React.FC<MyScreenProps['PaymentCheckoutScreenProps']> = (
     <>
       <ScrollView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Thanh Toán</Text>
@@ -158,7 +160,7 @@ const PaymentCheckout: React.FC<MyScreenProps['PaymentCheckoutScreenProps']> = (
           <View style={styles.paymentHeader}>
             <Text style={styles.sectionTitle}>Thông Tin Thanh Toán</Text>
             <Image
-              source={require('../../assets/images/stripe-powered.png')}
+              source={require('@/assets/images/stripe-powered.png')}
               style={styles.stripeLogo}
             />
           </View>
@@ -178,7 +180,7 @@ const PaymentCheckout: React.FC<MyScreenProps['PaymentCheckoutScreenProps']> = (
           />
           <View style={styles.paymentMethods}>
             <Image
-              source={require('../../assets/images/payment-methods.png')}
+              source={require('@/assets/images/payment-methods.png')}
               style={styles.paymentMethodsImage}
             />
           </View>

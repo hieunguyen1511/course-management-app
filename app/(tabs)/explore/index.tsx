@@ -81,6 +81,7 @@ async function getAllCategories() {
 import SearchHeader from '@/components/user/SearchHeader';
 import CategoryList from '@/components/user/CategoryList';
 import CourseList from '@/components/user/CourseList';
+import { router } from 'expo-router';
 
 const useExploreData = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -122,33 +123,45 @@ const useExploreData = () => {
   };
 };
 
-const Explore: React.FC<MyScreenProps['ExploreScreenProps']> = ({ navigation, route }) => {
+const Explore: React.FC = ({}) => {
   const { categories, popularCourses, loading, error, refetch } = useExploreData();
 
   const handleSearchPress = () => {
-    navigation.navigate('SearchCourseScreen', {
-      message: 'Tìm kiếm khóa học',
+    router.push({
+      pathname: '/explore/search',
+      params: {
+        message: 'Tìm kiếm khóa học',
+      },
     });
   };
 
   const handleCategoryPress = (category: Category) => {
-    navigation.navigate('UserViewAllCourseScreen', {
-      message: 'Khóa học theo danh mục',
-      category_id: category.id,
+    router.push({
+      pathname: '/explore/all',
+      params: {
+        message: 'Khóa học theo danh mục',
+        category_id: category.id,
+      },
     });
   };
 
   const handleViewAllPopularPress = () => {
-    navigation.navigate('UserViewAllCourseScreen', {
-      message: 'Khóa học phổ biến',
-      is_popular: true,
+    router.push({
+      pathname: '/explore/all',
+      params: {
+        message: 'Khóa học phổ biến',
+        is_popular: 1,
+      },
     });
   };
 
   const handleCoursePress = (course: Course) => {
-    navigation.navigate('DetailCourseScreen', {
-      courseId: course.id,
-      message: '',
+    router.push({
+      pathname: '/explore/detail',
+      params: {
+        courseId: course.id,
+        message: '',
+      },
     });
   };
 

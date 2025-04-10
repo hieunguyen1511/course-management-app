@@ -15,6 +15,7 @@ import { MyScreenProps } from '@/types/MyScreenProps';
 import axiosInstance from '@/api/axiosInstance';
 import { ToastType } from '@/components/NotificationToast';
 import NotificationToast from '@/components/NotificationToast';
+import { router, useLocalSearchParams } from 'expo-router';
 
 interface Enrollment {
   id: number;
@@ -77,8 +78,8 @@ async function getEnrollment(enrollmentId: number) {
   }
 }
 
-const UserRating: React.FC<MyScreenProps['UserRatingScreenProps']> = ({ navigation, route }) => {
-  const { enrollmentId = 1 } = route.params || {};
+const UserRating: React.FC = () => {
+  const { enrollmentId } = useLocalSearchParams();
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
   const [loading, setLoading] = useState(true);
   const [rating, setRating] = useState<number>(0);
@@ -103,7 +104,7 @@ const UserRating: React.FC<MyScreenProps['UserRatingScreenProps']> = ({ navigati
   const fetchEnrollmentData = async () => {
     try {
       setLoading(true);
-      const data = await getEnrollment(enrollmentId);
+      const data = await getEnrollment(parseInt(enrollmentId as string));
       if (data) {
         setEnrollment(data);
         if (data.rating) {
@@ -139,9 +140,9 @@ const UserRating: React.FC<MyScreenProps['UserRatingScreenProps']> = ({ navigati
 
     try {
       setIsSubmitting(true);
-      await updateEnrollmentRating(enrollmentId, rating, review);
+      await updateEnrollmentRating(parseInt(enrollmentId as string), rating, review);
       showToast('Cảm ơn bạn đã đánh giá khóa học!', ToastType.SUCCESS);
-      navigation.goBack();
+      router.back();
     } catch (error) {
       console.error('Error submitting rating:', error);
       showToast('Có lỗi xảy ra khi gửi đánh giá', ToastType.ERROR);
@@ -190,7 +191,7 @@ const UserRating: React.FC<MyScreenProps['UserRatingScreenProps']> = ({ navigati
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Đánh giá khóa học</Text>

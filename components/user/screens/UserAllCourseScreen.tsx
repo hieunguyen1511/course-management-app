@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { MyScreenProps } from '@/types/MyScreenProps';
 import axiosInstance from '@/api/axiosInstance';
 import { Strings } from '@/constants/Strings';
+import { router, useLocalSearchParams } from 'expo-router';
 
 interface Course {
   id: number;
@@ -204,7 +205,7 @@ const CourseItem: React.FC<{
   onPress: (courseId: number) => void;
 }> = ({ course, onPress }) => (
   <TouchableOpacity style={styles.courseItem} onPress={() => onPress(course.id)}>
-    <Image source={require('../../assets/images/course.jpg')} style={styles.courseImage} />
+    <Image source={require('@/assets/images/course.jpg')} style={styles.courseImage} />
     <View style={styles.courseContent}>
       <Text style={styles.courseTitle} numberOfLines={2}>
         {course.name}
@@ -221,15 +222,19 @@ const CourseItem: React.FC<{
   </TouchableOpacity>
 );
 
-const UserViewAllCourseScreen: React.FC<MyScreenProps['UserViewAllCourseScreenProps']> = ({
-  navigation,
-  route,
+interface UserViewAllCourseScreenProps {
+  viewDeailCourseHandle: (courseId: number) => void;
+}
+const UserViewAllCourseScreen: React.FC<UserViewAllCourseScreenProps> = ({
+  viewDeailCourseHandle,
 }) => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(0);
+
+  const { is_suggested, is_popular, category_id } = useLocalSearchParams();
 
   // State để xác định loại hiển thị
   const [isSuggested, setIsSuggested] = useState<boolean>(false);
@@ -285,21 +290,23 @@ const UserViewAllCourseScreen: React.FC<MyScreenProps['UserViewAllCourseScreenPr
     }
   };
   const loadData = async () => {
-    if (route.params) {
-      const { is_suggested, is_popular, category_id } = route.params;
-      setIsSuggested(is_suggested || false);
-      setIsPopular(is_popular || false);
-      setCategoryId(category_id);
+    const isSuggested = is_suggested === '1';
+    const isPopular = is_popular === '1';
+    const categoryId = parseInt(category_id as string);
+    if (category_id && (isSuggested || isPopular)) {
+      setIsSuggested(isSuggested);
+      setIsPopular(isPopular);
+      setCategoryId(categoryId);
 
       let fetchedCourses: Course[] = [];
 
-      if (is_suggested) {
-        fetchedCourses = await getAllSuggestedCourses(category_id || 'NaN');
-      } else if (is_popular) {
+      if (isSuggested) {
+        fetchedCourses = await getAllSuggestedCourses(categoryId);
+      } else if (isPopular) {
         fetchedCourses = (await getAllPopularCourses()) || [];
-      } else if (category_id) {
+      } else if (categoryId) {
         // Khi chỉ có category_id, fetch courses theo category và lấy tên category
-        fetchedCourses = (await getAllCoursesByCategoryId(category_id)) || [];
+        fetchedCourses = (await getAllCoursesByCategoryId(categoryId)) || [];
 
         // Lấy tên category từ API hoặc từ danh sách categories
         try {
@@ -331,11 +338,10 @@ const UserViewAllCourseScreen: React.FC<MyScreenProps['UserViewAllCourseScreenPr
   };
   useEffect(() => {
     loadData();
-  }, [route.params]);
+  }, []);
 
   // Cập nhật useEffect cho việc thay đổi category
   useEffect(() => {
-    const { is_suggested } = route.params || {};
     if (is_suggested) {
       return;
     }
@@ -351,10 +357,7 @@ const UserViewAllCourseScreen: React.FC<MyScreenProps['UserViewAllCourseScreenPr
   };
 
   const handleCoursePress = (courseId: number) => {
-    navigation.navigate('DetailCourseScreen', {
-      courseId,
-      message: '',
-    });
+    viewDeailCourseHandle(courseId);
   };
 
   const handleCategorySelect = (categoryId: number) => {
@@ -381,7 +384,7 @@ const UserViewAllCourseScreen: React.FC<MyScreenProps['UserViewAllCourseScreenPr
   return (
     <SafeAreaView style={{ flex: 1, paddingTop: 16 }}>
       <View style={styles.container}>
-        <CourseHeader title={getScreenTitle()} onBack={() => navigation.goBack()} />
+        <CourseHeader title={getScreenTitle()} onBack={() => router.back()} />
 
         {!isSuggested && !categoryId && (
           <CategoryFilter

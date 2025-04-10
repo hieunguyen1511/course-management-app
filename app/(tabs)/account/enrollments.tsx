@@ -9,56 +9,28 @@ import {
 } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { MyScreenProps } from '@/types/MyScreenProps';
+import { router } from 'expo-router';
+import axiosInstance from '@/api/axiosInstance';
+import { Enrollment } from '@/types/apiModels';
 
-interface Enrollment {
-  id: string;
-  courseId: string;
-  courseName: string;
-  category: string;
-  enrollmentDate: string;
-  status: 'active' | 'completed' | 'cancelled';
-  progress: number;
-  thumbnail: string;
-}
-
-const UserViewAllEnrollment: React.FC<MyScreenProps['UserViewAllEnrollmentScreenProps']> = ({
-  navigation,
-  route,
-}) => {
+const UserViewAllEnrollment: React.FC = () => {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchEnrollments = async () => {
+    const response = await axiosInstance.get(
+      `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_USER_JWT}`
+    );
+    setEnrollments(response.data.enrollments);
+
+    setLoading(false);
+  };
+
   useEffect(() => {
-    // Mock API call to fetch enrollments
-    setTimeout(() => {
-      setEnrollments([
-        {
-          id: '1',
-          courseId: '1',
-          courseName: 'React Native Cơ Bản',
-          category: 'Lập trình di động',
-          enrollmentDate: '2024-03-15',
-          status: 'active',
-          progress: 60,
-          thumbnail: 'https://via.placeholder.com/150',
-        },
-        {
-          id: '2',
-          courseId: '2',
-          courseName: 'JavaScript Nâng Cao',
-          category: 'Lập trình Web',
-          enrollmentDate: '2024-03-10',
-          status: 'completed',
-          progress: 100,
-          thumbnail: 'https://via.placeholder.com/150',
-        },
-      ]);
-      setLoading(false);
-    }, 1000);
+    fetchEnrollments();
   }, []);
 
-  const handleDelete = (enrollmentId: string) => {
+  const handleDelete = (enrollmentId: number) => {
     Alert.alert('Xác nhận hủy đăng ký', 'Bạn có chắc chắn muốn hủy đăng ký khóa học này?', [
       {
         text: 'Hủy',
@@ -92,29 +64,22 @@ const UserViewAllEnrollment: React.FC<MyScreenProps['UserViewAllEnrollmentScreen
     ]);
   };
 
-  const getStatusColor = (status: Enrollment['status']) => {
-    switch (status) {
-      case 'active':
-        return '#4a6ee0';
-      case 'completed':
-        return '#2c9e69';
-      case 'cancelled':
-        return '#e04a4a';
-      default:
-        return '#666';
+  const getStatusColor = (enrollment: Enrollment) => {
+    if (enrollment?.completed_at) {
+      return '#2c9e69';
+    } else {
+      return '#4a6ee0';
     }
+
+    // case 'cancelled':
+    // return '#e04a4a';
   };
 
-  const getStatusText = (status: Enrollment['status']) => {
-    switch (status) {
-      case 'active':
-        return 'Đang học';
-      case 'completed':
-        return 'Hoàn thành';
-      case 'cancelled':
-        return 'Đã hủy';
-      default:
-        return status;
+  const getStatusText = (enrollment: Enrollment) => {
+    if (enrollment?.completed_at) {
+      return 'Hoàn thành';
+    } else {
+      return 'Đang học';
     }
   };
 
@@ -130,7 +95,7 @@ const UserViewAllEnrollment: React.FC<MyScreenProps['UserViewAllEnrollmentScreen
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Khóa học của tôi</Text>
@@ -143,27 +108,31 @@ const UserViewAllEnrollment: React.FC<MyScreenProps['UserViewAllEnrollmentScreen
             key={enrollment.id}
             style={styles.enrollmentCard}
             onPress={() =>
-              navigation.navigate('UserDetailCourseScreen', {
-                courseId: parseInt(enrollment.courseId),
+              router.push({
+                pathname: '/course/detail',
+                params: {
+                  courseId: enrollment.course_id,
+                  enrollmentId: enrollment.id,
+                },
               })
             }
           >
             <View style={styles.enrollmentContent}>
               <View style={styles.courseInfo}>
                 <Text style={styles.courseName} numberOfLines={2}>
-                  {enrollment.courseName}
+                  {enrollment?.course?.name}
                 </Text>
-                <Text style={styles.category}>{enrollment.category}</Text>
+                <Text style={styles.category}>{enrollment?.course?.category?.name}</Text>
                 <Text style={styles.enrollmentDate}>
-                  Ngày đăng ký: {new Date(enrollment.enrollmentDate).toLocaleDateString('vi-VN')}
+                  Ngày đăng ký: {new Date(enrollment.createdAt).toLocaleDateString('vi-VN')}
                 </Text>
               </View>
 
               <View style={styles.statusContainer}>
-                <Text style={[styles.statusText, { color: getStatusColor(enrollment.status) }]}>
-                  {getStatusText(enrollment.status)}
+                <Text style={[styles.statusText, { color: getStatusColor(enrollment) }]}>
+                  {getStatusText(enrollment?.status)}
                 </Text>
-                {enrollment.status === 'active' && (
+                {enrollment?.status === 'active' && (
                   <View style={styles.progressContainer}>
                     <View style={[styles.progressBar, { width: `${enrollment.progress}%` }]} />
                     <Text style={styles.progressText}>{enrollment.progress}%</Text>

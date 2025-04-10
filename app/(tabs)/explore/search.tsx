@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Image } 
 import React, { useState, useEffect } from 'react';
 import { MyScreenProps } from '@/types/MyScreenProps';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 
 interface Course {
   id: number;
@@ -12,10 +13,7 @@ interface Course {
   rating: number;
 }
 
-const SearchCourse: React.FC<MyScreenProps['SearchCourseScreenProps']> = ({
-  navigation,
-  route,
-}) => {
+const SearchCourse: React.FC = ({}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
@@ -94,7 +92,12 @@ const SearchCourse: React.FC<MyScreenProps['SearchCourseScreenProps']> = ({
   const renderSearchResult = ({ item }: { item: Course }) => (
     <TouchableOpacity
       style={styles.searchResultItem}
-      onPress={() => navigation.navigate('DetailCourseScreen', { courseId: item.id })}
+      onPress={() =>
+        router.push({
+          pathname: '/home/detail',
+          params: { courseId: item.id },
+        })
+      }
     >
       <Image source={{ uri: item.image }} style={styles.courseImage} />
       <View style={styles.courseInfo}>
@@ -114,7 +117,7 @@ const SearchCourse: React.FC<MyScreenProps['SearchCourseScreenProps']> = ({
     <View style={styles.container}>
       {/* Search Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <View style={styles.searchContainer}>

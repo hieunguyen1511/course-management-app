@@ -12,11 +12,11 @@ import {
 import React, { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { MyScreenProps } from '@/types/MyScreenProps';
-import * as ImagePicker from 'expo-image-picker';
 
 import tokenStorageManager from '@/storage/tokenStorage/tokenStorageManager';
 import * as SecureStore from 'expo-secure-store';
 import axiosInstance from '@/api/axiosInstance';
+import { router } from 'expo-router';
 
 // Define user interface
 interface User {
@@ -65,9 +65,7 @@ const Account: React.FC<MyScreenProps['AccountScreenProps']> = ({ navigation, ro
   const handleLogout = async () => {
     await SecureStore.deleteItemAsync('user');
     await tokenStorageManager.deleteRefreshToken();
-    navigation.replace('Login', {
-      message: 'Đăng xuất thành công',
-    });
+    router.replace('/login');
     // In a real app, you would clear tokens, user data, etc.
   };
 
@@ -94,17 +92,14 @@ const Account: React.FC<MyScreenProps['AccountScreenProps']> = ({ navigation, ro
               <Text style={styles.userUsername}>@{user?.username}</Text>
 
               <Text style={styles.userDetail}>Số điện thoại: {user?.phone}</Text>
-              <Text style={styles.userDetail}>Email: {user?.email.slice(0, 20)}...</Text>
+              <Text style={styles.userDetail}>Email: {user?.email?.slice(0, 20)}...</Text>
             </View>
           </View>
         </View>
 
         {/* Action Items */}
         <View style={styles.menuContainer}>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate('EditProfileScreen', { message: '' })}
-          >
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/account/edit')}>
             <View style={styles.menuIconContainer}>
               <Ionicons name="person-outline" size={22} color="#4a6ee0" />
             </View>
@@ -117,7 +112,7 @@ const Account: React.FC<MyScreenProps['AccountScreenProps']> = ({ navigation, ro
 
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={() => navigation.navigate('UserViewAllEnrollmentScreen', { message: '' })}
+            onPress={() => router.push('/account/enrollments')}
           >
             <View style={styles.menuIconContainer}>
               <Ionicons name="book-outline" size={22} color="#4a6ee0" />
@@ -131,7 +126,7 @@ const Account: React.FC<MyScreenProps['AccountScreenProps']> = ({ navigation, ro
           {/* Doi mat khau */}
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={() => navigation.navigate('ChangePasswordScreen', { message: '' })}
+            onPress={() => router.push('/account/change-password')}
           >
             <View style={styles.menuIconContainer}>
               <Ionicons name="lock-closed-outline" size={22} color="#4a6ee0" />

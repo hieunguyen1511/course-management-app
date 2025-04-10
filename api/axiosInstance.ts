@@ -51,6 +51,7 @@ axiosInstance.interceptors.response.use(
       } catch (refreshError) {
         await tokenStorageManager.deleteRefreshToken();
         processQueue(refreshError);
+        router.dismissAll();
         router.replace('/login');
         return Promise.reject(refreshError);
       } finally {

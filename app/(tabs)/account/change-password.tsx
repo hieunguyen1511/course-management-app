@@ -10,10 +10,11 @@ import {
 } from 'react-native';
 import React, { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { MyScreenProps } from '@/types/MyScreenProps';
 import axiosInstance from '@/api/axiosInstance';
 import { tokenStorageManager } from '@/storage/tokenStorage/tokenStorageManager';
 import * as SecureStore from 'expo-secure-store';
+import { router } from 'expo-router';
+import { ToastType } from '@/components/NotificationToast';
 async function changePassword(currentPassword: string, newPassword: string) {
   try {
     const response = await axiosInstance.put(
@@ -33,10 +34,7 @@ async function changePassword(currentPassword: string, newPassword: string) {
   }
 }
 
-const ChangePassword: React.FC<MyScreenProps['ChangePasswordScreenProps']> = ({
-  navigation,
-  route,
-}) => {
+const ChangePassword: React.FC = () => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -45,17 +43,20 @@ const ChangePassword: React.FC<MyScreenProps['ChangePasswordScreenProps']> = ({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [updating, setUpdating] = useState(false);
 
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<ToastType>(ToastType.SUCCESS);
+  const showToast = async (message: string | '', type: ToastType) => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+  };
+
   const handleLogout = async () => {
-    await SecureStore.deleteItemAsync('user');
     await tokenStorageManager.deleteRefreshToken();
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Login' }],
-    });
-    navigation.navigate('Login', {
-      message: 'Đăng xuất thành công',
-    });
-    // In a real app, you would clear tokens, user data, etc.
+    await tokenStorageManager.deleteAccessToken();
+    router.dismissAll();
+    router.replace('/login');
   };
 
   const handleChangePassword = async () => {
@@ -82,15 +83,9 @@ const ChangePassword: React.FC<MyScreenProps['ChangePasswordScreenProps']> = ({
     setUpdating(true);
     try {
       await changePassword(currentPassword, newPassword);
-      Alert.alert('Thành công', 'Đổi mật khẩu thành công', [
-        {
-          text: 'OK',
-          onPress: () => {
-            setUpdating(false);
-            handleLogout();
-          },
-        },
-      ]);
+      setUpdating(false);
+      handleLogout();
+      showToast('Đổi mật khẩu thành công', ToastType.SUCCESS);
     } catch (error) {
       console.error('Error changing password:', error);
       Alert.alert('Lỗi', 'Không thể đổi mật khẩu. Vui lòng kiểm tra lại mật khẩu hiện tại.');
@@ -102,7 +97,7 @@ const ChangePassword: React.FC<MyScreenProps['ChangePasswordScreenProps']> = ({
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Đổi mật khẩu</Text>

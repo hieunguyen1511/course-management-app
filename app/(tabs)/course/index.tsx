@@ -20,6 +20,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import dayjs from 'dayjs';
 import { Enrollment } from '@/types/apiModels';
 import { formatDateOrRelative } from '@/utils/datetime';
+import { router } from 'expo-router';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 // Define course interface
 interface Course {
@@ -31,7 +32,7 @@ interface Course {
   rating: number;
 }
 
-const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, route }) => {
+const Course: React.FC = () => {
   // State variables
   const [activeTab, setActiveTab] = useState<'progress' | 'completed'>('progress');
   const [inProgressEnrollments, setInProgressEnrollments] = useState<Enrollment[]>([]);
@@ -162,9 +163,12 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
       <TouchableOpacity
         style={styles.continueButton}
         onPress={() =>
-          navigation.navigate('UserDetailCourseScreen', {
-            enrollmentId: item.id,
-            courseId: item.course_id,
+          router.push({
+            pathname: '/course/detail',
+            params: {
+              enrollmentId: item.id,
+              courseId: item.course_id,
+            },
           })
         }
       >
@@ -188,9 +192,12 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
     <TouchableOpacity
       style={styles.courseCard}
       onPress={() =>
-        navigation.navigate('UserDetailCourseScreen', {
-          enrollmentId: item.id,
-          courseId: item.course_id,
+        router.push({
+          pathname: '/course/detail',
+          params: {
+            enrollmentId: item.id,
+            courseId: item.course_id,
+          },
         })
       }
     >
@@ -214,19 +221,25 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
         style={styles.reviewButton}
         onPress={() =>
           item.rating !== null
-            ? navigation.navigate('UserRatingScreen', {
-                message: '',
-                enrollmentId: item.id,
-                is_rated: true,
-                courseName: item.course.name,
-                categoryName: item.course.category.name,
+            ? router.push({
+                pathname: '/course/rating',
+                params: {
+                  message: '',
+                  enrollmentId: item.id,
+                  is_rated: 1,
+                  courseName: item.course.name,
+                  categoryName: item.course.category.name,
+                },
               })
-            : navigation.navigate('UserRatingScreen', {
-                message: '',
-                enrollmentId: item.id,
-                is_rated: false,
-                courseName: item.course.name,
-                categoryName: item.course.category.name,
+            : router.push({
+                pathname: '/course/rating',
+                params: {
+                  message: '',
+                  enrollmentId: item.id,
+                  is_rated: 0,
+                  courseName: item.course.name,
+                  categoryName: item.course.category.name,
+                },
               })
         }
       >
@@ -270,8 +283,8 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {activeTab === 'progress' ? (
           <>
-            {inProgressEnrollments.length > 0 ? (
-              inProgressEnrollments.map(enrollment => (
+            {inProgressEnrollments?.length > 0 ? (
+              inProgressEnrollments?.map(enrollment => (
                 <View key={enrollment.id.toString()}>
                   {renderInProgressCourse({ item: enrollment })}
                 </View>

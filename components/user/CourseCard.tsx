@@ -35,7 +35,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, onPress, renderRatingSt
   return (
     <TouchableOpacity style={styles.courseCard} onPress={() => onPress?.(course)}>
       <Image
-        source={course.image ? { uri: course.image } : require('../../assets/images/course.jpg')}
+        source={course.image ? { uri: course.image } : require('@/assets/images/course.jpg')}
         style={styles.courseImage}
       />
       <View style={styles.courseCardContent}>

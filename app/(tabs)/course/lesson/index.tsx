@@ -1,16 +1,17 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { MyScreenProps } from '@/types/MyScreenProps';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import axiosInstance from '@/api/axiosInstance';
 import { Lesson, Question } from '@/types/apiModels';
+import { router, useLocalSearchParams } from 'expo-router';
 
 const UserViewLesson: React.FC<MyScreenProps['UserViewLessonScreenProps']> = ({
   navigation,
   route,
 }) => {
-  const { lessonId, enrollmentId } = route.params;
+  const { lessonId, enrollmentId } = useLocalSearchParams();
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
@@ -63,7 +64,7 @@ const UserViewLesson: React.FC<MyScreenProps['UserViewLessonScreenProps']> = ({
       enrollment_id: enrollmentId,
     });
     // Navigate back to course detail
-    navigation.goBack();
+    router.back();
   };
 
   const renderQuizQuestion = (question: Question, index: number) => (
@@ -126,7 +127,7 @@ const UserViewLesson: React.FC<MyScreenProps['UserViewLessonScreenProps']> = ({
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{lesson.title}</Text>
@@ -135,16 +136,27 @@ const UserViewLesson: React.FC<MyScreenProps['UserViewLessonScreenProps']> = ({
       {/* Content */}
       <ScrollView style={styles.content}>
         <View style={styles.videoContainer}>
-          <WebView
-            source={{ uri: getYouTubeEmbedUrl(lesson.video_url) }}
-            style={styles.video}
-            javaScriptEnabled={true}
-            domStorageEnabled={true}
-            allowsFullscreenVideo={true}
-            mediaPlaybackRequiresUserAction={false}
-            allowsInlineMediaPlayback={true}
-            scalesPageToFit={true}
-          />
+          {Platform.OS === 'web' ? (
+            <iframe
+              width="100%"
+              height="100%"
+              src={getYouTubeEmbedUrl(lesson.video_url)}
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ) : (
+            <WebView
+              source={{ uri: getYouTubeEmbedUrl(lesson.video_url) }}
+              style={styles.video}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+              allowsFullscreenVideo={true}
+              mediaPlaybackRequiresUserAction={false}
+              allowsInlineMediaPlayback={true}
+              scalesPageToFit={true}
+            />
+          )}
         </View>
 
         {/* Lesson Content */}
@@ -184,11 +196,6 @@ const UserViewLesson: React.FC<MyScreenProps['UserViewLessonScreenProps']> = ({
         >
           <Text style={styles.completeButtonText}>Hoàn thành</Text>
         </TouchableOpacity>
-
-        {/* <TouchableOpacity style={styles.navButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.navButtonText}>Bài tiếp</Text>
-          <Ionicons name="chevron-forward" size={24} color="#666" />
-        </TouchableOpacity> */}
       </View>
     </View>
   );

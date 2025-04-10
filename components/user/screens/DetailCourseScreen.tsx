@@ -17,6 +17,7 @@ import CourseContent from '@/components/user/CourseContent';
 import CourseReviews from '@/components/user/CourseReviews';
 import CourseActionButton from '@/components/user/CourseActionButton';
 import { useFocusEffect } from '@react-navigation/native';
+import { router, useLocalSearchParams } from 'expo-router';
 
 interface Course {
   id: number;
@@ -174,11 +175,12 @@ const UpdateProfileModal = ({
   </Modal>
 );
 
-const DetailCourseScreen: React.FC<MyScreenProps['DetailCourseScreenProps']> = ({
-  navigation,
-  route,
-}) => {
-  const { courseId, message } = route.params || 1;
+interface DetailCourseScreenProps {
+  paymentCheckoutHandler: (courseId: number) => void;
+}
+
+const DetailCourseScreen: React.FC<DetailCourseScreenProps> = ({ paymentCheckoutHandler }) => {
+  const { courseId, message } = useLocalSearchParams();
   const [course, setCourse] = useState<Course | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
@@ -191,9 +193,9 @@ const DetailCourseScreen: React.FC<MyScreenProps['DetailCourseScreenProps']> = (
     try {
       setLoading(true);
       const [sectionsData, enrollmentsData, courseData] = await Promise.all([
-        getSections(courseId),
-        getEnrollment(courseId),
-        getDetailCourse(courseId),
+        getSections(parseInt(courseId as string)),
+        getEnrollment(parseInt(courseId as string)),
+        getDetailCourse(parseInt(courseId as string)),
       ]);
 
       if (sectionsData) setSections(sectionsData);
@@ -261,22 +263,22 @@ const DetailCourseScreen: React.FC<MyScreenProps['DetailCourseScreenProps']> = (
         });
         if (response.status === 201) {
           setIsEnrolled(true);
-          const enrollmentsData = await getEnrollment(courseId);
+          const enrollmentsData = await getEnrollment(parseInt(courseId as string));
           if (enrollmentsData) setEnrollments(enrollmentsData);
-          navigation.replace('UserDetailCourseScreen', {
-            enrollmentId: response.data.enrollment.id,
-            courseId: courseId,
-            message_from_detail_course_screen: 'Đăng ký khóa học thành công, chào mừng bạn!',
+          router.replace({
+            pathname: '/course/detail',
+            params: {
+              enrollmentId: response.data.enrollment.id,
+              courseId: courseId,
+              message_from_detail_course_screen: 'Đăng ký khóa học thành công, chào mừng bạn!',
+            },
           });
         } else {
           console.error('Error enrolling in course:', response.data);
           return;
         }
       } else {
-        navigation.navigate('PaymentCheckoutScreen', {
-          courseId: courseId,
-          message: 'Đăng ký khóa học',
-        });
+        paymentCheckoutHandler(parseInt(courseId as string));
       }
     } catch (error) {
       console.error('Error enrolling in course:', error);
@@ -285,9 +287,12 @@ const DetailCourseScreen: React.FC<MyScreenProps['DetailCourseScreenProps']> = (
 
   const handleLessonPress = (lesson: any) => {
     if (!isEnrolled) return;
-    navigation.navigate('UserDetailCourseScreen', {
-      enrollmentId: enrollmentId,
-      courseId: courseId,
+    router.push({
+      pathname: '/course/detail',
+      params: {
+        enrollmentId: enrollmentId,
+        courseId: courseId,
+      },
     });
   };
 
@@ -309,7 +314,7 @@ const DetailCourseScreen: React.FC<MyScreenProps['DetailCourseScreenProps']> = (
 
   return (
     <View style={styles.container}>
-      <CourseHeader course={course} onBackPress={() => navigation.goBack()} />
+      <CourseHeader course={course} onBackPress={() => router.back()} />
       <ScrollView style={styles.scrollView}>
         <View style={styles.tabContainer}>
           <TouchableOpacity
@@ -355,9 +360,12 @@ const DetailCourseScreen: React.FC<MyScreenProps['DetailCourseScreenProps']> = (
         onClose={() => setShowUpdateProfileModal(false)}
         onUpdate={() => {
           setShowUpdateProfileModal(false);
-          navigation.navigate('EditProfileScreen', {
-            message:
-              'Vui lòng cập nhật đầy đủ thông tin cá nhân (số điện thoại và ngày sinh) trước khi đăng ký khóa học.',
+          router.push({
+            pathname: '/account/edit',
+            params: {
+              message:
+                'Vui lòng cập nhật đầy đủ thông tin cá nhân (số điện thoại và ngày sinh) trước khi đăng ký khóa học.',
+            },
           });
         }}
       />

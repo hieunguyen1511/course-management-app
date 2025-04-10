@@ -13,7 +13,7 @@ import React, { FC, useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { MyScreenProps } from '@/types/MyScreenProps';
 import axiosInstance from '@/api/axiosInstance';
-import { useRouter } from 'expo-router';
+import { router, useRouter } from 'expo-router';
 import { Strings } from '@/constants/Strings';
 import '../global.css';
 import Checkbox from '@/components/ui/Checkbox';
@@ -85,8 +85,8 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
         if (res.status === 200) {
           console.log('Login successful');
 
+          tokenStorageManager.setAccessToken(res.data.access_token);
           if (isRemmebermeChecked) {
-            tokenStorageManager.setAccessToken(res.data.access_token);
             await tokenStorageManager.setRefreshToken(res.data.refresh_token, !isRemmebermeChecked);
           }
 
@@ -95,9 +95,10 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
           };
           console.log('User role', user.role);
           if (user.role === 1) {
-            navigation.replace('UserTabLayout', {
-              message: 'Hello from Login',
-            });
+            // navigation.replace('UserTabLayout', {
+            //   message: 'Hello from Login',
+            // });
+            router.replace('/(tabs)/home');
           }
           if (user.role === 0) {
             navigation.replace('AdminLayout', {

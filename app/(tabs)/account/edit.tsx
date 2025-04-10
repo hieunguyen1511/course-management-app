@@ -16,6 +16,7 @@ import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/d
 import * as ImagePicker from 'expo-image-picker';
 import { MyScreenProps } from '@/types/MyScreenProps';
 import axiosInstance from '@/api/axiosInstance';
+import { router } from 'expo-router';
 
 interface User {
   id: string;
@@ -120,7 +121,7 @@ async function updateUserAvatar_JWT(avatar_url: string) {
     throw new Error('Failed to update user avatar');
   }
 }
-const EditProfile: React.FC<MyScreenProps['EditProfileScreenProps']> = ({ navigation, route }) => {
+const EditProfile: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -235,7 +236,7 @@ const EditProfile: React.FC<MyScreenProps['EditProfileScreenProps']> = ({ naviga
                 text: 'OK',
                 onPress: () => {
                   setUpdating(false);
-                  //navigation.goBack();
+                  router.back();
                 },
               },
             ]);
@@ -269,7 +270,7 @@ const EditProfile: React.FC<MyScreenProps['EditProfileScreenProps']> = ({ naviga
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Chỉnh sửa thông tin</Text>

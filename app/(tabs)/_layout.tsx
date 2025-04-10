@@ -1,76 +1,67 @@
 import React from 'react';
-import { Platform } from 'react-native';
-import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Text } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { BottomTabParamList, RootStackParamList } from '@/types/RootStackParamList';
-
-import Home from './home';
-import Explore from './explore';
-import Course from './course';
-import Account from './account';
-
-const Tabs = createBottomTabNavigator<RootStackParamList>();
+import { router, Tabs } from 'expo-router';
 
 export default function UserTabLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <Tabs.Navigator
-      initialRouteName="Home"
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
-          },
-          default: {},
-        }),
-      }}
-    >
-      <Tabs.Screen
-        name="Home"
-        component={Home}
-        options={{
-          title: 'Trang chủ',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+    <>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
         }}
-      />
-
-      <Tabs.Screen
-        name="Explore"
-        component={Explore}
-        options={{
-          title: 'Khám phá',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="search" color={color} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="Course"
-        component={Course}
-        options={{
-          title: 'Khóa học',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="library-books" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="Account"
-        component={Account}
-        options={{
-          title: 'Tài khoản',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="account-circle" color={color} />,
-        }}
-      />
-    </Tabs.Navigator>
+      >
+        <Tabs.Screen
+          name="home"
+          listeners={tabBarListeners}
+          options={{
+            headerShown: false,
+            title: 'Trang chủ',
+            tabBarIcon: ({ color, size }) => (
+              <IconSymbol name="house.fill" color={color} size={size} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="explore"
+          listeners={tabBarListeners}
+          options={{
+            headerShown: false,
+            title: 'Khám phá',
+            tabBarIcon: ({ color, size }) => <IconSymbol name="search" color={color} size={size} />,
+          }}
+        />
+        <Tabs.Screen
+          name="course"
+          listeners={tabBarListeners}
+          options={{
+            headerShown: false,
+            title: 'Khóa học',
+            tabBarIcon: ({ color, size }) => (
+              <IconSymbol name="library-books" color={color} size={size} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="account"
+          listeners={tabBarListeners}
+          options={{
+            headerShown: true,
+            title: 'Tài khoản',
+            tabBarIcon: ({ color, size }) => (
+              <IconSymbol name="account-circle" color={color} size={size} />
+            ),
+          }}
+        />
+      </Tabs>
+    </>
   );
 }
+
+const tabBarListeners = ({ navigation, route }: { navigation: any; route: any }) => ({
+  tabPress: () => {
+    router.replace({ pathname: route.name });
+  },
+});

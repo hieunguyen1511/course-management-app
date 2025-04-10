@@ -18,6 +18,7 @@ import { ToastType } from '@/components/NotificationToast';
 import dayjs from 'dayjs';
 import NotificationToast from '@/components/NotificationToast';
 import { formatDateOrRelative, formatDateTimeRelative } from '@/utils/datetime';
+import { router, useLocalSearchParams } from 'expo-router';
 
 interface User {
   id: number;
@@ -43,7 +44,8 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
   navigation,
   route,
 }) => {
-  const { enrollmentId, courseId } = route.params || { courseId: 1, enrollmentId: 1 };
+  const { enrollmentId, courseId } = useLocalSearchParams();
+
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,8 +107,8 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
   const fetchAllData = async () => {
     setLoading(true);
     const [enrollment, comments] = await Promise.all([
-      fetchEnrollmentByID(enrollmentId),
-      fetchCommentsByCourseID(courseId),
+      fetchEnrollmentByID(parseInt(enrollmentId as string)),
+      fetchCommentsByCourseID(parseInt(courseId as string)),
     ]);
     setEnrollment(enrollment);
     setComments(comments);
@@ -121,9 +123,12 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
 
   const handleLessonPress = (lesson: Lesson) => {
     // Navigate to lesson content
-    navigation.navigate('UserViewLessonScreen', {
-      lessonId: lesson.id,
-      enrollmentId: enrollmentId,
+    router.push({
+      pathname: '/course/lesson',
+      params: {
+        lessonId: lesson.id,
+        enrollmentId: enrollmentId,
+      },
     });
   };
 
@@ -131,7 +136,7 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
     try {
       const url = `${process.env.EXPO_PUBLIC_API_POST_COMMENT}`;
       const response = await axiosInstance.post(url, {
-        course_id: courseId,
+        course_id: parseInt(courseId as string),
         content: content,
         parent_id: parentId,
       });
@@ -139,7 +144,7 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
       if (response.status === 201 && response.data?.comment) {
         setNewComment('');
         setLoading(false);
-        const newComments = await fetchCommentsByCourseID(courseId);
+        const newComments = await fetchCommentsByCourseID(parseInt(courseId as string));
         setComments(newComments);
         showToast('Bình luận đã được gửi', ToastType.SUCCESS);
       } else {
@@ -376,7 +381,7 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
           <View style={styles.headerContent}>
