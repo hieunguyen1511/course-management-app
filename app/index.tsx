@@ -69,7 +69,7 @@ async function refreshToken() {
   }
 }
 
-async function processLogin(navigation: any, homeRouter: any) {
+async function processLogin(navigation: any, router: any) {
   const refresh_token = await refreshToken();
   const user = await getUserInformation();
   const jsonUser = JSON.parse(user);
@@ -107,6 +107,9 @@ async function processLogin(navigation: any, homeRouter: any) {
   } catch (err) {
     console.log('Error refreshing token', err);
     navigation.replace('Login', { message: 'Please login' });
+    // navigation.replace('AdminLayout', {
+    //   message: 'Hello from Login',
+    // });
   }
 }
 
@@ -117,8 +120,9 @@ const IndexScreen: React.FC<MyScreenProps['IndexScreenProps']> = ({ navigation, 
     if (isProcessing) {
       processLogin(navigation, route);
       setIsProcessing(false);
+      console.log('Processing login');
     }
-  }, [isProcessing]);
+  }, []);
   return (
     <View className="flex justify-center items-center h-full">
       <Text>Index Screen</Text>

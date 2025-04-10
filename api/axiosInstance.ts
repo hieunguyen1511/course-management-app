@@ -1,5 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { router } from 'expo-router';
+
 
 import tokenStorageManager from '@/storage/tokenStorage/tokenStorageManager';
 
@@ -51,7 +51,7 @@ axiosInstance.interceptors.response.use(
       } catch (refreshError) {
         await tokenStorageManager.deleteRefreshToken();
         processQueue(refreshError);
-        router.replace('/login');
+        //router.replace('/login');
         return Promise.reject(refreshError);
       } finally {
         tokenRefreshing = false;
