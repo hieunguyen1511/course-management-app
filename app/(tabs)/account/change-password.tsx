@@ -55,6 +55,7 @@ const ChangePassword: React.FC = () => {
   const handleLogout = async () => {
     await tokenStorageManager.deleteRefreshToken();
     await tokenStorageManager.deleteAccessToken();
+    await SecureStore.deleteItemAsync('user');
     router.dismissAll();
     router.replace('/login');
   };

@@ -17,29 +17,7 @@ export default function AdminLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <NavigationIndependentTree>
-        <Drawer.Navigator
-          initialRouteName={SCREENS.DASHBOARD}
-          //   drawerContent={(props) => {
-          //     const { routeNames, index } = props.state;
-          //     const focused = routeNames[index];
-          //     return (
-          //       <DrawerContentScrollView {...props}>
-          //         <Text>ABC</Text>
-          //         <DrawerItem
-          //           label={"Profile"}
-          //           onPress={() => {
-          //             props.navigation.navigate(SCREENS.PROFILE);
-          //           }}
-          //           focused={focused === SCREENS.PROFILE}
-          //           activeBackgroundColor={Colors.ORANGE}
-          //           inactiveBackgroundColor={Colors.GRAY_LIGHT}
-          //           inactiveTintColor={Colors.BLACK}
-          //           activeTintColor={Colors.WHITE}
-          //         />
-          //       </DrawerContentScrollView>
-          //     );
-          //   }}
-        >
+        <Drawer.Navigator initialRouteName={SCREENS.DASHBOARD}>
           <Drawer.Screen name={SCREENS.DASHBOARD} component={DashboardScreen} />
           <Drawer.Screen name={SCREENS.NOTIFICATIONS} component={NotificationsScreen} />
           <Drawer.Screen name={SCREENS.CATEGORY} component={CategoryScreen} />

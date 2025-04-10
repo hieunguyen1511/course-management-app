@@ -4,25 +4,24 @@ import { Platform } from 'react-native';
 
 const REFRESH_TOKEN_KEY = 'refresh_token';
 
-const asyncStorage = AsyncStorage.useAsyncStorage('access_token');
-
 class TokenStorageManager {
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
+  private asyncStorage = AsyncStorage.useAsyncStorage('access_token');
 
   async getAccessToken() {
     if (this.accessToken) {
       return this.accessToken;
     }
 
-    this.accessToken = await asyncStorage.getItem();
+    this.accessToken = await this.asyncStorage.getItem();
 
     return this.accessToken;
   }
 
   setAccessToken(accessToken: string) {
     this.accessToken = accessToken;
-    asyncStorage.setItem(accessToken);
+    this.asyncStorage.setItem(accessToken);
   }
 
   async setRefreshToken(refreshToken: string, isNotPersistent: boolean = false) {
@@ -56,7 +55,7 @@ class TokenStorageManager {
 
   async deleteAccessToken() {
     this.accessToken = null;
-    return await asyncStorage.removeItem();
+    return await this.asyncStorage.removeItem();
   }
 }
 

@@ -15,33 +15,16 @@ import { MyScreenProps } from '@/types/MyScreenProps';
 import axiosInstance from '@/api/axiosInstance';
 import { router, useRouter } from 'expo-router';
 import { Strings } from '@/constants/Strings';
-import '../global.css';
+import '@/global.css';
 import Checkbox from '@/components/ui/Checkbox';
 import HorizontalRule from '@/components/ui/HorizontalRule';
 
 import NotificationToast from '@/components/NotificationToast';
 import { ToastType } from '@/components/NotificationToast';
 import tokenStorageManager from '@/storage/tokenStorage/tokenStorageManager';
-
-// async function saveUserInformation(user: any) {
-//   try {
-//     await SecureStore.deleteItemAsync('user');
-//     await SecureStore.setItemAsync('user', JSON.stringify(user));
-//   } catch (e) {
-//     console.log('Error saving user', e);
-//   }
-// }
-
-// async function saveRefreshToken(refresh_token: string) {
-//   try {
-//     await tokenStorageManager.setRefreshToken(refresh_token);
-//   } catch (e) {
-//     console.log('Error saving token', e);
-//   }
-// }
-
+import * as SecureStore from 'expo-secure-store';
 const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => {
-  //const homeRouter = useRouter();
+  //const homeRouter = ueseRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isRemmebermeChecked, setIsRemmebermeChecked] = useState(false);
@@ -67,15 +50,22 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
     }
   }, [route?.params]);
 
+  async function saveUserInformation(user: any) {
+    try {
+      await SecureStore.deleteItemAsync('user');
+      await SecureStore.setItemAsync('user', JSON.stringify(user));
+    } catch (e) {
+      console.log('Error saving user', e);
+    }
+  }
+
   const handleLogin = async () => {
     try {
       if (username === '' || password === '') {
         showToast('Vui lòng nhập đầy đủ thông tin', ToastType.ERROR);
         return;
       }
-
       setIsLoading(true);
-
       try {
         const res = await axiosInstance.post(`${process.env.EXPO_PUBLIC_API_LOGIN}`, {
           username: username,
@@ -83,9 +73,8 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
         });
 
         if (res.status === 200) {
-          console.log('Login successful');
-
           tokenStorageManager.setAccessToken(res.data.access_token);
+          await saveUserInformation(res.data.user);
           if (isRemmebermeChecked) {
             await tokenStorageManager.setRefreshToken(res.data.refresh_token, !isRemmebermeChecked);
           }
@@ -93,17 +82,12 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
           const user = {
             role: res.data.user.role,
           };
-          console.log('User role', user.role);
+
           if (user.role === 1) {
-            // navigation.replace('UserTabLayout', {
-            //   message: 'Hello from Login',
-            // });
             router.replace('/(tabs)/home');
           }
           if (user.role === 0) {
-            navigation.replace('AdminLayout', {
-              message: 'Hello from Login',
-            });
+            router.replace('/admin');
           }
         }
       } catch (error: any) {
@@ -142,10 +126,7 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
         <View style={styles.formContainer}>
           <Text style={styles.title}>{Strings.login.title}</Text>
 
-          <Image
-            source={require('../assets/images/course-bg-login.png')}
-            style={styles.logoImage}
-          />
+          <Image source={require('@/assets/images/course-bg-login.png')} style={styles.logoImage} />
 
           <View style={styles.inputContainer}>
             <View style={styles.inputWrapper}>
@@ -232,7 +213,7 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
               // Add your Google sign-in logic here
             }}
           >
-            <Image source={require('../assets/images/google.png')} style={styles.googleIcon} />
+            <Image source={require('@/assets/images/google.png')} style={styles.googleIcon} />
             <Text style={styles.googleButtonText}>{Strings.login.signInByGoogle}</Text>
           </TouchableOpacity>
 
@@ -240,9 +221,7 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
             <Text style={styles.registerText}>{Strings.login.dontHaveAccount} </Text>
             <TouchableOpacity
               onPress={() => {
-                navigation.navigate('Register', {
-                  message: 'Hello from Login',
-                });
+                router.push('/register');
               }}
             >
               <Text style={styles.registerLink}>{Strings.login.register}</Text>
