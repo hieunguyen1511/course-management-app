@@ -50,5 +50,31 @@ export interface MyCompletedCourse {
   categoryName: string;
   description: string;
   image: string;
+  rating: number;
   completed_at: string;
+}
+
+export interface UserComment {
+  id: number;
+  user_id: number;
+  course_id: number;
+  content: string;
+  parent_id: number;
+  createdAt: string;
+  fullname: string;
+  avatar: string;
+  role: number;
+  replies: UserComment[];
+}
+
+export interface ResultCourse {
+  courseId: number;
+  categoryId: number;
+  name: string;
+  description: string;
+  categoryName: string;
+  price: number;
+  discount: number;
+  image: string;
+  rating: number;
 }

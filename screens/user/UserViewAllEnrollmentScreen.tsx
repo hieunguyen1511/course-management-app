@@ -145,6 +145,7 @@ const UserViewAllEnrollment: React.FC<MyScreenProps['UserViewAllEnrollmentScreen
             onPress={() =>
               navigation.navigate('UserDetailCourseScreen', {
                 courseId: parseInt(enrollment.courseId),
+                enrollmentId: parseInt(enrollment.id),
               })
             }
           >
@@ -189,6 +190,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+    paddingTop: Platform.OS === 'ios' ? 50 : 20,
   },
   header: {
     flexDirection: 'row',

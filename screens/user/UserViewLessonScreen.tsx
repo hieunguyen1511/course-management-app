@@ -136,7 +136,7 @@ const UserViewLesson: React.FC<MyScreenProps['UserViewLessonScreenProps']> = ({
       <ScrollView style={styles.content}>
         <View style={styles.videoContainer}>
           <WebView
-            source={{ uri: getYouTubeEmbedUrl(lesson.video_url) }}
+            source={{ uri: getYouTubeEmbedUrl(lesson.video_url || '') }}
             style={styles.video}
             javaScriptEnabled={true}
             domStorageEnabled={true}

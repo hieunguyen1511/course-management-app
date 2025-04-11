@@ -192,17 +192,17 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
           item.rating !== null
             ? navigation.navigate('UserRatingScreen', {
                 message: '',
-                enrollmentId: item.id,
+                enrollmentId: item.enrollmentId,
                 is_rated: true,
-                courseName: item.course.name,
-                categoryName: item.course.category.name,
+                courseName: item.name,
+                categoryName: item.categoryName,
               })
             : navigation.navigate('UserRatingScreen', {
                 message: '',
-                enrollmentId: item.id,
+                enrollmentId: item.enrollmentId,
                 is_rated: false,
-                courseName: item.course.name,
-                categoryName: item.course.category.name,
+                courseName: item.name,
+                categoryName: item.categoryName,
               })
         }
       >
