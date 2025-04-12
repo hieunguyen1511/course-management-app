@@ -1,4 +1,4 @@
-import { TouchableOpacity, View, Text } from 'react-native';
+import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import React from 'react';
 
 interface CheckboxProps {
@@ -6,8 +6,8 @@ interface CheckboxProps {
   onCheck: (checked: boolean) => void;
   label?: string;
   disabled?: boolean;
-  className?: string;
-  labelClassName?: string;
+  style?: any;
+  labelStyle?: any;
 }
 
 const Checkbox = ({
@@ -15,28 +15,66 @@ const Checkbox = ({
   onCheck,
   label,
   disabled = false,
-  className = '',
-  labelClassName = '',
+  style,
+  labelStyle,
 }: CheckboxProps) => {
   return (
     <TouchableOpacity
-      className={`flex-row items-center ${disabled ? 'opacity-50' : ''} ${className}`}
+      style={[styles.container, disabled && styles.disabled, style]}
       onPress={() => !disabled && onCheck(!checked)}
       activeOpacity={0.7}
     >
       <View
-        className={`
-        h-5 w-5 rounded border items-center justify-center
-        ${checked ? 'bg-blue-500 border-blue-500' : 'border-gray-300 bg-white'}
-        ${disabled ? 'border-gray-200' : ''}
-      `}
+        style={[
+          styles.checkbox,
+          checked ? styles.checked : styles.unchecked,
+          disabled && styles.disabledCheckbox,
+        ]}
       >
-        {checked && <Text className="text-white text-sm">✓</Text>}
+        {checked && <Text style={styles.checkmark}>✓</Text>}
       </View>
 
-      {label && <Text className={`ml-2 text-md text-gray-700 ${labelClassName}`}>{label}</Text>}
+      {label && <Text style={[styles.label, labelStyle]}>{label}</Text>}
     </TouchableOpacity>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  disabled: {
+    opacity: 0.5,
+  },
+  checkbox: {
+    height: 20,
+    width: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checked: {
+    backgroundColor: '#3b82f6',
+    borderColor: '#3b82f6',
+  },
+  unchecked: {
+    borderColor: '#d1d5db',
+    backgroundColor: 'white',
+  },
+  disabledCheckbox: {
+    borderColor: '#e5e7eb',
+  },
+  checkmark: {
+    color: 'white',
+    fontSize: 14,
+  },
+  label: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: '#374151',
+  },
+});
 
 export default Checkbox;
