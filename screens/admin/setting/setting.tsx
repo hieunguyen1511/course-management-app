@@ -1,35 +1,31 @@
 import {
   View,
   Text,
-  StyleSheet,
-  Image,
-  TouchableOpacity,
-  ScrollView,
-  Platform,
   SafeAreaView,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  Platform,
   StatusBar,
+  StyleSheet,
 } from 'react-native';
-import React, { useState, useEffect } from 'react';
-import { Ionicons } from '@expo/vector-icons';
-import { MyScreenProps } from '@/types/MyScreenProps';
+import React, { FC, useCallback, useState } from 'react';
 
 import tokenStorageManager from '@/storage/tokenStorage/tokenStorageManager';
 import * as SecureStore from 'expo-secure-store';
 import axiosInstance from '@/api/axiosInstance';
-import { router } from 'expo-router';
+import { User } from '@/types/apiModels';
+import { useFocusEffect } from 'expo-router';
+import { NavigationIndependentTree } from '@react-navigation/native';
+import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/types/RootStackParamList';
+import { Ionicons } from '@expo/vector-icons';
+import EditProfileAdminScreen from './editProfile';
 
-// Define user interface
-interface User {
-  id: string;
-  fullname: string;
-  username: string;
-  email: string;
-  phone: string;
-  birth: string;
-  avatar: string;
-  totalCourses?: number;
-  name?: string;
-}
+// import  login from "@/screens/login"
+// import  register from "@/screens/register"
+const Stack = createNativeStackNavigator<RootStackParamList>();
+type SettingScreenProps = NativeStackScreenProps<RootStackParamList, 'SettingScreen'>;
 
 async function getUserInfo_JWT() {
   try {
@@ -41,32 +37,38 @@ async function getUserInfo_JWT() {
   }
 }
 
-const Account: React.FC<MyScreenProps['AccountScreenProps']> = ({ navigation, route }) => {
+const SettingScreen: FC<SettingScreenProps> = ({ navigation, route }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Fetch user data
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const userData = await getUserInfo_JWT();
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  useFocusEffect(
+    useCallback(() => {
+      const fetchUserData = async () => {
+        try {
+          const userData = await getUserInfo_JWT();
+          const parsedUser = JSON.parse(userData);
+          setUser(parsedUser);
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
 
-    fetchUserData();
-  }, []);
+      fetchUserData();
+
+      // Optional cleanup
+      return () => {};
+    }, [])
+  );
 
   const handleLogout = async () => {
     await SecureStore.deleteItemAsync('user');
     await tokenStorageManager.deleteRefreshToken();
-    router.replace('/login');
-    // In a real app, you would clear tokens, user data, etc.
+    navigation.navigate('Login', {
+      message: 'Đăng xuất thành công',
+    });
   };
 
   if (loading) {
@@ -84,7 +86,16 @@ const Account: React.FC<MyScreenProps['AccountScreenProps']> = ({ navigation, ro
         <View style={styles.card}>
           <View style={styles.cardContent}>
             <View style={styles.avatarContainer}>
-              <Image source={{ uri: user?.avatar }} style={styles.avatar} />
+              {user?.avatar ? (
+                <Image source={{ uri: user?.avatar }} style={styles.avatar} />
+              ) : (
+                <Text style={styles.avatarText}>
+                  {user?.fullname
+                    .split(' ')
+                    .map(n => n[0])
+                    .join('')}
+                </Text>
+              )}
             </View>
 
             <View style={styles.userInfo}>
@@ -92,14 +103,20 @@ const Account: React.FC<MyScreenProps['AccountScreenProps']> = ({ navigation, ro
               <Text style={styles.userUsername}>@{user?.username}</Text>
 
               <Text style={styles.userDetail}>Số điện thoại: {user?.phone}</Text>
-              <Text style={styles.userDetail}>Email: {user?.email?.slice(0, 20)}...</Text>
+              <Text style={styles.userDetail}>Email: {user?.email.slice(0, 20)}...</Text>
+              <View style={styles.roleBadge}>
+                <Text style={styles.roleText}>{user?.role === 0 ? 'Quản trị' : 'Người dùng'}</Text>
+              </View>
             </View>
           </View>
         </View>
 
         {/* Action Items */}
         <View style={styles.menuContainer}>
-          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/account/edit')}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('EditProfileAdminScreen', { message: '' })}
+          >
             <View style={styles.menuIconContainer}>
               <Ionicons name="person-outline" size={22} color="#4a6ee0" />
             </View>
@@ -110,23 +127,10 @@ const Account: React.FC<MyScreenProps['AccountScreenProps']> = ({ navigation, ro
             <Ionicons name="chevron-forward" size={20} color="#ccc" />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => router.push('/account/enrollments')}
-          >
-            <View style={styles.menuIconContainer}>
-              <Ionicons name="book-outline" size={22} color="#4a6ee0" />
-            </View>
-            <View style={styles.menuTextContainer}>
-              <Text style={styles.menuText}>Khóa học của tôi</Text>
-              <Text style={styles.menuSubtext}>Quản lý khóa học đã đăng ký</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#ccc" />
-          </TouchableOpacity>
           {/* Doi mat khau */}
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={() => router.push('/account/change-password')}
+            onPress={() => navigation.navigate('ChangePasswordScreen', { message: '' })}
           >
             <View style={styles.menuIconContainer}>
               <Ionicons name="lock-closed-outline" size={22} color="#4a6ee0" />
@@ -187,12 +191,23 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   avatarContainer: {
-    marginRight: 20,
-  },
-  avatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  avatar: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 50,
+  },
+  avatarText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   userInfo: {
     flex: 1,
@@ -212,6 +227,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginBottom: 4,
+  },
+  roleBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#4a6ee0',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
+  },
+  roleText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '500',
   },
   menuContainer: {
     backgroundColor: 'white',
@@ -289,19 +316,14 @@ const styles = StyleSheet.create({
   },
 });
 
-// function AccountScreenRoutes() {
-//   return (
-//     <NavigationIndependentTree>
-//       <Stack.Navigator
-//         initialRouteName="AccountScreen"
-//         screenOptions={{ headerShown: false }}
-//       >
-//         <Stack.Screen name="AccountScreen" component={AccountScreen} />
-
-//         {/* Add other screens here if needed */}
-//       </Stack.Navigator>
-//     </NavigationIndependentTree>
-//   );
-// }
-
-export default Account;
+const SettingTabLayout = () => {
+  return (
+    <NavigationIndependentTree>
+      <Stack.Navigator initialRouteName="SettingScreen" screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="SettingScreen" component={SettingScreen} />
+        <Stack.Screen name="EditProfileAdminScreen" component={EditProfileAdminScreen} />
+      </Stack.Navigator>
+    </NavigationIndependentTree>
+  );
+};
+export default SettingTabLayout;

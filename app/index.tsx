@@ -2,7 +2,7 @@ import { View, Text, Button } from 'react-native';
 import React from 'react';
 import { useRouter } from 'expo-router';
 
-import { NavigationIndependentTree } from '@react-navigation/native';
+import { NavigationContainer, NavigationIndependentTree } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { RootStackParamList } from '@/types/RootStackParamList';
@@ -34,6 +34,7 @@ import SearchCourseScreen from '@/screens/user/SearchCourseScreen';
 import Test4 from '@/screens/test4';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import PaymentCheckoutScreen from '@/screens/user/PaymentCheckoutScreen';
+import { navigationRef } from '@/services/NavigationService';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -69,7 +70,7 @@ async function refreshToken() {
   }
 }
 
-async function processLogin(navigation: any, homeRouter: any) {
+async function processLogin(navigation: any, router: any) {
   const refresh_token = await refreshToken();
   const user = await getUserInformation();
   const jsonUser = JSON.parse(user);
@@ -107,6 +108,9 @@ async function processLogin(navigation: any, homeRouter: any) {
   } catch (err) {
     console.log('Error refreshing token', err);
     navigation.replace('Login', { message: 'Please login' });
+    // navigation.replace('AdminLayout', {
+    //   message: 'Hello from Login',
+    // });
   }
 }
 
@@ -117,6 +121,7 @@ const IndexScreen: React.FC<MyScreenProps['IndexScreenProps']> = ({ navigation, 
     if (isProcessing) {
       processLogin(navigation, route);
       setIsProcessing(false);
+      console.log('Processing login');
     }
   }, [isProcessing]);
   return (
@@ -134,7 +139,7 @@ const IndexScreen: React.FC<MyScreenProps['IndexScreenProps']> = ({ navigation, 
           navigation.navigate("Test2", { message: "Hello from Index" });
         }}
       /> */}
-      <Button
+      {/* <Button
         title="Go to Login"
         onPress={() => {
           navigation.navigate('Login', { message: 'Hello from Index' });
@@ -163,7 +168,7 @@ const IndexScreen: React.FC<MyScreenProps['IndexScreenProps']> = ({ navigation, 
         onPress={() => {
           navigation.navigate('Test4', { message: 'Hello from Index' });
         }}
-      />
+      /> */}
     </View>
   );
 };

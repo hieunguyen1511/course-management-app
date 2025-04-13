@@ -111,15 +111,21 @@ const getSections = async (course_id: number): Promise<Section[]> => {
   }
 };
 
-const getUserInformation = async (): Promise<any> => {
+async function getUserInformation() {
   try {
-    const user = await SecureStore.getItemAsync('user');
-    return user ? JSON.parse(user) : null;
-  } catch (error) {
-    console.error('Error getting user:', error);
-    return null;
+    const response = await axiosInstance.get(`${process.env.EXPO_PUBLIC_API_GET_USER_INFO_JWT}`);
+    if (response.status === 200) {
+      console.log('User', response.data);
+      return JSON.stringify(response.data.user);
+    }
+  } catch (e) {
+    console.log('Error getting user', e);
+    return JSON.stringify({});
+  } finally {
+    console.log('Finally');
   }
-};
+  return JSON.stringify({});
+}
 
 const getUserInformationById = async (user_id: number): Promise<any> => {
   try {
@@ -201,10 +207,11 @@ const DetailCourseScreen: React.FC<MyScreenProps['DetailCourseScreenProps']> = (
       if (courseData) setCourse(courseData);
 
       const userInfo = await getUserInformation();
-      if (enrollmentsData && userInfo?.id) {
-        setIsEnrolled(enrollmentsData.some(enrollment => enrollment.user_id === userInfo.id));
+      const userInfoJson = JSON.parse(userInfo);
+      if (enrollmentsData && userInfoJson?.id) {
+        setIsEnrolled(enrollmentsData.some(enrollment => enrollment.user_id === userInfoJson.id));
         setEnrollmentId(
-          enrollmentsData.find(enrollment => enrollment.user_id === userInfo.id)?.id || 0
+          enrollmentsData.find(enrollment => enrollment.user_id === userInfoJson.id)?.id || 0
         );
       }
     } catch (error) {
@@ -223,12 +230,13 @@ const DetailCourseScreen: React.FC<MyScreenProps['DetailCourseScreenProps']> = (
   const checkUserInfo = async (): Promise<boolean> => {
     try {
       const userInfo = await getUserInformation();
-      if (!userInfo?.id) {
+      const userInfoJson = JSON.parse(userInfo);
+      if (!userInfoJson?.id) {
         console.error('User not found');
         return false;
       }
 
-      const userDetails = await getUserInformationById(userInfo.id);
+      const userDetails = await getUserInformationById(userInfoJson.id);
       if (!userDetails || userDetails.phone === '' || userDetails.birth === null) {
         setShowUpdateProfileModal(true);
         return false;
@@ -332,11 +340,7 @@ const DetailCourseScreen: React.FC<MyScreenProps['DetailCourseScreenProps']> = (
 
         <View style={styles.tabContent}>
           {activeTab === 'content' ? (
-            <CourseContent
-              sections={sections}
-              isEnrolled={isEnrolled}
-              onLessonPress={handleLessonPress}
-            />
+            <CourseContent sections={sections} isEnrolled={isEnrolled} onLessonPress={() => {}} />
           ) : (
             <CourseReviews enrollments={enrollments} />
           )}

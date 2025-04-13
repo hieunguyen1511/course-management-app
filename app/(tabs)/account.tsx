@@ -68,7 +68,6 @@ const Account: React.FC<MyScreenProps['AccountScreenProps']> = ({ navigation, ro
     navigation.replace('Login', {
       message: 'Đăng xuất thành công',
     });
-    // In a real app, you would clear tokens, user data, etc.
   };
 
   if (loading) {

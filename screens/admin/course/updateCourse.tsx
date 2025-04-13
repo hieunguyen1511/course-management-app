@@ -19,7 +19,7 @@ import { Picker } from '@react-native-picker/picker';
 import axiosInstance from '@/api/axiosInstance';
 import { Category, Section, Lesson, Question, Answer } from '@/types/apiModels';
 import { Strings } from '@/constants/Strings';
-import { uploadToCloudinary, deleteImagefromCloudinary } from '@/components/Cloudinary';
+import { uploadToCloudinary, deleteImagefromCloudinary } from '@/services/Cloudinary';
 
 interface DeleteModalProps {
   visible: boolean;

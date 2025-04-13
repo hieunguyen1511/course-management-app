@@ -16,17 +16,8 @@ import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/d
 import * as ImagePicker from 'expo-image-picker';
 import { MyScreenProps } from '@/types/MyScreenProps';
 import axiosInstance from '@/api/axiosInstance';
-import { router } from 'expo-router';
-
-interface User {
-  id: string;
-  fullname: string;
-  username: string;
-  email: string;
-  phone: string;
-  birth: string;
-  avatar: string;
-}
+import { User } from '@/types/apiModels';
+import { uploadToCloudinary, deleteImagefromCloudinary } from '@/services/Cloudinary';
 
 async function getUserInfo_JWT() {
   try {
@@ -59,51 +50,6 @@ async function updateUserInfo_JWT(user: User) {
   }
 }
 
-const uploadToCloudinary = async (imageUri: string) => {
-  try {
-    const upload_preset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_USER_PRESET;
-    const cloud_name = process.env.EXPO_PUBLIC_CLOUDINARY_COURSE_CLOUD_NAME;
-    const upload_url = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_COURSE_API_URL;
-
-    if (!upload_preset || !cloud_name || !upload_url) {
-      throw new Error('Cloudinary configuration is missing');
-    }
-
-    const formData = new FormData();
-
-    const uriParts = imageUri.split('.');
-    const fileType = uriParts[uriParts.length - 1];
-
-    formData.append('file', {
-      uri: imageUri,
-      type: `image/${fileType}`,
-      name: `photo.${fileType}`,
-    } as any);
-
-    formData.append('upload_preset', upload_preset);
-    formData.append('cloud_name', cloud_name);
-
-    const response = await fetch(`${upload_url}`, {
-      method: 'POST',
-      body: formData,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Upload failed');
-    }
-
-    const result = await response.json();
-    return result.secure_url;
-  } catch (error) {
-    console.error('Error uploading image:', error);
-    Alert.alert('Lỗi', `Error uploading image: ${error}`, [{ text: 'OK' }]);
-    return null;
-  }
-};
-
 async function updateUserAvatar_JWT(avatar_url: string) {
   try {
     const response = await axiosInstance.put(
@@ -121,11 +67,15 @@ async function updateUserAvatar_JWT(avatar_url: string) {
     throw new Error('Failed to update user avatar');
   }
 }
-const EditProfile: React.FC = () => {
+const EditProfileAdminScreen: React.FC<MyScreenProps['EditProfileAdminScreenProps']> = ({
+  navigation,
+  route,
+}) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [avatar, setAvatar] = useState<string | null>(null);
+  const [oldAvatar, setOldAvatar] = useState<string | null>(null);
   const [fullName, setFullName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState(new Date());
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -164,6 +114,7 @@ const EditProfile: React.FC = () => {
         setPhoneNumber(parsedUser.phone);
         setDateOfBirth(new Date(parsedUser.birth));
         setAvatar(parsedUser.avatar);
+        setOldAvatar(parsedUser.avatar);
       } catch (error) {
         console.error('Error fetching user data:', error);
         Alert.alert('Lỗi', 'Không thể tải thông tin người dùng');
@@ -192,6 +143,15 @@ const EditProfile: React.FC = () => {
       console.error('Error picking image:', error);
       Alert.alert('Lỗi', 'Không thể chọn ảnh');
     }
+  };
+
+  const uploadImage = async (uri: string) => {
+    const imageUrl = await uploadToCloudinary(uri);
+    if (!imageUrl) {
+      Alert.alert('Lỗi', 'Upload ảnh thất bại', [{ text: 'OK' }]);
+      return;
+    }
+    return imageUrl;
   };
 
   const handleSave = async () => {
@@ -227,25 +187,31 @@ const EditProfile: React.FC = () => {
       const response = await updateUserInfo_JWT(updatedUser);
       console.log('Updated user:', response.data);
       if (response.status === 200) {
-        try {
-          const response = await uploadToCloudinary(avatar ? avatar : '');
-          if (response) {
-            await updateUserAvatar_JWT(response);
-            Alert.alert('Thành công', 'Cập nhật thông tin thành công', [
-              {
-                text: 'OK',
-                onPress: () => {
-                  setUpdating(false);
-                  router.back();
-                },
-              },
-            ]);
+        if (avatar !== oldAvatar) {
+          if (oldAvatar) {
+            const response = await deleteImagefromCloudinary(oldAvatar);
+            if (!response) {
+              Alert.alert('Lỗi', 'Không thể xoá ảnh khỏi Cloudinary');
+              return;
+            }
           }
-        } catch (error) {
-          console.error('Error uploading image:', error);
-          Alert.alert('Lỗi', 'Không thể cập nhật ảnh đại diện');
-          setUpdating(false);
+          //delete oldImage
+          const savedPath = await uploadImage(avatar);
+          if (savedPath) {
+            await updateUserAvatar_JWT(savedPath);
+            setOldAvatar(savedPath);
+            setAvatar(savedPath);
+          }
         }
+        Alert.alert('Thành công', 'Cập nhật thông tin thành công', [
+          {
+            text: 'OK',
+            onPress: () => {
+              setUpdating(false);
+              navigation.goBack();
+            },
+          },
+        ]);
       } else {
         Alert.alert('Lỗi', 'Không thể cập nhật thông tin');
         setUpdating(false);
@@ -270,7 +236,7 @@ const EditProfile: React.FC = () => {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Chỉnh sửa thông tin</Text>
@@ -486,4 +452,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default EditProfile;
+export default EditProfileAdminScreen;

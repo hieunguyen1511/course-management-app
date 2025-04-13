@@ -90,6 +90,8 @@ export type RootStackParamList = {
 
   UserScreen: { message?: string };
   ViewUserScreen: { userId: number; message?: string };
+  SettingScreen: { message?: string };
+  EditProfileAdminScreen: { message?: string };
 };
 
 // export type BottomTabParamList = {

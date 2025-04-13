@@ -7,7 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import DashboardScreen from '@/screens/admin/dashboard';
 import UserScreen from '@/screens/admin/user/user';
-import SettingScreen from '@/screens/admin/setting';
+import SettingScreen from '@/screens/admin/setting/setting';
 import CourseScreen from '@/screens/admin/course/course';
 import CategoryScreen from '@/screens/admin/category/category';
 const Drawer = createDrawerNavigator();

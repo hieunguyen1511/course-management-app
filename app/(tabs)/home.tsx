@@ -21,58 +21,12 @@ import { Strings } from '@/constants/Strings';
 import { RootStackParamList } from '../../types/RootStackParamList';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-// Types for our courses data
-interface Course {
-  id: number;
-  name: string;
-  description: string;
-  status: number;
-  price: number;
-  discount: number;
-  category_id: number;
-  total_rating: number;
-  enrollment_count: number;
-  image: string;
-  category: {
-    id: number;
-    name: string;
-  };
-}
-
-interface UserEnrollments {
-  id: number;
-  user_id: number;
-  course_id: number;
-  total_lesson: number;
-  complete_lesson: number;
-  progress: number;
-  image: string;
-  last_access: string;
-  createdAt: string;
-  updatedAt: string;
-  course: {
-    id: number;
-    name: string;
-    description: string;
-    status: number;
-    price: number;
-    discount: number;
-  };
-}
-
-interface User {
-  id: number;
-  username: string;
-  fullname: string;
-  email: string;
-  role: string;
-  avatar: string;
-}
+import { ContinueCourse, CourseCard, UserHeader } from '@/types/MyInterfaces';
 
 // Components
 import Section from '@/components/user/Section';
 import Header from '@/components/user/Header';
-import CourseCard from '@/components/user/CourseCard';
+import CourseCardComponent from '@/components/user/CourseCardComponent';
 import InProgressCourseCard from '@/components/user/InProgressCourseCard';
 
 // Helper functions
@@ -92,113 +46,61 @@ async function getUserInformation() {
   return JSON.stringify({});
 }
 
-const getCoursesByReferenceCategory = async (categoryId: number | string): Promise<Course[]> => {
+const getCoursesByReferenceCategory = async (
+  categoryId: number | string
+): Promise<CourseCard[]> => {
   try {
-    const url = `${process.env.EXPO_PUBLIC_API_GET_COURSES_BY_REFERENCES_CATEOGORY_ID}`.replace(
-      ':category_id',
-      categoryId.toString()
-    );
+    const url =
+      `${process.env.EXPO_PUBLIC_API_GET_COURSES_BY_REFERENCES_CATEOGORY_ID_LIMIT_INFO}`.replace(
+        ':category_id',
+        categoryId.toString()
+      );
 
     const response = await axiosInstance.get(url);
 
-    if (response.status === 200 && response.data?.course) {
-      return response.data.course
+    if (response.status === 200 && response.data?.courses) {
+      return response.data.courses
         .slice(0, 10)
-        .sort((a: Course, b: Course) => b.total_rating - a.total_rating);
+        .sort((a: CourseCard, b: CourseCard) => b.rating - a.rating);
     }
-    return [];
+    return [] as CourseCard[];
   } catch (error) {
     console.error('Error fetching courses by reference category:', error);
-    return [];
+    return [] as CourseCard[];
   }
 };
 
+const getContinueCourses = async (): Promise<ContinueCourse> => {
+  try {
+    const response = await axiosInstance.get(`${process.env.EXPO_PUBLIC_API_GET_CONTINUE_COURSES}`);
+    if (response.status === 200) {
+      return response.data.enrollment as ContinueCourse;
+    }
+    return {} as ContinueCourse;
+  } catch (error) {
+    console.error('Error fetching continue courses:', error);
+    return {} as ContinueCourse;
+  }
+};
 type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Home'>;
-
 const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
   const { tmessage } = useLocalSearchParams();
   const [message, setMessage] = useState('');
   const [userName, setUserName] = useState('User');
-  const [inProgressCourses, setInProgressCourses] = useState<UserEnrollments>();
-  const [suggestedCourses, setSuggestedCourses] = useState<Course[]>([]);
-  const [popularCourses, setPopularCourses] = useState<Course[]>([]);
+  const [inProgressCourses, setInProgressCourses] = useState<ContinueCourse>({} as ContinueCourse);
+  const [suggestedCourses, setSuggestedCourses] = useState<CourseCard[]>([]);
+  const [popularCourses, setPopularCourses] = useState<CourseCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [referenceCategoryId, setReferenceCategoryId] = useState<number | string>('NaN');
 
-  // Helper functions
-  const renderRatingStars = useCallback(
-    (rating: number) => (
-      <View style={styles.ratingContainer}>
-        {[1, 2, 3, 4, 5].map(star => (
-          <Text key={star} style={styles.starIcon}>
-            {rating >= star ? '★' : '☆'}
-          </Text>
-        ))}
-        <Text style={styles.ratingText}>{rating ? rating.toFixed(1) : 0}</Text>
-      </View>
-    ),
-    []
-  );
-
-  const renderProgressBar = useCallback(
-    ({ progress }: { progress: number }) => (
-      <View style={styles.progressBarContainer}>
-        <View style={[styles.progressBar, { width: `${progress}%` }]} />
-      </View>
-    ),
-    []
-  );
-
   // Fetch user enrollments
-  const fetchUserEnrollments = useCallback(async (userId: number) => {
-    if (!userId) return;
-
+  const fetchContinueCourses = useCallback(async () => {
     try {
-      const response = await axiosInstance.get(
-        `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_USER_ID_JWT}`
-      );
-      console.log('User enrollments response:', userId);
-      if (response.data?.enrollments?.length > 0) {
-        const sortedEnrollments = response.data.enrollments.sort(
-          (a: UserEnrollments, b: UserEnrollments) =>
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        );
-        //console.log('User enrollments response:', response.data?.enrollments?.length);
-        const firstEnrollment = sortedEnrollments[0];
-        if (firstEnrollment) {
-          setReferenceCategoryId(firstEnrollment.course.category_id);
-          //console.log('User enrollments response:', response.data?.enrollments?.length);
-          const mappedData: UserEnrollments = {
-            id: firstEnrollment.id,
-            user_id: firstEnrollment.user_id,
-            course_id: firstEnrollment.course_id,
-            course: {
-              id: firstEnrollment.course?.id || 0,
-              name: firstEnrollment.course?.name || 'N/A',
-              description: firstEnrollment.course?.description || 'N/A',
-              status: firstEnrollment.course?.status || 0,
-              price: firstEnrollment.course?.price || 0,
-              discount: firstEnrollment.course?.discount || 0,
-            },
-            total_lesson: firstEnrollment.total_lesson || 0,
-            complete_lesson: firstEnrollment.complete_lesson || 0,
-            progress: Math.round(
-              ((firstEnrollment.complete_lesson || 0) / (firstEnrollment.total_lesson || 1)) * 100
-            ),
-            image: firstEnrollment.course?.image || '',
-            last_access: firstEnrollment.last_access || '',
-            createdAt: firstEnrollment.createdAt || '',
-            updatedAt: new Intl.DateTimeFormat('vi-VN', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            }).format(new Date(firstEnrollment.updatedAt)),
-          };
-          setInProgressCourses(mappedData);
-        }
+      const data = await getContinueCourses();
+      if (data) {
+        setReferenceCategoryId(data.categoryId);
+        setInProgressCourses(data);
       }
     } catch (error) {
       console.error('Error fetching user enrollments:', error);
@@ -215,7 +117,7 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
         setUserName(parsedUserInfo.fullname || 'User');
 
         if (parsedUserInfo.id) {
-          await fetchUserEnrollments(parsedUserInfo.id);
+          await fetchContinueCourses();
         }
       }
 
@@ -236,7 +138,7 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
     } finally {
       setLoading(false);
     }
-  }, [fetchUserEnrollments, referenceCategoryId]);
+  }, [fetchContinueCourses, referenceCategoryId]);
 
   useEffect(() => {
     if (route.params?.message) {
@@ -252,28 +154,42 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
     setRefreshing(false);
   }, [fetchData]);
 
+  // Helper functions
+  const renderRatingStars = useCallback(
+    (rating: number) => (
+      <View style={styles.ratingContainer}>
+        {[1, 2, 3, 4, 5].map(star => (
+          <Text key={star} style={styles.starIcon}>
+            {rating >= star ? '★' : '☆'}
+          </Text>
+        ))}
+        <Text style={styles.ratingText}>{rating ? rating.toFixed(1) : 0}</Text>
+      </View>
+    ),
+    []
+  );
+
+  const renderProgressBar = useCallback(
+    ({ progress }: { progress?: number }) => (
+      <View style={styles.progressBarContainer}>
+        <View style={[styles.progressBar, { width: `${progress ? progress : 0}%` }]} />
+      </View>
+    ),
+    []
+  );
   const renderInProgressSection = useCallback(
     () => (
       <Section title={Strings.user_home.continue_learning} showViewAll={false}>
-        <FlatList
-          data={inProgressCourses ? [inProgressCourses] : []}
-          keyExtractor={item => item.id.toString()}
-          renderItem={({ item }) => (
-            <InProgressCourseCard
-              item={item}
-              onPress={() =>
-                navigation.navigate('UserDetailCourseScreen', {
-                  courseId: item.course_id,
-                  message: '',
-                  enrollmentId: item.id,
-                })
-              }
-              renderProgressBar={renderProgressBar}
-            />
-          )}
-          ListEmptyComponent={() => (
-            <Text style={styles.noCourses}>{Strings.user_home.no_enrolled_courses}</Text>
-          )}
+        <InProgressCourseCard
+          item={inProgressCourses ? inProgressCourses : null}
+          onPress={() =>
+            navigation.navigate('UserDetailCourseScreen', {
+              courseId: inProgressCourses.courseId,
+              message: '',
+              enrollmentId: inProgressCourses.enrollmentId,
+            })
+          }
+          renderProgressBar={renderProgressBar}
         />
       </Section>
     ),
@@ -296,13 +212,13 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
           horizontal
           showsHorizontalScrollIndicator={false}
           data={suggestedCourses}
-          keyExtractor={item => item.id.toString()}
+          keyExtractor={item => item.courseId.toString()}
           renderItem={({ item }) => (
-            <CourseCard
+            <CourseCardComponent
               course={item}
               onPress={() =>
                 navigation.navigate('DetailCourseScreen', {
-                  courseId: item.id,
+                  courseId: item.courseId,
                   message: '',
                 })
               }
@@ -331,13 +247,13 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
           horizontal
           showsHorizontalScrollIndicator={false}
           data={popularCourses}
-          keyExtractor={item => item.id.toString()}
+          keyExtractor={item => item.courseId.toString()}
           renderItem={({ item }) => (
-            <CourseCard
+            <CourseCardComponent
               course={item}
               onPress={() =>
                 navigation.navigate('DetailCourseScreen', {
-                  courseId: item.id,
+                  courseId: item.courseId,
                   message: '',
                 })
               }

@@ -27,7 +27,7 @@ import AddLesson from './section/lesson/addLesson';
 import UpdateLesson from './section/lesson/updateLesson';
 
 import { Category, Course } from '@/types/apiModels';
-import { deleteImagefromCloudinary } from '@/components/Cloudinary';
+import { deleteImagefromCloudinary } from '@/services/Cloudinary';
 import DeleteModal from '@/components/deleteModal';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

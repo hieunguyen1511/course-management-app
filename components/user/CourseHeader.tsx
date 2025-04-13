@@ -42,10 +42,17 @@ const CourseHeader: React.FC<CourseHeaderProps> = ({ course, onBackPress }) => {
 
   return (
     <View style={styles.headerContainer}>
-      <Image
-        source={{ uri: course.image }}
-        style={[styles.headerImage, { width: screenWidth, height: 200 }]}
-      />
+      {course.image ? (
+        <Image
+          source={{ uri: course.image }}
+          style={[styles.headerImage, { width: screenWidth, height: 200 }]}
+        />
+      ) : (
+        <Image
+          source={require('../../assets/images/course.jpg')}
+          style={[styles.headerImage, { width: screenWidth, height: 200 }]}
+        />
+      )}
       <TouchableOpacity style={styles.backButton} onPress={onBackPress}>
         <Ionicons name="arrow-back" size={24} color="#333" />
       </TouchableOpacity>

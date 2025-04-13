@@ -2,22 +2,28 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, Image } 
 import React, { useState, useEffect } from 'react';
 import { MyScreenProps } from '@/types/MyScreenProps';
 import { Ionicons } from '@expo/vector-icons';
+import axiosInstance from '@/api/axiosInstance';
+import { Course } from '@/types/apiModels';
+import { ResultCourse } from '@/types/MyInterfaces';
 
-interface Course {
-  id: number;
-  title: string;
-  category: string;
-  price: number;
-  image: string;
-  rating: number;
-}
+const getResults = async (keyword: string): Promise<ResultCourse[]> => {
+  try {
+    const response = await axiosInstance.get(
+      `${process.env.EXPO_PUBLIC_API_SEARCH_COURSE_BY_KEYWORD}?keyword=${keyword}`
+    );
+    return response.data.courses as ResultCourse[];
+  } catch (error) {
+    console.error('Error getting results', error);
+    return [] as ResultCourse[];
+  }
+};
 
 const SearchCourse: React.FC<MyScreenProps['SearchCourseScreenProps']> = ({
   navigation,
   route,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Course[]>([]);
+  const [searchResults, setSearchResults] = useState<ResultCourse[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Format price to VND
@@ -35,73 +41,55 @@ const SearchCourse: React.FC<MyScreenProps['SearchCourseScreenProps']> = ({
             {rating >= star ? '★' : '☆'}
           </Text>
         ))}
-        <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+        <Text style={styles.ratingText}>{rating?.toFixed(1)}</Text>
       </View>
     );
   };
 
-  // Mock search function - replace with actual API call in production
-  const handleSearch = (query: string) => {
-    setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      const mockResults: Course[] = [
-        {
-          id: 1,
-          title: 'Lập trình React Native cơ bản',
-          category: 'Lập trình',
-          price: 1499000,
-          image: 'https://via.placeholder.com/100',
-          rating: 4.7,
-        },
-        {
-          id: 2,
-          title: 'Nguyên tắc thiết kế UI/UX',
-          category: 'Thiết kế',
-          price: 999000,
-          image: 'https://via.placeholder.com/100',
-          rating: 4.5,
-        },
-        {
-          id: 3,
-          title: 'Chiến lược Marketing số',
-          category: 'Marketing',
-          price: 799000,
-          image: 'https://via.placeholder.com/100',
-          rating: 4.2,
-        },
-      ].filter(
-        course =>
-          course.title.toLowerCase().includes(query.toLowerCase()) ||
-          course.category.toLowerCase().includes(query.toLowerCase())
-      );
-      setSearchResults(mockResults);
-      setLoading(false);
-    }, 500);
-  };
-
   // Handle search input change
-  const handleSearchChange = (text: string) => {
+  const handleSearchChange = async (text: string) => {
     setSearchQuery(text);
-    if (text.length > 0) {
-      handleSearch(text);
+    if (text.length > 2) {
+      setLoading(true);
+      try {
+        const results = await getResults(text);
+        if (results.length > 0) {
+          console.log('Results', results);
+          setSearchResults(results);
+        } else {
+          setSearchResults([]);
+        }
+      } catch (error) {
+        console.error('Error searching courses:', error);
+        setSearchResults([]);
+      } finally {
+        setLoading(false);
+      }
     } else {
       setSearchResults([]);
     }
   };
 
   // Render search result item
-  const renderSearchResult = ({ item }: { item: Course }) => (
+  const renderSearchResult = ({ item }: { item: ResultCourse }) => (
     <TouchableOpacity
       style={styles.searchResultItem}
-      onPress={() => navigation.navigate('DetailCourseScreen', { courseId: item.id })}
+      onPress={() => navigation.navigate('DetailCourseScreen', { courseId: item.courseId })}
     >
-      <Image source={{ uri: item.image }} style={styles.courseImage} />
+      <View style={styles.courseImageContainer}>
+        {item.image ? (
+          <Image source={{ uri: item.image }} style={styles.courseImage} />
+        ) : (
+          <Image source={require('../../assets/images/course.jpg')} style={styles.courseImage} />
+        )}
+      </View>
+
       <View style={styles.courseInfo}>
         <Text style={styles.courseTitle} numberOfLines={2}>
-          {item.title}
+          {item.name}
         </Text>
-        <Text style={styles.categoryText}>{item.category}</Text>
+        <Text style={styles.descriptionText}>{item.description}</Text>
+        <Text style={styles.categoryText}>{item.categoryName}</Text>
         <View style={styles.courseFooter}>
           <Text style={styles.priceText}>{formatPrice(item.price)}</Text>
           {renderRatingStars(item.rating)}
@@ -128,7 +116,11 @@ const SearchCourse: React.FC<MyScreenProps['SearchCourseScreenProps']> = ({
             autoFocus
           />
           {searchQuery !== '' && (
-            <TouchableOpacity onPress={() => handleSearchChange('')}>
+            <TouchableOpacity
+              onPress={() => {
+                handleSearchChange('');
+              }}
+            >
               <Ionicons name="close-circle" size={20} color="#666" />
             </TouchableOpacity>
           )}
@@ -144,7 +136,7 @@ const SearchCourse: React.FC<MyScreenProps['SearchCourseScreenProps']> = ({
         <FlatList
           data={searchResults}
           renderItem={renderSearchResult}
-          keyExtractor={item => item.id.toString()}
+          keyExtractor={item => item.courseId.toString()}
           contentContainerStyle={styles.searchResultsList}
         />
       ) : searchQuery.length > 0 ? (
@@ -216,6 +208,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
+  courseImageContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   courseImage: {
     width: 100,
     height: 100,
@@ -268,6 +264,11 @@ const styles = StyleSheet.create({
   noResultsText: {
     fontSize: 16,
     color: '#666',
+  },
+  descriptionText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
   },
 });
 

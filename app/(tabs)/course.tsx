@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/types/RootStackParamList';
 import {
   View,
   Text,
@@ -17,60 +15,39 @@ import {
 import { MyScreenProps } from '@/types/MyScreenProps';
 import axiosInstance from '@/api/axiosInstance';
 import { useFocusEffect } from '@react-navigation/native';
-import dayjs from 'dayjs';
-import { Enrollment } from '@/types/apiModels';
+
 import { formatDateOrRelative } from '@/utils/datetime';
-const Stack = createNativeStackNavigator<RootStackParamList>();
-// Define course interface
-interface Course {
-  id: number;
-  enrollment_id: number;
-  title: string;
-  category: string;
-  image: string;
-  rating: number;
-}
+import { MyCompletedCourse } from '@/types/MyInterfaces';
+import { MyProgressCourse } from '@/types/MyInterfaces';
+
+const getMyInProgressEnrollments = async (): Promise<MyProgressCourse[]> => {
+  const response = await axiosInstance.get(
+    `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_IN_PROGRESS_LIMIT_INFO}`
+  );
+  return response.data.enrollments as MyProgressCourse[];
+};
+
+const getMyCompletedEnrollments = async (): Promise<MyCompletedCourse[]> => {
+  const response = await axiosInstance.get(
+    `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_COMPLETED_LIMIT_INFO}`
+  );
+  return response.data.enrollments as MyCompletedCourse[];
+};
 
 const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, route }) => {
   // State variables
   const [activeTab, setActiveTab] = useState<'progress' | 'completed'>('progress');
-  const [inProgressEnrollments, setInProgressEnrollments] = useState<Enrollment[]>([]);
-  const [completedEnrollments, setCompletedEnrollments] = useState<Enrollment[]>([]);
+  const [inProgressEnrollments, setInProgressEnrollments] = useState<MyProgressCourse[]>([]);
+  const [completedEnrollments, setCompletedEnrollments] = useState<MyCompletedCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchInProgressEnrollments = async () => {
-    try {
-      console.log('Fetching in-progress enrollments...');
-      const respone = await axiosInstance.get(
-        `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_IN_PROGRESS}`
-      );
-
-      return respone.data.enrollments;
-    } catch (error) {
-      console.error('Error fetching courses:', error);
-    }
-  };
-
-  const fetchCompletedCourses = async () => {
-    try {
-      console.log('Fetching completed courses...');
-      const respone = await axiosInstance.get(
-        `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_COMPLETED}`
-      );
-
-      return respone.data.enrollments;
-    } catch (error) {
-      console.error('Error fetching courses:', error);
-    }
-  };
-
   const fetchAllData = async () => {
     setLoading(true);
     const [inProgressEnrollments, completedEnrollments] = await Promise.all([
-      fetchInProgressEnrollments(),
-      fetchCompletedCourses(),
+      getMyInProgressEnrollments(),
+      getMyCompletedEnrollments(),
     ]);
     setInProgressEnrollments(inProgressEnrollments);
     setCompletedEnrollments(completedEnrollments);
@@ -119,42 +96,35 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
   );
 
   // Render in-progress course
-  const renderInProgressCourse = ({ item }: { item: Enrollment }) => (
+  const renderInProgressCourse = ({ item }: { item: MyProgressCourse }) => (
     <TouchableOpacity style={styles.courseCard}>
-      <Image source={{ uri: item?.course?.image }} style={styles.courseImage} />
+      <View style={styles.courseImageContainer}>
+        {item?.image ? (
+          <Image source={{ uri: item?.image }} style={styles.courseImage} />
+        ) : (
+          <Image source={require('../../assets/images/course.jpg')} style={styles.courseImage} />
+        )}
+      </View>
 
       <View style={styles.courseInfo}>
         <Text style={styles.courseTitle} numberOfLines={1}>
-          {item?.course?.name}
+          {item?.name}
         </Text>
-        <Text style={styles.categoryText}>{item?.course?.category?.name}</Text>
+        <Text style={styles.categoryText}>{item?.categoryName}</Text>
 
         <View style={styles.progressContainer}>
-          <ProgressBar
-            progress={
-              ((item.total_lesson_completed ?? 0) /
-                (item.total_lesson > 0 ? item.total_lesson : 1)) *
-              100
-            }
-          />
+          <ProgressBar progress={item.progress ?? 0} />
           <View style={styles.progressTextContainer}>
-            <Text style={styles.progressText}>
-              {Math.round(
-                ((item.total_lesson_completed ?? 0) /
-                  (item.total_lesson > 0 ? item.total_lesson : 1)) *
-                  100
-              )}
-              % Hoàn thành
-            </Text>
+            <Text style={styles.progressText}>{item.progress ?? 0}% Hoàn thành</Text>
             <Text style={styles.lessonCount}>
               {item.total_lesson_completed}/{item.total_lesson ?? 0} bài học
             </Text>
           </View>
         </View>
 
-        {item.last_access && (
+        {item.last_accessed && (
           <Text style={styles.lastAccessedText}>
-            Truy cập lần cuối: {formatDateOrRelative(item.last_access)}
+            Truy cập lần cuối: {formatDateOrRelative(item.last_accessed)}
           </Text>
         )}
       </View>
@@ -163,8 +133,8 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
         style={styles.continueButton}
         onPress={() =>
           navigation.navigate('UserDetailCourseScreen', {
-            enrollmentId: item.id,
-            courseId: item.course_id,
+            enrollmentId: item.enrollmentId,
+            courseId: item.courseId,
           })
         }
       >
@@ -189,18 +159,24 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
       style={styles.courseCard}
       onPress={() =>
         navigation.navigate('UserDetailCourseScreen', {
-          enrollmentId: item.id,
-          courseId: item.course_id,
+          enrollmentId: item.enrollmentId,
+          courseId: item.courseId,
         })
       }
     >
-      <Image source={{ uri: item.image }} style={styles.courseImage} />
+      <View style={styles.courseImageContainer}>
+        {item?.image ? (
+          <Image source={{ uri: item.image }} style={styles.courseImage} />
+        ) : (
+          <Image source={require('../../assets/images/course.jpg')} style={styles.courseImage} />
+        )}
+      </View>
 
       <View style={styles.courseInfo}>
         <Text style={styles.courseTitle} numberOfLines={1}>
-          {item?.course?.name}
+          {item?.name}
         </Text>
-        <Text style={styles.categoryText}>{item?.course?.category?.name}</Text>
+        <Text style={styles.categoryText}>{item?.categoryName}</Text>
 
         <View style={styles.completedInfoContainer}>
           <View style={styles.completedDateContainer}>
@@ -216,17 +192,17 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
           item.rating !== null
             ? navigation.navigate('UserRatingScreen', {
                 message: '',
-                enrollmentId: item.id,
+                enrollmentId: item.enrollmentId,
                 is_rated: true,
-                courseName: item.course.name,
-                categoryName: item.course.category.name,
+                courseName: item.name,
+                categoryName: item.categoryName,
               })
             : navigation.navigate('UserRatingScreen', {
                 message: '',
-                enrollmentId: item.id,
+                enrollmentId: item.enrollmentId,
                 is_rated: false,
-                courseName: item.course.name,
-                categoryName: item.course.category.name,
+                courseName: item.name,
+                categoryName: item.categoryName,
               })
         }
       >
@@ -272,7 +248,7 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
           <>
             {inProgressEnrollments.length > 0 ? (
               inProgressEnrollments.map(enrollment => (
-                <View key={enrollment.id.toString()}>
+                <View key={enrollment.enrollmentId.toString()}>
                   {renderInProgressCourse({ item: enrollment })}
                 </View>
               ))
@@ -290,7 +266,7 @@ const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, 
           <>
             {completedEnrollments.length > 0 ? (
               completedEnrollments.map(enrollment => (
-                <View key={enrollment.id.toString()}>
+                <View key={enrollment.enrollmentId.toString()}>
                   {renderCompletedCourse({ item: enrollment })}
                 </View>
               ))
@@ -372,6 +348,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
+  },
+  courseImageContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   courseImage: {
     width: 90,

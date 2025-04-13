@@ -150,10 +150,6 @@ const ViewDetailUserScreen: React.FC<MyScreenProps['ViewUserScreenProps']> = ({
           </View>
           <Text style={styles.userName}>{user?.fullname}</Text>
           <Text style={styles.username}>@{user?.username}</Text>
-
-          <View style={styles.roleBadge}>
-            <Text style={styles.roleText}>{user?.role === 0 ? 'Quản trị' : 'Người dùng'}</Text>
-          </View>
         </View>
 
         {/* User Details Section */}
@@ -270,17 +266,7 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 12,
   },
-  roleBadge: {
-    backgroundColor: '#4a6ee0',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 16,
-  },
-  roleText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '500',
-  },
+
   detailsSection: {
     backgroundColor: 'white',
     padding: 16,

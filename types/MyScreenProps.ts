@@ -46,4 +46,6 @@ export type MyScreenProps = {
 
   UserScreenProps: NativeStackScreenProps<RootStackParamList, 'UserScreen'>;
   ViewUserScreenProps: NativeStackScreenProps<RootStackParamList, 'ViewUserScreen'>;
+  SettingScreenProps: NativeStackScreenProps<RootStackParamList, 'SettingScreen'>;
+  EditProfileAdminScreenProps: NativeStackScreenProps<RootStackParamList, 'EditProfileAdminScreen'>;
 };

@@ -15,29 +15,9 @@ import { Enrollment, Lesson, Section } from '@/types/apiModels';
 import axiosInstance from '@/api/axiosInstance';
 import { useFocusEffect } from '@react-navigation/native';
 import { ToastType } from '@/components/NotificationToast';
-import dayjs from 'dayjs';
 import NotificationToast from '@/components/NotificationToast';
 import { formatDateOrRelative, formatDateTimeRelative } from '@/utils/datetime';
-
-interface User {
-  id: number;
-  username: string;
-  fullname: string;
-  email: string;
-  avatar?: string | null;
-}
-
-interface Comment {
-  id: number;
-  user_id: number;
-  course_id: number;
-  content: string;
-  parent_id: number;
-  createdAt: string;
-  updatedAt: string;
-  user: User;
-  replies?: Comment[];
-}
+import { UserComment } from '@/types/MyInterfaces';
 
 const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProps']> = ({
   navigation,
@@ -45,7 +25,7 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
 }) => {
   const { enrollmentId, courseId } = route.params || { courseId: 1, enrollmentId: 1 };
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [comments, setComments] = useState<UserComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'content' | 'discussion'>('content');
   const [newComment, setNewComment] = useState('');
@@ -57,7 +37,7 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<ToastType>(ToastType.SUCCESS);
 
-  const flatListRef = useRef<FlatList<Comment>>(null); // Create a ref for the FlatList
+  const flatListRef = useRef<FlatList<UserComment>>(null); // Create a ref for the FlatList
 
   const showToast = (message: string, type: ToastType) => {
     setToastMessage(message);
@@ -68,7 +48,10 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
   const fetchEnrollmentByID = async (eID: number) => {
     try {
       const response = await axiosInstance.get(
-        process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_ID?.replace(':id', eID.toString()) || ''
+        process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_ID_LIMIT_INFO?.replace(
+          ':id',
+          eID.toString()
+        ) || ''
       );
       return response?.data?.enrollment;
     } catch (error) {
@@ -85,14 +68,15 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
           cID.toString()
         ) || ''
       );
-
-      const parentComments = response.data.comments.filter(
-        (item: Comment) => item.parent_id === null
-      );
-      parentComments.forEach((comment: Comment) => {
-        comment.replies = response.data.comments.filter(
-          (item: Comment) => item.parent_id === comment.id
-        );
+      const comments = response.data.comments.map((item: any) => ({
+        ...item,
+        role: item.user.role || 0,
+        fullname: item.user.fullname || '',
+        avatar: item.user.avatar || 'https://via.placeholder.com/150',
+      }));
+      const parentComments = comments.filter((item: UserComment) => item.parent_id === null);
+      parentComments.forEach((comment: UserComment) => {
+        comment.replies = comments.filter((item: UserComment) => item.parent_id === comment.id);
       });
 
       return parentComments;
@@ -167,7 +151,15 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
 
   const handleChangeReply = (commentId: number) => {
     setReplyingTo(commentId);
-    setReplyingToComment('');
+    //console.log(commentId);
+
+    const fullname = comments.find(comment => comment.id === commentId)?.fullname;
+    if (fullname) {
+      setReplyingToComment(`@${fullname} `);
+    } else {
+      const reply = comments.find(comment => comment.replies.find(reply => reply.id === commentId));
+      setReplyingToComment(`@${reply?.replies.find(reply => reply.id === commentId)?.fullname} `);
+    }
   };
 
   const handleReplySubmit = (replyingToCommentId: number) => {
@@ -182,17 +174,14 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
   };
 
   const renderComment = useCallback(
-    ({ item: comment }: { item: Comment }) => (
+    ({ item: comment }: { item: UserComment }) => (
       <View key={comment.id} style={[styles.commentContainer]}>
         <View style={styles.commentHeader}>
           <View style={styles.commentInfo}>
             <View style={styles.avatarContainer}>
-              <Image
-                source={{ uri: getAvatarOrDefault(comment.user.avatar) }}
-                style={styles.avatar}
-              />
+              <Image source={{ uri: getAvatarOrDefault(comment.avatar) }} style={styles.avatar} />
               <View style={{ paddingLeft: 10 }}>
-                <Text style={styles.userName}>{comment.user?.fullname || 'Người dùng'}</Text>
+                <Text style={styles.userName}>{comment.fullname || 'Người dùng'}</Text>
                 <Text style={styles.timestamp}>{formatDateOrRelative(comment.createdAt)}</Text>
               </View>
             </View>
@@ -212,11 +201,11 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
                   <View style={styles.commentInfo}>
                     <View style={styles.avatarContainer}>
                       <Image
-                        source={{ uri: getAvatarOrDefault(reply.user.avatar) }}
+                        source={{ uri: getAvatarOrDefault(reply.avatar) }}
                         style={styles.avatar}
                       />
                       <View style={{ paddingLeft: 10 }}>
-                        <Text style={styles.userName}>{reply.user?.fullname || 'Người dùng'}</Text>
+                        <Text style={styles.userName}>{reply.fullname || 'Người dùng'}</Text>
                         <Text style={styles.timestamp}>
                           {formatDateOrRelative(reply.createdAt)}
                         </Text>
@@ -225,6 +214,25 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
                   </View>
                 </View>
                 <Text style={styles.commentContent}>{reply.content}</Text>
+                <TouchableOpacity
+                  style={styles.replyButton}
+                  onPress={() => handleChangeReply(reply.id)}
+                >
+                  <Text style={styles.replyButtonText}>Trả lời</Text>
+                </TouchableOpacity>
+                {replyingTo === reply.id && (
+                  <View style={styles.replyInputContainer}>
+                    <TextInput
+                      style={styles.replyInput}
+                      placeholder="Viết phản hồi..."
+                      value={replyingToComment}
+                      onChangeText={setReplyingToComment}
+                    />
+                    <TouchableOpacity onPress={() => handleReplySubmit(comment.id)}>
+                      <Text style={styles.submitButtonText}>Gửi</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
             )}
           />
@@ -315,7 +323,6 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
                 >
                   {lesson.title}
                 </Text>
-                <Text style={styles.lessonDuration}>{lesson.duration}</Text>
               </View>
             </View>
             {lesson.lesson_status !== 'locked' && (
@@ -384,57 +391,6 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
             <Text style={styles.headerSubtitle}>{enrollment.course.category.name}</Text>
           </View>
         </View>
-
-        {/* Progress Bar */}
-        {/* <View style={styles.progressContainer}>
-          <View style={styles.progressBarContainer}>
-            <View
-              style={[
-                (enrollment?.enrollment_lessons?.filter(l => l.completed_at).length /
-                  (enrollment?.course?.sections?.reduce(
-                    (acc, section) => acc + section.lessons.length,
-                    0
-                  ) ?? 1)) *
-                  100 ===
-                100
-                  ? styles.completedProgress
-                  : styles.progressBar,
-                {
-                  width: `${
-                    (enrollment?.enrollment_lessons?.filter(l => l.completed_at).length /
-                      (enrollment?.course?.sections?.reduce(
-                        (acc, section) => acc + section.lessons.length,
-                        0
-                      ) ?? 1)) *
-                    100
-                  }%`,
-                },
-              ]}
-            />
-          </View>
-          <View style={styles.progressTextContainer}>
-            <Text style={styles.progressText}>
-              {`${Math.round(
-                ((enrollment?.enrollment_lessons?.filter(l => l.completed_at).length ?? 0) /
-                  (enrollment?.course?.sections?.length > 0
-                    ? enrollment?.course?.sections?.reduce(
-                        (acc, section) => acc + section.lessons.length,
-                        0
-                      )
-                    : 1)) *
-                  100
-              )}% Hoàn thành`}
-            </Text>
-            <Text style={styles.lessonCount}>
-              {enrollment?.enrollment_lessons?.filter(l => l.completed_at).length}/
-              {enrollment?.course?.sections?.reduce(
-                (acc, section) => acc + section.lessons.length,
-                0
-              )}
-              bài học
-            </Text>
-          </View>
-        </View> */}
 
         {/* Tabs */}
         <View style={styles.tabContainer}>

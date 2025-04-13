@@ -8,7 +8,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { BottomTabParamList, RootStackParamList } from '@/types/RootStackParamList';
+import { RootStackParamList } from '@/types/RootStackParamList';
 
 import Home from './home';
 import Explore from './explore';

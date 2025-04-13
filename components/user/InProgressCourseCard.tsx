@@ -3,50 +3,35 @@ import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Strings } from '@/constants/Strings';
-
-interface UserEnrollments {
-  id: number;
-  user_id: number;
-  course_id: number;
-  total_lesson: number;
-  complete_lesson: number;
-  progress: number;
-  image: string;
-  last_access: string;
-  createdAt: string;
-  updatedAt: string;
-  course: {
-    id: number;
-    name: string;
-    description: string;
-    status: number;
-    price: number;
-    discount: number;
-  };
-}
+import { ContinueCourse } from '@/types/MyInterfaces';
+import { formatDateTime } from '@/utils/datetime';
 
 const InProgressCourseCard: React.FC<{
-  item: UserEnrollments;
+  item: ContinueCourse | null;
   onPress: () => void;
-  renderProgressBar: (props: { progress: number }) => React.ReactNode;
+  renderProgressBar: (props: { progress?: number }) => React.ReactNode;
 }> = ({ item, onPress, renderProgressBar }) => (
   <TouchableOpacity style={styles.continueCard} onPress={onPress}>
-    <Image source={require('../../assets/images/course.jpg')} style={styles.continueImage} />
+    {item?.image ? (
+      <Image source={{ uri: item?.image }} style={styles.continueImage} />
+    ) : (
+      <Image source={require('../../assets/images/course.jpg')} style={styles.continueImage} />
+    )}
     <View style={styles.continueContent}>
       <Text style={styles.continueTitle} numberOfLines={1}>
-        {item.course.name}
+        {item?.name}
       </Text>
       <Text style={styles.continueLesson} numberOfLines={1}>
-        {item.course.description}
+        {item?.description}
       </Text>
       <View style={styles.progressContainer}>
-        {renderProgressBar({ progress: item.progress })}
+        {renderProgressBar({ progress: item?.progress })}
         <Text style={styles.progressText}>
-          {item.progress}% {Strings.user_home.complete}
+          {item?.progress}% {Strings.user_home.complete}
         </Text>
       </View>
       <Text style={styles.lastAccessed}>
-        {Strings.user_home.last_accessed}: {item.updatedAt}
+        {Strings.user_home.last_accessed}: {formatDateTime(item?.last_accessed || '')}
       </Text>
     </View>
     <TouchableOpacity style={styles.playButton}>

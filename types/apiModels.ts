@@ -117,4 +117,5 @@ export interface Comment {
   content: string;
   parent_id: number;
   createdAt: string | Date;
+  replies: Comment[];
 }

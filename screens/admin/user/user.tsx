@@ -18,6 +18,8 @@ import { RootStackParamList } from '@/types/RootStackParamList';
 import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { NavigationIndependentTree } from '@react-navigation/native';
 import ViewUserScreen from './viewUser';
+import DeleteModal from '@/components/deleteModal';
+import { uploadToCloudinary, deleteImagefromCloudinary } from '@/services/Cloudinary';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 type UserScreenProps = NativeStackScreenProps<RootStackParamList, 'UserScreen'>;
@@ -28,6 +30,11 @@ const UserScreen: React.FC<UserScreenProps> = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // State for delete modal
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ user: User } | undefined>(undefined);
+
   // Fetch users data
   const fetchUsers = async () => {
     try {
@@ -72,6 +79,48 @@ const UserScreen: React.FC<UserScreenProps> = ({ navigation }) => {
     fetchUsers();
   };
 
+  const handleDelete = (user: User) => {
+    setItemToDelete({ user: user });
+    setDeleteModalVisible(true);
+  };
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    setLoading(true);
+    try {
+      const response = await axiosInstance.delete(
+        `${process.env.EXPO_PUBLIC_API_DELETE_USER}`.replace(':id', String(itemToDelete.user.id))
+      );
+      if (response.status === 200) {
+        if (itemToDelete.user.avatar) {
+          const response = await deleteImagefromCloudinary(itemToDelete.user.avatar);
+          if (!response) {
+            Alert.alert('Lỗi', 'Không thể xoá ảnh khỏi Cloudinary');
+          }
+        }
+        const updatedUsers = users.filter(cat => cat.id !== itemToDelete.user.id);
+        setUsers(updatedUsers);
+        setDeleteModalVisible(false);
+        Alert.alert('Thành công', 'Xóa thành công người dùng', [{ text: 'OK' }]);
+      } else {
+        console.log(`Failed to delete item. Status: ${response.status}`);
+        Alert.alert('Lỗi', `Failed to delete item. Status: ${response.status}`, [{ text: 'OK' }]);
+      }
+    } catch (error) {
+      console.error('Failed to delete item:', error);
+      Alert.alert('Lỗi', 'Xóa người dùng thất bại', [{ text: 'OK' }]);
+    } finally {
+      setLoading(false);
+      setDeleteModalVisible(false);
+      setItemToDelete(undefined);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteModalVisible(false);
+    setItemToDelete(undefined);
+  };
+
   // Render user item
   const renderUserItem = ({ item }: { item: User }) => (
     <TouchableOpacity
@@ -101,7 +150,10 @@ const UserScreen: React.FC<UserScreenProps> = ({ navigation }) => {
           </View>
         </View>
       </View>
-
+      {/* Nút icon xóa */}
+      <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item)}>
+        <Ionicons name="trash-outline" size={20} color="#e04a4a" />
+      </TouchableOpacity>
       <Ionicons name="chevron-forward" size={20} color="#ccc" />
     </TouchableOpacity>
   );
@@ -152,6 +204,13 @@ const UserScreen: React.FC<UserScreenProps> = ({ navigation }) => {
           }
         />
       )}
+      <DeleteModal
+        visible={deleteModalVisible}
+        title="Xác nhận xóa"
+        message={`Bạn có chắc chắn muốn xóa người dùng "${itemToDelete?.user.fullname}"@"${itemToDelete?.user.username}" không? Hành động này không thể hoàn tác.`}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </View>
   );
 };
@@ -273,6 +332,12 @@ const styles = StyleSheet.create({
     color: '#666',
     marginLeft: 6,
   },
+  deleteButton: {
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
