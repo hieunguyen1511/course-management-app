@@ -18,22 +18,20 @@ import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navig
 import { RootStackParamList } from '@/types/RootStackParamList';
 import axiosInstance from '@/api/axiosInstance';
 import { Strings } from '@/constants/Strings';
-import AddCourse from '@/screens/admin/course/addCourse';
-import UpdateCourse from '@/screens/admin/course/updateCourse';
-import ViewCourse from '@/screens/admin/course/viewCourse';
-import AddSection from './section/addSection';
-import UpdateSection from './section/updateSection';
-import AddLesson from './section/lesson/addLesson';
-import UpdateLesson from './section/lesson/updateLesson';
+import AddCourse from '@/screens/admin/course/AddCourseScreen';
+import UpdateCourse from '@/screens/admin/course/UpdateCourseScreen';
+import ViewCourse from '@/screens/admin/course/AdminViewCourseScreen';
+import AddSection from './course/section/AddSectionScreen';
+import UpdateSection from './course/section/UpdateSectionScreen';
+import AddLesson from './course/section/lesson/AddLessonScreen';
 
 import { Category, Course } from '@/types/apiModels';
 import { deleteImagefromCloudinary } from '@/services/Cloudinary';
 import DeleteModal from '@/components/deleteModal';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
-type CourseScreenProps = NativeStackScreenProps<RootStackParamList, 'CourseScreen'>;
+type AdminCourseScreenProps = NativeStackScreenProps<RootStackParamList, 'AdminCourseScreen'>;
 
-const CourseScreen: React.FC<CourseScreenProps> = ({ navigation }) => {
+const AdminCourseScreen: React.FC<AdminCourseScreenProps> = ({ navigation, route }) => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState(0);
@@ -256,7 +254,9 @@ const CourseScreen: React.FC<CourseScreenProps> = ({ navigation }) => {
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={[styles.actionButton, styles.viewButton]}
-            onPress={() => navigation.navigate('ViewCourseScreen', { courseId: Number(item.id) })}
+            onPress={() =>
+              navigation.navigate('AdminViewCourseScreen', { courseId: Number(item.id) })
+            }
           >
             <Ionicons name="eye" size={20} color="#fff" />
           </TouchableOpacity>
@@ -578,22 +578,20 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
 });
-
-const CourseTabLayout = () => {
-  return (
-    <NavigationIndependentTree>
-      <Stack.Navigator initialRouteName="CourseScreen" screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="CourseScreen" component={CourseScreen} />
-        <Stack.Screen name="AddCourseScreen" component={AddCourse} />
-        <Stack.Screen name="UpdateCourseScreen" component={UpdateCourse} />
-        <Stack.Screen name="ViewCourseScreen" component={ViewCourse} />
-        <Stack.Screen name="AddSectionScreen" component={AddSection} />
-        <Stack.Screen name="UpdateSectionScreen" component={UpdateSection} />
-        <Stack.Screen name="AddLessonScreen" component={AddLesson} />
-        <Stack.Screen name="UpdateLessonScreen" component={UpdateLesson} />
-      </Stack.Navigator>
-    </NavigationIndependentTree>
-  );
-};
-
-export default CourseTabLayout;
+export default AdminCourseScreen;
+//const CourseTabLayout = () => {
+//return (
+//<NavigationIndependentTree>
+/*<Stack.Navigator initialRouteName="AdminCourseScreen" screenOptions={{ headerShown: false }}>
+  <Stack.Screen name="AdminCourseScreen" component={} />
+  <Stack.Screen name="AddCourseScreen" component={AddCourse} />
+  <Stack.Screen name="UpdateCourseScreen" component={UpdateCourse} />
+  <Stack.Screen name="AdminViewCourseScreen" component={ViewCourseScreen} />
+  <Stack.Screen name="AddSectionScreen" component={AddSection} />
+  <Stack.Screen name="UpdateSectionScreen" component={UpdateSection} />
+  <Stack.Screen name="AddLessonScreen" component={AddLesson} />
+  <Stack.Screen name="UpdateLessonScreen" component={UpdateLesson} />
+</Stack.Navigator>;
+// </NavigationIndependentTree>
+//);
+//};*/

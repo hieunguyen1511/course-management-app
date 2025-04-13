@@ -16,6 +16,8 @@ import * as FileSystem from 'expo-file-system';
 import * as XLSX from 'xlsx';
 import * as Sharing from 'expo-sharing';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { RootStackParamList } from '@/types/RootStackParamList';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 // Define interfaces
 interface StatData {
@@ -35,7 +37,9 @@ interface TimeRangeStats {
   revenue: number;
 }
 
-const DashboardScreen = () => {
+type DashboardScreenProps = NativeStackScreenProps<RootStackParamList, 'DashboardScreen'>;
+
+const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation, route }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [statData, setStatData] = useState<StatData>({

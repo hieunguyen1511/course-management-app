@@ -6,7 +6,7 @@ import { WebView } from 'react-native-webview';
 import axiosInstance from '@/api/axiosInstance';
 import { Lesson, Question } from '@/types/apiModels';
 
-const UserViewLesson: React.FC<MyScreenProps['UserViewLessonScreenProps']> = ({
+const UserViewLessonScreen: React.FC<MyScreenProps['UserViewLessonScreenProps']> = ({
   navigation,
   route,
 }) => {
@@ -357,4 +357,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default UserViewLesson;
+export default UserViewLessonScreen;

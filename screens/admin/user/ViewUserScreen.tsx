@@ -17,7 +17,7 @@ import { MyScreenProps } from '@/types/MyScreenProps';
 import { Enrollment, User } from '@/types/apiModels';
 import { formatDate } from '@/components/formatDate';
 
-const ViewDetailUserScreen: React.FC<MyScreenProps['ViewUserScreenProps']> = ({
+const ViewDetailUserScreen: React.FC<MyScreenProps['ViewDetailUserScreenProps']> = ({
   navigation,
   route,
 }) => {

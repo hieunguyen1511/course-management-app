@@ -120,7 +120,10 @@ async function updateUserAvatar_JWT(avatar_url: string) {
     throw new Error('Failed to update user avatar');
   }
 }
-const EditProfile: React.FC<MyScreenProps['EditProfileScreenProps']> = ({ navigation, route }) => {
+const EditProfileScreen: React.FC<MyScreenProps['EditProfileScreenProps']> = ({
+  navigation,
+  route,
+}) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -485,4 +488,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default EditProfile;
+export default EditProfileScreen;

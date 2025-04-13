@@ -3,18 +3,18 @@ import { Lesson, Section } from './apiModels';
 export type RootStackParamList = {
   //Main: { screen: keyof RootStackParamList };
 
-  Index: { message?: string };
-  Login: { message?: string; message_from_register?: string | '' };
-  Register: { message?: string };
+  IndexScreen: { message?: string };
+  LoginScreen: { message?: string; message_from_register?: string | '' };
+  RegisterScreen: { message?: string };
   //User Bottom Tab
-  Home: { message?: string };
-  Account: { message?: string };
-  Explore: { message?: string };
-  Course: { message?: string };
+  HomeScreen: { message?: string };
+  AccountScreen: { message?: string };
+  ExploreScreen: { message?: string };
+  UserCourseScreen: { message?: string };
 
   //Tab Layout
   UserTabLayout: { message?: string };
-  AdminLayout: { message?: string };
+  AdminTabLayout: { message?: string };
 
   //Admin Screen
 
@@ -59,10 +59,12 @@ export type RootStackParamList = {
   AddCategoryScreen: { message?: string };
   UpdateCategoryScreen: { categoryId: number; message?: string };
 
-  CourseScreen: { message?: string };
+  AdminCourseScreen: { message?: string };
   AddCourseScreen: { message?: string };
-  ViewCourseScreen: { courseId: number; message?: string };
+  AdminViewCourseScreen: { courseId: number; message?: string };
   UpdateCourseScreen: { courseId: number; message?: string };
+
+  DashboardScreen: { message?: string };
 
   AddSectionScreen: {
     courseId: number;
@@ -89,7 +91,7 @@ export type RootStackParamList = {
   };
 
   UserScreen: { message?: string };
-  ViewUserScreen: { userId: number; message?: string };
+  ViewDetailUserScreen: { userId: number; message?: string };
   SettingScreen: { message?: string };
   EditProfileAdminScreen: { message?: string };
 };

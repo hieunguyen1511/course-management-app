@@ -119,7 +119,7 @@ const useExploreData = () => {
   };
 };
 
-const Explore: React.FC<MyScreenProps['ExploreScreenProps']> = ({ navigation, route }) => {
+const ExploreScreen: React.FC<MyScreenProps['ExploreScreenProps']> = ({ navigation, route }) => {
   const { categories, popularCourses, loading, error, refetch } = useExploreData();
 
   const handleSearchPress = () => {
@@ -310,4 +310,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Explore;
+export default ExploreScreen;

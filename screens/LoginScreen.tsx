@@ -99,7 +99,7 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
             });
           }
           if (user.role === 0) {
-            navigation.replace('AdminLayout', {
+            navigation.replace('AdminTabLayout', {
               message: 'Hello from Login',
             });
           }
@@ -238,7 +238,7 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
             <Text style={styles.registerText}>{Strings.login.dontHaveAccount} </Text>
             <TouchableOpacity
               onPress={() => {
-                navigation.navigate('Register', {
+                navigation.navigate('RegisterScreen', {
                   message: 'Hello from Login',
                 });
               }}

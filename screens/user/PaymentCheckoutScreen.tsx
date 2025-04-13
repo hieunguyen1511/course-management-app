@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ToastType } from '@/components/NotificationToast';
 import NotificationToast from '@/components/NotificationToast';
 
-const PaymentCheckout: React.FC<MyScreenProps['PaymentCheckoutScreenProps']> = ({
+const PaymentCheckoutScreen: React.FC<MyScreenProps['PaymentCheckoutScreenProps']> = ({
   navigation,
   route,
 }) => {
@@ -405,4 +405,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PaymentCheckout;
+export default PaymentCheckoutScreen;

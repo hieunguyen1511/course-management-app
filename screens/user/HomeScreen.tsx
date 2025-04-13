@@ -82,8 +82,8 @@ const getContinueCourses = async (): Promise<ContinueCourse> => {
     return {} as ContinueCourse;
   }
 };
-type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Home'>;
-const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
+type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'HomeScreen'>;
+const HomeScreen: React.FC<HomeScreenProps> = ({ navigation, route }) => {
   const { tmessage } = useLocalSearchParams();
   const [message, setMessage] = useState('');
   const [userName, setUserName] = useState('User');
@@ -283,7 +283,7 @@ const Home: React.FC<HomeScreenProps> = ({ navigation, route }) => {
         ListHeaderComponent={
           <Header
             userName={userName}
-            onProfilePress={() => navigation.navigate('Account', { message: '' })}
+            onProfilePress={() => navigation.navigate('AccountScreen', { message: '' })}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -370,4 +370,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Home;
+export default HomeScreen;

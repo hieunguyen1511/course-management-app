@@ -22,7 +22,7 @@ interface Enrollment {
   thumbnail: string;
 }
 
-const UserViewAllEnrollment: React.FC<MyScreenProps['UserViewAllEnrollmentScreenProps']> = ({
+const UserViewAllEnrollmentScreen: React.FC<MyScreenProps['UserViewAllEnrollmentScreenProps']> = ({
   navigation,
   route,
 }) => {
@@ -294,4 +294,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default UserViewAllEnrollment;
+export default UserViewAllEnrollmentScreen;

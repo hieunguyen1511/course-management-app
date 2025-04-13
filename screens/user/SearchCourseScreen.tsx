@@ -18,7 +18,7 @@ const getResults = async (keyword: string): Promise<ResultCourse[]> => {
   }
 };
 
-const SearchCourse: React.FC<MyScreenProps['SearchCourseScreenProps']> = ({
+const SearchCourseScreen: React.FC<MyScreenProps['SearchCourseScreenProps']> = ({
   navigation,
   route,
 }) => {
@@ -272,4 +272,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SearchCourse;
+export default SearchCourseScreen;

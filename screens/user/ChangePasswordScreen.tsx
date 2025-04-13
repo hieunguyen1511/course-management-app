@@ -33,7 +33,7 @@ async function changePassword(currentPassword: string, newPassword: string) {
   }
 }
 
-const ChangePassword: React.FC<MyScreenProps['ChangePasswordScreenProps']> = ({
+const ChangePasswordScreen: React.FC<MyScreenProps['ChangePasswordScreenProps']> = ({
   navigation,
   route,
 }) => {
@@ -54,7 +54,7 @@ const ChangePassword: React.FC<MyScreenProps['ChangePasswordScreenProps']> = ({
     // });
     navigation.reset({
       index: 0,
-      routes: [{ name: 'Login', params: { message: 'Đăng xuất thành công' } }],
+      routes: [{ name: 'LoginScreen', params: { message: 'Đăng xuất thành công' } }],
     });
     //navigation.goBack();
     // navigation.navigate('Login', {
@@ -272,4 +272,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ChangePassword;
+export default ChangePasswordScreen;

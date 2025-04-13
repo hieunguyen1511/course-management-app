@@ -142,7 +142,9 @@ const RegisterScreen: React.FC<MyScreenProps['RegisterScreenProps']> = ({ naviga
         if (respone.status === 201) {
           setIsLoading(false);
           //showToast(Strings.register.success_message, ToastType.SUCCESS);
-          navigation.replace('Login', { message_from_register: Strings.register.success_message });
+          navigation.replace('LoginScreen', {
+            message_from_register: Strings.register.success_message,
+          });
         }
       } catch (error: any) {
         setIsLoading(false);

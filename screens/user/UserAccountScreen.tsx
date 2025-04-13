@@ -1,31 +1,35 @@
 import {
   View,
   Text,
-  SafeAreaView,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  Platform,
-  StatusBar,
   StyleSheet,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+  Platform,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
-import React, { FC, useCallback, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { MyScreenProps } from '@/types/MyScreenProps';
+import * as ImagePicker from 'expo-image-picker';
 
 import tokenStorageManager from '@/storage/tokenStorage/tokenStorageManager';
 import * as SecureStore from 'expo-secure-store';
 import axiosInstance from '@/api/axiosInstance';
-import { User } from '@/types/apiModels';
-import { useFocusEffect } from 'expo-router';
-import { NavigationIndependentTree } from '@react-navigation/native';
-import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/types/RootStackParamList';
-import { Ionicons } from '@expo/vector-icons';
-import EditProfileAdminScreen from './editProfile';
 
-// import  login from "@/screens/login"
-// import  register from "@/screens/register"
-const Stack = createNativeStackNavigator<RootStackParamList>();
-type SettingScreenProps = NativeStackScreenProps<RootStackParamList, 'SettingScreen'>;
+// Define user interface
+interface User {
+  id: string;
+  fullname: string;
+  username: string;
+  email: string;
+  phone: string;
+  birth: string;
+  avatar: string;
+  totalCourses?: number;
+  name?: string;
+}
 
 async function getUserInfo_JWT() {
   try {
@@ -37,36 +41,31 @@ async function getUserInfo_JWT() {
   }
 }
 
-const SettingScreen: FC<SettingScreenProps> = ({ navigation, route }) => {
+const AccountScreen: React.FC<MyScreenProps['AccountScreenProps']> = ({ navigation, route }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Fetch user data
-  useFocusEffect(
-    useCallback(() => {
-      const fetchUserData = async () => {
-        try {
-          const userData = await getUserInfo_JWT();
-          const parsedUser = JSON.parse(userData);
-          setUser(parsedUser);
-        } catch (error) {
-          console.error('Error fetching user data:', error);
-        } finally {
-          setLoading(false);
-        }
-      };
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const userData = await getUserInfo_JWT();
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      fetchUserData();
-
-      // Optional cleanup
-      return () => {};
-    }, [])
-  );
+    fetchUserData();
+  }, []);
 
   const handleLogout = async () => {
     await SecureStore.deleteItemAsync('user');
     await tokenStorageManager.deleteRefreshToken();
-    navigation.navigate('Login', {
+    navigation.replace('LoginScreen', {
       message: 'Đăng xuất thành công',
     });
   };
@@ -86,16 +85,7 @@ const SettingScreen: FC<SettingScreenProps> = ({ navigation, route }) => {
         <View style={styles.card}>
           <View style={styles.cardContent}>
             <View style={styles.avatarContainer}>
-              {user?.avatar ? (
-                <Image source={{ uri: user?.avatar }} style={styles.avatar} />
-              ) : (
-                <Text style={styles.avatarText}>
-                  {user?.fullname
-                    .split(' ')
-                    .map(n => n[0])
-                    .join('')}
-                </Text>
-              )}
+              <Image source={{ uri: user?.avatar }} style={styles.avatar} />
             </View>
 
             <View style={styles.userInfo}>
@@ -104,9 +94,6 @@ const SettingScreen: FC<SettingScreenProps> = ({ navigation, route }) => {
 
               <Text style={styles.userDetail}>Số điện thoại: {user?.phone}</Text>
               <Text style={styles.userDetail}>Email: {user?.email.slice(0, 20)}...</Text>
-              <View style={styles.roleBadge}>
-                <Text style={styles.roleText}>{user?.role === 0 ? 'Quản trị' : 'Người dùng'}</Text>
-              </View>
             </View>
           </View>
         </View>
@@ -115,7 +102,7 @@ const SettingScreen: FC<SettingScreenProps> = ({ navigation, route }) => {
         <View style={styles.menuContainer}>
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={() => navigation.navigate('EditProfileAdminScreen', { message: '' })}
+            onPress={() => navigation.navigate('EditProfileScreen', { message: '' })}
           >
             <View style={styles.menuIconContainer}>
               <Ionicons name="person-outline" size={22} color="#4a6ee0" />
@@ -127,6 +114,19 @@ const SettingScreen: FC<SettingScreenProps> = ({ navigation, route }) => {
             <Ionicons name="chevron-forward" size={20} color="#ccc" />
           </TouchableOpacity>
 
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('UserViewAllEnrollmentScreen', { message: '' })}
+          >
+            <View style={styles.menuIconContainer}>
+              <Ionicons name="book-outline" size={22} color="#4a6ee0" />
+            </View>
+            <View style={styles.menuTextContainer}>
+              <Text style={styles.menuText}>Khóa học của tôi</Text>
+              <Text style={styles.menuSubtext}>Quản lý khóa học đã đăng ký</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#ccc" />
+          </TouchableOpacity>
           {/* Doi mat khau */}
           <TouchableOpacity
             style={styles.menuItem}
@@ -191,23 +191,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   avatarContainer: {
+    marginRight: 20,
+  },
+  avatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  avatar: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 50,
-  },
-  avatarText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
   userInfo: {
     flex: 1,
@@ -227,18 +216,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginBottom: 4,
-  },
-  roleBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#4a6ee0',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 16,
-  },
-  roleText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '500',
   },
   menuContainer: {
     backgroundColor: 'white',
@@ -316,14 +293,19 @@ const styles = StyleSheet.create({
   },
 });
 
-const SettingTabLayout = () => {
-  return (
-    <NavigationIndependentTree>
-      <Stack.Navigator initialRouteName="SettingScreen" screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="SettingScreen" component={SettingScreen} />
-        <Stack.Screen name="EditProfileAdminScreen" component={EditProfileAdminScreen} />
-      </Stack.Navigator>
-    </NavigationIndependentTree>
-  );
-};
-export default SettingTabLayout;
+// function AccountScreenRoutes() {
+//   return (
+//     <NavigationIndependentTree>
+//       <Stack.Navigator
+//         initialRouteName="AccountScreen"
+//         screenOptions={{ headerShown: false }}
+//       >
+//         <Stack.Screen name="AccountScreen" component={AccountScreen} />
+
+//         {/* Add other screens here if needed */}
+//       </Stack.Navigator>
+//     </NavigationIndependentTree>
+//   );
+// }
+
+export default AccountScreen;

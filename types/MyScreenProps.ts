@@ -2,14 +2,14 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/types/RootStackParamList';
 
 export type MyScreenProps = {
-  IndexScreenProps: NativeStackScreenProps<RootStackParamList, 'Index'>;
-  LoginScreenProps: NativeStackScreenProps<RootStackParamList, 'Login'>;
-  RegisterScreenProps: NativeStackScreenProps<RootStackParamList, 'Register'>;
+  IndexScreenProps: NativeStackScreenProps<RootStackParamList, 'IndexScreen'>;
+  LoginScreenProps: NativeStackScreenProps<RootStackParamList, 'LoginScreen'>;
+  RegisterScreenProps: NativeStackScreenProps<RootStackParamList, 'RegisterScreen'>;
   // User Bottom Tab
-  HomeScreenProps: NativeStackScreenProps<RootStackParamList, 'Home'>;
-  UserCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'Course'>;
-  AccountScreenProps: NativeStackScreenProps<RootStackParamList, 'Account'>;
-  ExploreScreenProps: NativeStackScreenProps<RootStackParamList, 'Explore'>;
+  HomeScreenProps: NativeStackScreenProps<RootStackParamList, 'HomeScreen'>;
+  UserCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'UserCourseScreen'>;
+  AccountScreenProps: NativeStackScreenProps<RootStackParamList, 'AccountScreen'>;
+  ExploreScreenProps: NativeStackScreenProps<RootStackParamList, 'ExploreScreen'>;
 
   // User Screen Props
   Test2: NativeStackScreenProps<RootStackParamList, 'Test2'>;
@@ -34,9 +34,9 @@ export type MyScreenProps = {
   CategoryScreenProps: NativeStackScreenProps<RootStackParamList, 'CategoryScreen'>;
   AddCategoryScreenProps: NativeStackScreenProps<RootStackParamList, 'AddCategoryScreen'>;
   UpdateCategoryScreenProps: NativeStackScreenProps<RootStackParamList, 'UpdateCategoryScreen'>;
-  CourseScreenProps: NativeStackScreenProps<RootStackParamList, 'CourseScreen'>;
+  AdminCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'AdminCourseScreen'>;
   AddCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'AddCourseScreen'>;
-  ViewCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'ViewCourseScreen'>;
+  AdminViewCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'AdminViewCourseScreen'>;
   UpdateCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'UpdateCourseScreen'>;
 
   AddSectionScreenProps: NativeStackScreenProps<RootStackParamList, 'AddSectionScreen'>;
@@ -45,7 +45,7 @@ export type MyScreenProps = {
   UpdateLessonScreenProps: NativeStackScreenProps<RootStackParamList, 'UpdateLessonScreen'>;
 
   UserScreenProps: NativeStackScreenProps<RootStackParamList, 'UserScreen'>;
-  ViewUserScreenProps: NativeStackScreenProps<RootStackParamList, 'ViewUserScreen'>;
+  ViewDetailUserScreenProps: NativeStackScreenProps<RootStackParamList, 'ViewDetailUserScreen'>;
   SettingScreenProps: NativeStackScreenProps<RootStackParamList, 'SettingScreen'>;
   EditProfileAdminScreenProps: NativeStackScreenProps<RootStackParamList, 'EditProfileAdminScreen'>;
 };

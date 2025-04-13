@@ -34,7 +34,10 @@ const getMyCompletedEnrollments = async (): Promise<MyCompletedCourse[]> => {
   return response.data.enrollments as MyCompletedCourse[];
 };
 
-const Course: React.FC<MyScreenProps['UserCourseScreenProps']> = ({ navigation, route }) => {
+const UserCourseScreen: React.FC<MyScreenProps['UserCourseScreenProps']> = ({
+  navigation,
+  route,
+}) => {
   // State variables
   const [activeTab, setActiveTab] = useState<'progress' | 'completed'>('progress');
   const [inProgressEnrollments, setInProgressEnrollments] = useState<MyProgressCourse[]>([]);
@@ -525,4 +528,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Course;
+export default UserCourseScreen;

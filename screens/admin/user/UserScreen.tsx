@@ -17,7 +17,7 @@ import { User } from '@/types/apiModels';
 import { RootStackParamList } from '@/types/RootStackParamList';
 import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
 import { NavigationIndependentTree } from '@react-navigation/native';
-import ViewUserScreen from './viewUser';
+import ViewUserScreen from './ViewUserScreen';
 import DeleteModal from '@/components/deleteModal';
 import { uploadToCloudinary, deleteImagefromCloudinary } from '@/services/Cloudinary';
 
@@ -125,7 +125,7 @@ const UserScreen: React.FC<UserScreenProps> = ({ navigation }) => {
   const renderUserItem = ({ item }: { item: User }) => (
     <TouchableOpacity
       style={styles.userCard}
-      onPress={() => navigation.navigate('ViewUserScreen', { userId: item.id })}
+      onPress={() => navigation.navigate('ViewDetailUserScreen', { userId: item.id })}
     >
       <View style={styles.reviewAvatar}>
         {item.avatar ? (
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   },
 });
 
-const UserTabLayout = () => {
+/*const UserTabLayout = () => {
   return (
     <NavigationIndependentTree>
       <Stack.Navigator initialRouteName="UserScreen" screenOptions={{ headerShown: false }}>
@@ -360,6 +360,6 @@ const UserTabLayout = () => {
       </Stack.Navigator>
     </NavigationIndependentTree>
   );
-};
+};*/
 
-export default UserTabLayout;
+export default UserScreen;

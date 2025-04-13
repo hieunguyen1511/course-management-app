@@ -77,7 +77,10 @@ async function getEnrollment(enrollmentId: number) {
   }
 }
 
-const UserRating: React.FC<MyScreenProps['UserRatingScreenProps']> = ({ navigation, route }) => {
+const UserRatingScreen: React.FC<MyScreenProps['UserRatingScreenProps']> = ({
+  navigation,
+  route,
+}) => {
   const { enrollmentId = 1 } = route.params || {};
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
   const [loading, setLoading] = useState(true);
@@ -378,4 +381,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default UserRating;
+export default UserRatingScreen;

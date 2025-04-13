@@ -12,8 +12,8 @@ import React, { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Strings } from '@/constants/Strings';
 import axiosInstance from '@/api/axiosInstance';
-import AddCategory from '@/screens/admin/category/addCategory';
-import UpdateCategory from '@/screens/admin/category/updateCategory';
+import AddCategory from '@/screens/admin/category/AddCategoryScreen';
+import UpdateCategory from '@/screens/admin/category/UpdateCategoryScreen';
 
 import { NavigationIndependentTree } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
   },
 });
 
-const CategoryTabLayout = () => {
+/*const CategoryTabLayout = () => {
   return (
     <NavigationIndependentTree>
       <Stack.Navigator initialRouteName="CategoryScreen" screenOptions={{ headerShown: false }}>
@@ -372,6 +372,6 @@ const CategoryTabLayout = () => {
       </Stack.Navigator>
     </NavigationIndependentTree>
   );
-};
+};*/
 
-export default CategoryTabLayout;
+export default CategoryScreen;
