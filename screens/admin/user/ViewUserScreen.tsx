@@ -69,12 +69,12 @@ const ViewDetailUserScreen: React.FC<MyScreenProps['ViewDetailUserScreenProps']>
   const renderEnrollmentItem = ({ item }: { item: Enrollment }) => (
     <View style={styles.courseCard}>
       <View style={styles.reviewAvatar}>
-        {item.user.avatar ? (
+        {item.user?.avatar ? (
           <Image source={{ uri: item.user.avatar }} style={styles.avatarImage} />
         ) : (
           <Text style={styles.avatarText}>
-            {item.user.fullname
-              .split(' ')
+            {item.user?.fullname
+              ?.split(' ')
               .map(n => n[0])
               .join('')}
           </Text>
@@ -82,9 +82,9 @@ const ViewDetailUserScreen: React.FC<MyScreenProps['ViewDetailUserScreenProps']>
       </View>
       <View style={styles.courseInfo}>
         <Text style={styles.courseName} numberOfLines={2}>
-          {item.course.name}
+          {item.course?.name}
         </Text>
-        <Text style={styles.courseCategory}>{item.course.category.name}</Text>
+        <Text style={styles.courseCategory}>{item.course?.category?.name}</Text>
 
         <View style={styles.progressContainer}>
           <View style={styles.progressBarContainer}>
@@ -92,19 +92,19 @@ const ViewDetailUserScreen: React.FC<MyScreenProps['ViewDetailUserScreenProps']>
               style={[
                 styles.progressBar,
                 {
-                  width: `${Math.round(((item.enrollment_lessons.length * 100) / item.total_lesson, 0))}%`,
+                  width: `${Math.round(((item.enrollment_lessons?.length * 100) / item.total_lesson, 0))}%`,
                 },
               ]}
             />
           </View>
           <Text style={styles.progressText}>
-            {Math.round(((item.enrollment_lessons.length * 100) / item.total_lesson, 0))}% hoàn
+            {Math.round(((item.enrollment_lessons?.length * 100) / item.total_lesson, 0))}% hoàn
             thành
           </Text>
         </View>
 
         <Text style={styles.lessonCount}>
-          {item.enrollment_lessons.length}/{item.total_lesson} bài học
+          {item.enrollment_lessons?.length}/{item.total_lesson} bài học
         </Text>
       </View>
     </View>

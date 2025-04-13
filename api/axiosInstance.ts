@@ -52,7 +52,7 @@ axiosInstance.interceptors.response.use(
         await tokenStorageManager.deleteRefreshToken();
         processQueue(refreshError);
         console.log('Session expired. Please log in again.');
-        //navigate('Login', { message: 'Session expired. Please log in again.' });
+        navigate('LoginScreen', { message: 'Session expired. Please log in again.' });
         return Promise.reject(refreshError);
       } finally {
         tokenRefreshing = false;

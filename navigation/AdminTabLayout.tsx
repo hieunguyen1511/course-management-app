@@ -21,6 +21,7 @@ export default function AdminTabLayout() {
         name="DashboardScreen"
         options={{
           drawerLabel: 'Trang chủ',
+          headerTitle: 'Trang chủ',
           drawerIcon: () => <Ionicons name="home" size={24} color="#4a6ee0" />,
         }}
         component={DashboardScreen}
@@ -29,6 +30,7 @@ export default function AdminTabLayout() {
         name="UserScreen"
         options={{
           drawerLabel: 'Quản lý người dùng',
+          headerTitle: 'Quản lý người dùng',
           drawerIcon: () => <Ionicons name="people" size={24} color="#4a6ee0" />,
         }}
         component={UserScreen}
@@ -37,6 +39,7 @@ export default function AdminTabLayout() {
         name="CategoryScreen"
         options={{
           drawerLabel: 'Quản lý chủ đề',
+          headerTitle: 'Quản lý chủ đề',
           drawerIcon: () => <Ionicons name="list" size={24} color="#4a6ee0" />,
         }}
         component={CategoryScreen}
@@ -45,6 +48,7 @@ export default function AdminTabLayout() {
         name="AdminCourseScreen"
         options={{
           drawerLabel: 'Quản lý khóa học',
+          headerTitle: 'Quản lý khóa học',
           drawerIcon: () => <Ionicons name="book" size={24} color="#4a6ee0" />,
         }}
         component={AdminCourseScreen}
@@ -53,6 +57,7 @@ export default function AdminTabLayout() {
         name="SettingScreen"
         options={{
           drawerLabel: 'Cài đặt',
+          headerTitle: 'Cài đặt',
           drawerIcon: () => <Ionicons name="settings" size={24} color="#4a6ee0" />,
         }}
         component={SettingScreen}
