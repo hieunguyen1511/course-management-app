@@ -64,7 +64,7 @@ const UpdateSectionScreen: React.FC<MyScreenProps['UpdateSectionScreenProps']> =
         >
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chỉnh Sửa Chương</Text>
+        <Text style={styles.headerTitle}>Cập nhật chương</Text>
       </View>
 
       <ScrollView style={styles.content}>

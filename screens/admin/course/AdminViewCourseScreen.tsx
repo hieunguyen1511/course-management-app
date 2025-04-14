@@ -609,7 +609,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    padding: 16,
+    padding: 20,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',

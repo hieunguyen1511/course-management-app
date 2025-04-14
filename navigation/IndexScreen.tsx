@@ -62,7 +62,7 @@ async function processLogin(navigation: any, router: any) {
         // });
       }
       if (jsonUser.role === 0) {
-        navigation.replace('AdminLayout', {
+        navigation.replace('AdminTabLayout', {
           message: 'Hello from Login',
         });
         // homeRouter.push({

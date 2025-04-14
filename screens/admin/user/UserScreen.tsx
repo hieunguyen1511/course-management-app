@@ -146,7 +146,7 @@ const UserScreen: React.FC<UserScreenProps> = ({ navigation }) => {
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <Ionicons name="book-outline" size={16} color="#4a6ee0" />
-            <Text style={styles.statText}>{item.totalCourses} khóa học</Text>
+            <Text style={styles.statText}>{item.enrollments.length} khóa học</Text>
           </View>
         </View>
       </View>

@@ -63,7 +63,7 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
   const fetchCommentsByCourseID = async (cID: number) => {
     try {
       const response = await axiosInstance.get(
-        process.env.EXPO_PUBLIC_API_GET_ALL_COMMENT_BY_COURSES_ID?.replace(
+        process.env.EXPO_PUBLIC_API_GET_ALL_COMMENTS_BY_COURSE_ID?.replace(
           ':course_id',
           cID.toString()
         ) || ''
@@ -89,8 +89,8 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
   const fetchAllData = async () => {
     setLoading(true);
     const [enrollment, comments] = await Promise.all([
-      fetchEnrollmentByID(enrollmentId),
-      fetchCommentsByCourseID(courseId),
+      await fetchEnrollmentByID(enrollmentId),
+      await fetchCommentsByCourseID(courseId),
     ]);
     setEnrollment(enrollment);
     setComments(comments);
@@ -159,6 +159,7 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
     } else {
       const reply = comments.find(comment => comment.replies.find(reply => reply.id === commentId));
       setReplyingToComment(`@${reply?.replies.find(reply => reply.id === commentId)?.fullname} `);
+      console.log(reply);
     }
   };
 

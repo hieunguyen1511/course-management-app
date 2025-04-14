@@ -105,9 +105,9 @@ export interface User {
   avatar: string;
   role: number;
   email: string;
-  totalCourses: number;
   phone?: string;
   birth?: any;
+  enrollments: Enrollment[];
 }
 
 export interface Comment {

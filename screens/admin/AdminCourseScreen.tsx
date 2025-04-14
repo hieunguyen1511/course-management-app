@@ -280,7 +280,7 @@ const AdminCourseScreen: React.FC<AdminCourseScreenProps> = ({ navigation, route
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Danh sách người dùng</Text>
+        <Text style={styles.headerTitle}>Danh sách khóa học</Text>
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => navigation.navigate('AddCourseScreen', { message: 'Hello' })}

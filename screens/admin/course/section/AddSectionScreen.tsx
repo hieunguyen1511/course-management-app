@@ -55,12 +55,12 @@ const AddSectionScreen: React.FC<MyScreenProps['AddSectionScreenProps']> = ({
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{'Thêm Section Mới'}</Text>
+        <Text style={styles.headerTitle}>{'Thêm chương mới'}</Text>
       </View>
 
       <ScrollView style={styles.content}>
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Tên Section</Text>
+          <Text style={styles.label}>Tên chương</Text>
           <TextInput
             style={styles.input}
             value={formData.name}

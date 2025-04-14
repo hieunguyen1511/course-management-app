@@ -75,7 +75,7 @@ export const Strings = {
   },
 
   categories: {
-    title: 'DANH SÁCH CHỦ ĐỀ',
+    title: 'Danh sách chủ đề',
     loading: 'Đang tải chủ đề',
     confirmDelete: 'Xác nhận xóa chủ đề',
     questionConfirmDelete: 'Bạn có chắc muốn xóa chủ đề có tên ',

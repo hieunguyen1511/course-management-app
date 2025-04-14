@@ -314,7 +314,7 @@ const AddLessonScreen: React.FC<MyScreenProps['AddLessonScreenProps']> = ({
         >
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{'Thêm Bài Học Mới'}</Text>
+        <Text style={styles.headerTitle}>Thêm bài học mới</Text>
       </View>
 
       <ScrollView style={styles.content}>

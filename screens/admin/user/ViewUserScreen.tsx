@@ -69,15 +69,10 @@ const ViewDetailUserScreen: React.FC<MyScreenProps['ViewDetailUserScreenProps']>
   const renderEnrollmentItem = ({ item }: { item: Enrollment }) => (
     <View style={styles.courseCard}>
       <View style={styles.reviewAvatar}>
-        {item.user.avatar ? (
-          <Image source={{ uri: item.user.avatar }} style={styles.avatarImage} />
+        {item.course.image ? (
+          <Image source={{ uri: item.course.image }} style={styles.avatarImage} />
         ) : (
-          <Text style={styles.avatarText}>
-            {item.user.fullname
-              .split(' ')
-              .map(n => n[0])
-              .join('')}
-          </Text>
+          <Image source={require('@/assets/images/course.jpg')} style={styles.courseImage} />
         )}
       </View>
       <View style={styles.courseInfo}>
@@ -92,19 +87,23 @@ const ViewDetailUserScreen: React.FC<MyScreenProps['ViewDetailUserScreenProps']>
               style={[
                 styles.progressBar,
                 {
-                  width: `${Math.round(((item.enrollment_lessons.length * 100) / item.total_lesson, 0))}%`,
+                  width: `${Math.round((((item.enrollment_lessons ? item.enrollment_lessons.length : 0) * 100) / item.total_lesson, 0))}%`,
                 },
               ]}
             />
           </View>
           <Text style={styles.progressText}>
-            {Math.round(((item.enrollment_lessons.length * 100) / item.total_lesson, 0))}% hoàn
-            thành
+            {Math.round(
+              (((item.enrollment_lessons ? item.enrollment_lessons.length : 0) * 100) /
+                item.total_lesson,
+              0)
+            )}
+            % hoàn thành
           </Text>
         </View>
 
         <Text style={styles.lessonCount}>
-          {item.enrollment_lessons.length}/{item.total_lesson} bài học
+          {item.enrollment_lessons ? item.enrollment_lessons.length : 0}/{item.total_lesson} bài học
         </Text>
       </View>
     </View>
@@ -173,7 +172,7 @@ const ViewDetailUserScreen: React.FC<MyScreenProps['ViewDetailUserScreenProps']>
 
           <View style={styles.detailItem}>
             <Ionicons name="book-outline" size={20} color="#4a6ee0" />
-            <Text style={styles.detailText}>{user?.totalCourses} khóa học</Text>
+            <Text style={styles.detailText}>{user?.enrollments.length} khóa học</Text>
           </View>
         </View>
 

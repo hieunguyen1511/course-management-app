@@ -955,7 +955,7 @@ const UpdateCourseScreen = ({ navigation, route }: MyScreenProps['UpdateCourseSc
         disabled={loading}
       >
         <Ionicons name="add-circle-outline" size={24} color="#007AFF" />
-        <Text style={styles.addSectionButtonText}>Thêm Section Mới</Text>
+        <Text style={styles.addSectionButtonText}>Thêm chương mới</Text>
       </TouchableOpacity>
 
       {sections.length === 0 ? (
@@ -1019,7 +1019,7 @@ const UpdateCourseScreen = ({ navigation, route }: MyScreenProps['UpdateCourseSc
               onPress={() => handleAddLesson(section)}
             >
               <Ionicons name="add-circle-outline" size={20} color="#007AFF" />
-              <Text style={styles.addLessonButtonText}>Thêm Lesson</Text>
+              <Text style={styles.addLessonButtonText}>Thêm bài học mới</Text>
             </TouchableOpacity>
           </View>
         ))
@@ -1037,7 +1037,7 @@ const UpdateCourseScreen = ({ navigation, route }: MyScreenProps['UpdateCourseSc
         >
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chỉnh Sửa Khóa Học</Text>
+        <Text style={styles.headerTitle}>Cập nhật khóa học</Text>
       </View>
 
       <View style={styles.tabs}>

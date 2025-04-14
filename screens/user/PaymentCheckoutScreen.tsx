@@ -103,6 +103,7 @@ const PaymentCheckoutScreen: React.FC<MyScreenProps['PaymentCheckoutScreenProps'
         });
       }
     } catch (error) {
+      console.log(error);
       showToast('Thanh toán thất bại. Vui lòng thử lại.', ToastType.ERROR);
     } finally {
       setPaymentLoading(false);

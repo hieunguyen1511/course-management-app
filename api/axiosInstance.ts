@@ -105,6 +105,7 @@ axiosInstance.interceptors.request.use(
     const token = await tokenStorageManager.getAccessToken();
 
     config.headers.Authorization = `Bearer ${token}`;
+    console.log(`Bearer ${token}`);
     return config;
   },
   error => {
