@@ -63,7 +63,7 @@ const UserDetailCourseScreen: React.FC<MyScreenProps['UserDetailCourseScreenProp
   const fetchCommentsByCourseID = async (cID: number) => {
     try {
       const response = await axiosInstance.get(
-        process.env.EXPO_PUBLIC_API_GET_ALL_COMMENTS_BY_COURSE_ID?.replace(
+        process.env.EXPO_PUBLIC_API_GET_ALL_COMMENT_BY_COURSE_ID?.replace(
           ':course_id',
           cID.toString()
         ) || ''

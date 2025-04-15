@@ -18,6 +18,7 @@ import axiosInstance from '@/api/axiosInstance';
 import { Category } from '@/types/apiModels';
 import { Strings } from '@/constants/Strings';
 import { MyScreenProps } from '@/types/MyScreenProps';
+import { uploadToCloudinary } from '@/services/Cloudinary';
 
 const AddCourseScreen = ({ navigation }: MyScreenProps['AddCourseScreenProps']) => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -110,51 +111,6 @@ const AddCourseScreen = ({ navigation }: MyScreenProps['AddCourseScreenProps']) 
   //     return null;
   //   }
   // };
-
-  const uploadToCloudinary = async (imageUri: string) => {
-    try {
-      const upload_preset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_COURSE_PRESET;
-      const cloud_name = process.env.EXPO_PUBLIC_CLOUDINARY_COURSE_CLOUD_NAME;
-      const upload_url = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_COURSE_API_URL;
-
-      if (!upload_preset || !cloud_name || !upload_url) {
-        throw new Error('Cloudinary configuration is missing');
-      }
-
-      const formData = new FormData();
-
-      const uriParts = imageUri.split('.');
-      const fileType = uriParts[uriParts.length - 1];
-
-      formData.append('file', {
-        uri: imageUri,
-        type: `image/${fileType}`,
-        name: `photo.${fileType}`,
-      } as any);
-
-      formData.append('upload_preset', upload_preset);
-      formData.append('cloud_name', cloud_name);
-
-      const response = await fetch(`${upload_url}`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Upload failed');
-      }
-
-      const result = await response.json();
-      return result.secure_url;
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      Alert.alert('Lỗi', `Error uploading image: ${error}`, [{ text: 'OK' }]);
-      return null;
-    }
-  };
 
   const uploadImage = async (uri: string) => {
     const imageUrl = await uploadToCloudinary(uri);
