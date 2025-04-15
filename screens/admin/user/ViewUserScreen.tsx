@@ -77,9 +77,9 @@ const ViewDetailUserScreen: React.FC<MyScreenProps['ViewDetailUserScreenProps']>
       </View>
       <View style={styles.courseInfo}>
         <Text style={styles.courseName} numberOfLines={2}>
-          {item.course.name}
+          {item.course?.name}
         </Text>
-        <Text style={styles.courseCategory}>{item.course.category.name}</Text>
+        <Text style={styles.courseCategory}>{item.course?.category?.name}</Text>
 
         <View style={styles.progressContainer}>
           <View style={styles.progressBarContainer}>
@@ -87,7 +87,7 @@ const ViewDetailUserScreen: React.FC<MyScreenProps['ViewDetailUserScreenProps']>
               style={[
                 styles.progressBar,
                 {
-                  width: `${Math.round((((item.enrollment_lessons ? item.enrollment_lessons.length : 0) * 100) / item.total_lesson, 0))}%`,
+                  width: `${Math.round(((item.enrollment_lessons?.length * 100) / item.total_lesson, 0))}%`,
                 },
               ]}
             />
