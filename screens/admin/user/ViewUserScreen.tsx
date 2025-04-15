@@ -63,6 +63,9 @@ const ViewDetailUserScreen: React.FC<MyScreenProps['ViewDetailUserScreenProps']>
   const handleRefresh = () => {
     setRefreshing(true);
     fetchUserDetails();
+    enrollments.forEach(enrollment => {
+      console.log(enrollment.enrollment_lessons);
+    });
   };
 
   // Render enrollment item
@@ -87,17 +90,17 @@ const ViewDetailUserScreen: React.FC<MyScreenProps['ViewDetailUserScreenProps']>
               style={[
                 styles.progressBar,
                 {
-                  width: `${Math.round((((item.enrollment_lessons ? item.enrollment_lessons.length : 0) * 100) / item.total_lesson, 0))}%`,
+                  width: `${Math.round(
+                    ((item.enrollment_lessons ? item.enrollment_lessons.length : 0) * 100) /
+                      item.total_lesson || 100
+                  )}%`,
                 },
               ]}
             />
           </View>
           <Text style={styles.progressText}>
-            {Math.round(
-              (((item.enrollment_lessons ? item.enrollment_lessons.length : 0) * 100) /
-                item.total_lesson,
-              0)
-            )}
+            {((item.enrollment_lessons ? item.enrollment_lessons.length : 0) * 100) /
+              item.total_lesson || 100}
             % hoàn thành
           </Text>
         </View>
@@ -172,7 +175,7 @@ const ViewDetailUserScreen: React.FC<MyScreenProps['ViewDetailUserScreenProps']>
 
           <View style={styles.detailItem}>
             <Ionicons name="book-outline" size={20} color="#4a6ee0" />
-            <Text style={styles.detailText}>{user?.enrollments.length} khóa học</Text>
+            <Text style={styles.detailText}>{enrollments.length} khóa học</Text>
           </View>
         </View>
 
