@@ -34,9 +34,9 @@ export type MyScreenProps = {
   CategoryScreenProps: NativeStackScreenProps<RootStackParamList, 'CategoryScreen'>;
   AddCategoryScreenProps: NativeStackScreenProps<RootStackParamList, 'AddCategoryScreen'>;
   UpdateCategoryScreenProps: NativeStackScreenProps<RootStackParamList, 'UpdateCategoryScreen'>;
-  AdminCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'AdminCourseScreen'>;
+  CourseScreenProps: NativeStackScreenProps<RootStackParamList, 'CourseScreen'>;
   AddCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'AddCourseScreen'>;
-  AdminViewCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'AdminViewCourseScreen'>;
+  ViewCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'ViewCourseScreen'>;
   UpdateCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'UpdateCourseScreen'>;
 
   AddSectionScreenProps: NativeStackScreenProps<RootStackParamList, 'AddSectionScreen'>;

@@ -13,25 +13,19 @@ import {
 import React, { useCallback, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 
-import { NavigationIndependentTree, useFocusEffect } from '@react-navigation/native';
-import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/types/RootStackParamList';
 import axiosInstance from '@/api/axiosInstance';
 import { Strings } from '@/constants/Strings';
-import AddCourse from '@/screens/admin/course/AddCourseScreen';
-import UpdateCourse from '@/screens/admin/course/UpdateCourseScreen';
-import ViewCourse from '@/screens/admin/course/AdminViewCourseScreen';
-import AddSection from './course/section/AddSectionScreen';
-import UpdateSection from './course/section/UpdateSectionScreen';
-import AddLesson from './course/section/lesson/AddLessonScreen';
 
 import { Category, Course } from '@/types/apiModels';
 import { deleteImagefromCloudinary } from '@/services/Cloudinary';
 import DeleteModal from '@/components/deleteModal';
 
-type AdminCourseScreenProps = NativeStackScreenProps<RootStackParamList, 'AdminCourseScreen'>;
+type CourseScreenProps = NativeStackScreenProps<RootStackParamList, 'CourseScreen'>;
 
-const AdminCourseScreen: React.FC<AdminCourseScreenProps> = ({ navigation, route }) => {
+const CourseScreen: React.FC<CourseScreenProps> = ({ navigation, route }) => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState(0);
@@ -254,9 +248,7 @@ const AdminCourseScreen: React.FC<AdminCourseScreenProps> = ({ navigation, route
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={[styles.actionButton, styles.viewButton]}
-            onPress={() =>
-              navigation.navigate('AdminViewCourseScreen', { courseId: Number(item.id) })
-            }
+            onPress={() => navigation.navigate('ViewCourseScreen', { courseId: Number(item.id) })}
           >
             <Ionicons name="eye" size={20} color="#fff" />
           </TouchableOpacity>
@@ -578,20 +570,4 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
 });
-export default AdminCourseScreen;
-//const CourseTabLayout = () => {
-//return (
-//<NavigationIndependentTree>
-/*<Stack.Navigator initialRouteName="AdminCourseScreen" screenOptions={{ headerShown: false }}>
-  <Stack.Screen name="AdminCourseScreen" component={} />
-  <Stack.Screen name="AddCourseScreen" component={AddCourse} />
-  <Stack.Screen name="UpdateCourseScreen" component={UpdateCourse} />
-  <Stack.Screen name="AdminViewCourseScreen" component={ViewCourseScreen} />
-  <Stack.Screen name="AddSectionScreen" component={AddSection} />
-  <Stack.Screen name="UpdateSectionScreen" component={UpdateSection} />
-  <Stack.Screen name="AddLessonScreen" component={AddLesson} />
-  <Stack.Screen name="UpdateLessonScreen" component={UpdateLesson} />
-</Stack.Navigator>;
-// </NavigationIndependentTree>
-//);
-//};*/
+export default CourseScreen;
