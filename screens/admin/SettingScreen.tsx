@@ -313,15 +313,4 @@ const styles = StyleSheet.create({
   },
 });
 
-/*const SettingTabLayout = () => {
-  return (
-    <NavigationIndependentTree>
-      <Stack.Navigator initialRouteName="SettingScreen" screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="SettingScreen" component={SettingScreen} />
-        <Stack.Screen name="EditProfileAdminScreen" component={EditProfileAdminScreen} />
-      </Stack.Navigator>
-    </NavigationIndependentTree>
-  );
-};*/
-
 export default SettingScreen;

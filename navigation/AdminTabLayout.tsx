@@ -2,7 +2,7 @@ import CourseScreen from '@/screens/admin/CourseScreen';
 import CategoryScreen from '@/screens/admin/CategoryScreen';
 import DashboardScreen from '@/screens/admin/DashboardScreen';
 import SettingScreen from '@/screens/admin/SettingScreen';
-import UserScreen from '@/screens/admin/user/UserScreen';
+import UserScreen from '@/screens/admin/UserScreen';
 import { RootStackParamList } from '@/types/RootStackParamList';
 import { Ionicons } from '@expo/vector-icons';
 import { createDrawerNavigator } from '@react-navigation/drawer';

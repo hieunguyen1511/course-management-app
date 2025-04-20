@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import axiosInstance from '@/api/axiosInstance';
 import * as FileSystem from 'expo-file-system';
@@ -76,16 +76,6 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation, route }) 
       } else {
         Alert.alert('Lỗi', `Failed to fetch. Status: ${response.status}`, [{ text: 'OK' }]);
       }
-      /*
-      const response = await axiosInstance.get('/api/statistics', {
-        params: {
-          startDate: startDate.toISOString(),
-          endDate: endDate.toISOString()
-        }
-      });
-      
-      setStatData(response.data);
-      */
     } catch (error) {
       console.error('Error fetching statistics:', error);
       Alert.alert('Lỗi', 'Không thể tải dữ liệu thống kê. Vui lòng thử lại sau.');

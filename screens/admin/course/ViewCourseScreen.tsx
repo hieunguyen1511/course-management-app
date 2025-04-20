@@ -20,10 +20,7 @@ import * as SecureStore from 'expo-secure-store';
 import DeleteModal from '@/components/deleteModal';
 import { formatDate } from '@/components/formatDate';
 
-const AdminViewCourseScreen = ({
-  navigation,
-  route,
-}: MyScreenProps['AdminViewCourseScreenProps']) => {
+const AdminViewCourseScreen = ({ navigation, route }: MyScreenProps['ViewCourseScreenProps']) => {
   const courseId = route.params.courseId;
   const [name, setName] = useState('');
   const [category, setCategory] = useState<Category>();
