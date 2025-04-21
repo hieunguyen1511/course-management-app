@@ -33,6 +33,9 @@ import AdminViewCourseScreen from '@/screens/admin/course/AdminViewCourseScreen'
 import UpdateCourseScreen from '@/screens/admin/course/UpdateCourseScreen';
 import EditProfileAdminScreen from '@/screens/admin/setting/EditProfileScreen';
 import ViewDetailUserScreen from '@/screens/admin/user/ViewUserScreen';
+import ForgotPasswordScreen from '@/screens/ForgotPasswordScreen';
+import InputOTPScreen from '@/screens/InputOTPScreen';
+import NewPasswordScreen from '@/screens/NewPasswordScreen';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Navigation = () => {
   return (
@@ -52,6 +55,21 @@ const Navigation = () => {
           <Stack.Screen
             name="RegisterScreen"
             component={RegisterScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="ForgotPasswordScreen"
+            component={ForgotPasswordScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="InputOTPScreen"
+            component={InputOTPScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="NewPasswordScreen"
+            component={NewPasswordScreen}
             options={{ headerShown: false }}
           />
           {/* Tab Layout */}

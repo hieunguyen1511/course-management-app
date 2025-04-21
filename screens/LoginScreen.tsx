@@ -195,13 +195,30 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
               </TouchableOpacity>
             </View>
           </View>
-
-          <View style={styles.checkboxContainer}>
-            <Checkbox
-              checked={isRemmebermeChecked}
-              onCheck={setIsRemmebermeChecked}
-              label={Strings.login.rememberMe}
-            />
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+            }}
+          >
+            <View style={styles.checkboxContainer}>
+              <Checkbox
+                checked={isRemmebermeChecked}
+                onCheck={setIsRemmebermeChecked}
+                label={Strings.login.rememberMe}
+              />
+            </View>
+            <TouchableOpacity
+              onPress={() => {
+                navigation.navigate('ForgotPasswordScreen', {
+                  message: 'Hello from Login',
+                });
+              }}
+            >
+              <Text style={{ color: '#3b82f6', fontWeight: '500' }}>
+                {Strings.login.forgotPassword}
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <TouchableOpacity
