@@ -12,17 +12,13 @@ import React, { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Strings } from '@/constants/Strings';
 import axiosInstance from '@/api/axiosInstance';
-import AddCategory from '@/screens/admin/category/AddCategoryScreen';
-import UpdateCategory from '@/screens/admin/category/UpdateCategoryScreen';
 
-import { NavigationIndependentTree } from '@react-navigation/native';
-import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { RootStackParamList } from '@/types/RootStackParamList';
 import { Category } from '@/types/apiModels';
 import DeleteModal from '@/components/deleteModal';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
 type CategoryScreenProps = NativeStackScreenProps<RootStackParamList, 'CategoryScreen'>;
 
 const CategoryScreen: React.FC<CategoryScreenProps> = ({ navigation, route }) => {
@@ -165,7 +161,6 @@ const CategoryScreen: React.FC<CategoryScreenProps> = ({ navigation, route }) =>
   );
 
   const handleAddCategory = () => {
-    console.log(navigation.getState());
     navigation.navigate('AddCategoryScreen', {});
   };
 

@@ -15,13 +15,10 @@ import { Ionicons } from '@expo/vector-icons';
 import axiosInstance from '@/api/axiosInstance';
 import { User } from '@/types/apiModels';
 import { RootStackParamList } from '@/types/RootStackParamList';
-import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
-import { NavigationIndependentTree } from '@react-navigation/native';
-import ViewUserScreen from './ViewUserScreen';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import DeleteModal from '@/components/deleteModal';
-import { uploadToCloudinary, deleteImagefromCloudinary } from '@/services/Cloudinary';
+import { deleteImagefromCloudinary } from '@/services/Cloudinary';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
 type UserScreenProps = NativeStackScreenProps<RootStackParamList, 'UserScreen'>;
 
 const UserScreen: React.FC<UserScreenProps> = ({ navigation }) => {

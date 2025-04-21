@@ -1,4 +1,4 @@
-import AdminCourseScreen from '@/screens/admin/AdminCourseScreen';
+import CourseScreen from '@/screens/admin/CourseScreen';
 import CategoryScreen from '@/screens/admin/CategoryScreen';
 import DashboardScreen from '@/screens/admin/DashboardScreen';
 import SettingScreen from '@/screens/admin/SettingScreen';
@@ -45,13 +45,13 @@ export default function AdminTabLayout() {
         component={CategoryScreen}
       />
       <Drawer.Screen
-        name="AdminCourseScreen"
+        name="CourseScreen"
         options={{
           drawerLabel: 'Quản lý khóa học',
           headerTitle: 'Quản lý khóa học',
           drawerIcon: () => <Ionicons name="book" size={24} color="#4a6ee0" />,
         }}
-        component={AdminCourseScreen}
+        component={CourseScreen}
       />
       <Drawer.Screen
         name="SettingScreen"

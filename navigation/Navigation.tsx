@@ -1,4 +1,3 @@
-import { View, Text } from 'react-native';
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { StripeProvider } from '@stripe/stripe-react-native';
@@ -21,7 +20,6 @@ import SearchCourse from '@/screens/user/SearchCourseScreen';
 import UserViewLesson from '@/screens/user/UserViewLessonScreen';
 import UserDetailCourseScreen from '@/screens/user/UserDetailCourseScreen';
 import UserTabLayout from '@/navigation/UserTabLayout';
-import DashboardScreen from '@/screens/admin/DashboardScreen';
 import AddCategoryScreen from '@/screens/admin/category/AddCategoryScreen';
 import UpdateCategoryScreen from '@/screens/admin/category/UpdateCategoryScreen';
 import AddLessonScreen from '@/screens/admin/course/section/lesson/AddLessonScreen';
@@ -29,7 +27,7 @@ import UpdateLessonScreen from '@/screens/admin/course/section/lesson/UpdateLess
 import AddCourseScreen from '@/screens/admin/course/AddCourseScreen';
 import AddSectionScreen from '@/screens/admin/course/section/AddSectionScreen';
 import UpdateSectionScreen from '@/screens/admin/course/section/UpdateSectionScreen';
-import AdminViewCourseScreen from '@/screens/admin/course/AdminViewCourseScreen';
+import ViewCourseScreen from '@/screens/admin/course/ViewCourseScreen';
 import UpdateCourseScreen from '@/screens/admin/course/UpdateCourseScreen';
 import EditProfileAdminScreen from '@/screens/admin/setting/EditProfileScreen';
 import ViewDetailUserScreen from '@/screens/admin/user/ViewUserScreen';
@@ -103,7 +101,7 @@ const Navigation = () => {
           <Stack.Screen name="AddSectionScreen" component={AddSectionScreen} />
           <Stack.Screen name="UpdateSectionScreen" component={UpdateSectionScreen} />
           <Stack.Screen name="AddCourseScreen" component={AddCourseScreen} />
-          <Stack.Screen name="AdminViewCourseScreen" component={AdminViewCourseScreen} />
+          <Stack.Screen name="ViewCourseScreen" component={ViewCourseScreen} />
           <Stack.Screen name="UpdateCourseScreen" component={UpdateCourseScreen} />
           <Stack.Screen name="EditProfileAdminScreen" component={EditProfileAdminScreen} />
           <Stack.Screen name="ViewDetailUserScreen" component={ViewDetailUserScreen} />

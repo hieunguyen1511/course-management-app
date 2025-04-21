@@ -62,9 +62,9 @@ export type RootStackParamList = {
   AddCategoryScreen: { message?: string };
   UpdateCategoryScreen: { categoryId: number; message?: string };
 
-  AdminCourseScreen: { message?: string };
+  CourseScreen: { message?: string };
   AddCourseScreen: { message?: string };
-  AdminViewCourseScreen: { courseId: number; message?: string };
+  ViewCourseScreen: { courseId: number; message?: string };
   UpdateCourseScreen: { courseId: number; message?: string };
 
   DashboardScreen: { message?: string };

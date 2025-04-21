@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import axiosInstance from '@/api/axiosInstance';
 import * as FileSystem from 'expo-file-system';
@@ -118,11 +118,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation, route }) 
   // Initial fetch
   useEffect(() => {
     fetchStatistics();
-  }, []);
-
-  useEffect(() => {
     fetchTimeRangeStats();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle refresh
   const handleRefresh = () => {
