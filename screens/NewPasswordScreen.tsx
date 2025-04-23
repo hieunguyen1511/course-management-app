@@ -5,25 +5,72 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
+  Platform,
 } from 'react-native';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { MyScreenProps } from '@/types/MyScreenProps';
 import { Ionicons } from '@expo/vector-icons';
+import axiosInstance from '@/api/axiosInstance';
 
 const NewPasswordScreen: React.FC<MyScreenProps['NewPasswordScreenProps']> = ({
   navigation,
   route,
 }) => {
-  const [newPassword, setNewPassword] = React.useState('');
-  const [confirmPassword, setConfirmPassword] = React.useState('');
-  const [showNewPassword, setShowNewPassword] = React.useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
-  const [updating, setUpdating] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [userId, setUserId] = useState(0);
+
+  useEffect(() => {
+    if (route.params.userId) {
+      setUserId(route.params.userId);
+      console.log('User ID:', route.params.userId);
+    }
+  }, [route.params.userId]);
+
+  const handleSubmit = async () => {
+    if (newPassword !== confirmPassword) {
+      setError('Mật khẩu không khớp!');
+      return;
+    }
+    setError(null);
+    setIsLoading(true);
+
+    if (userId === 0) {
+      return;
+    }
+
+    try {
+      const response = await axiosInstance.post(
+        `${process.env.EXPO_PUBLIC_API_USER_UPDATE_NEW_PASSWORD}`,
+        {
+          userId: userId,
+          password: newPassword,
+        }
+      );
+
+      if (response.status === 200) {
+        setIsLoading(false);
+        navigation.popTo('LoginScreen', { message: 'Cập nhật mật khẩu thành công!' });
+      } else {
+        console.error('Failed to update password:', response.data);
+      }
+    } catch (error) {
+      console.error('Error updating password:', error);
+    } finally {
+      setIsLoading(false);
+    }
+
+    console.log('User ID:', userId);
+  };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
-      <Text>NewPasswordScreen</Text>
+    <View style={styles.container}>
       <View style={styles.content}>
         {/* Form Fields */}
         <View style={styles.form}>
@@ -68,15 +115,18 @@ const NewPasswordScreen: React.FC<MyScreenProps['NewPasswordScreenProps']> = ({
               </TouchableOpacity>
             </View>
           </View>
+          {error && <Text style={{ color: 'red', marginBottom: 10 }}>{error}</Text>}
         </View>
 
-        {/* Change Password Button */}
+        {/* Update Button */}
         <TouchableOpacity
-          style={[styles.changeButton, updating && styles.changeButtonDisabled]}
-          onPress={() => {}}
-          disabled={updating}
+          style={[styles.changeButton, isLoading && styles.changeButtonDisabled]}
+          onPress={() => {
+            handleSubmit();
+          }}
+          disabled={isLoading}
         >
-          {updating ? (
+          {isLoading ? (
             <ActivityIndicator color="white" />
           ) : (
             <Text style={styles.changeButtonText}>Cập nhật</Text>
@@ -88,6 +138,11 @@ const NewPasswordScreen: React.FC<MyScreenProps['NewPasswordScreenProps']> = ({
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingTop: Platform.OS === 'android' ? 25 : 0,
+    backgroundColor: '#ffffff',
+  },
   content: {
     flex: 1,
     padding: 20,
@@ -96,7 +151,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 20,
+    marginBottom: 10,
   },
   inputContainer: {
     marginBottom: 20,
@@ -125,7 +180,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   changeButton: {
-    backgroundColor: '#4a6ee0',
+    backgroundColor: '#3b82f6',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',

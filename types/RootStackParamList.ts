@@ -8,7 +8,7 @@ export type RootStackParamList = {
   RegisterScreen: { message?: string };
   ForgotPasswordScreen: { message?: string };
   InputOTPScreen: { message?: string; email?: string };
-  NewPasswordScreen: { message?: string };
+  NewPasswordScreen: { message?: string; userId?: number };
   //User Bottom Tab
   HomeScreen: { message?: string };
   AccountScreen: { message?: string };

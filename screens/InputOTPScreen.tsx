@@ -12,15 +12,16 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { MyScreenProps } from '@/types/MyScreenProps';
 import { NativeSyntheticEvent, TextInputKeyPressEventData } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import axiosInstance from '@/api/axiosInstance';
 
 const InputOTPScreen: React.FC<MyScreenProps['InputOTPScreenProps']> = ({ navigation, route }) => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const inputRefs = useRef<Array<TextInput | null>>([]);
   const [email, setEmail] = useState('');
   const [subEmail, setSubEmail] = useState('');
-
   const [reSendOtp, setResendOtp] = useState(false);
   const [countdown, setCountdown] = useState(60);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (route.params && route.params.email) {
@@ -50,24 +51,59 @@ const InputOTPScreen: React.FC<MyScreenProps['InputOTPScreenProps']> = ({ naviga
     }
   };
   const handleSubmit = async () => {
-    navigation.navigate('NewPasswordScreen', {
-      message: 'Nhập mật khẩu mới',
-    });
+    setIsLoading(true);
+    try {
+      const otpCode = otp.join('');
+      const response = await axiosInstance.post(`${process.env.EXPO_PUBLIC_API_VERIFY_OTP}`, {
+        email: email,
+        otp: otpCode,
+      });
+      if (response.status === 200) {
+        setIsLoading(false);
+        const userId = response.data.userId;
+        navigation.replace('NewPasswordScreen', {
+          message: 'Nhập mật khẩu mới',
+          userId: userId,
+        });
+      } else {
+        setIsLoading(false);
+        console.error('Failed to verify OTP:', response.data);
+      }
+    } catch (error) {
+      setIsLoading(false);
+      console.error('Error submitting OTP:', error);
+    }
   };
 
   const handleResendOtp = async () => {
     setResendOtp(true);
-    setCountdown(60);
-    const interval = await setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          setResendOtp(false);
-          return 0;
-        }
-        return prev - 1;
+
+    try {
+      const response = await axiosInstance.post(`${process.env.EXPO_PUBLIC_API_SEND_OTP}`, {
+        email: email,
       });
-    }, 1000);
+      if (response.status === 200) {
+        setCountdown(60);
+        const interval = await setInterval(() => {
+          setCountdown(prev => {
+            if (prev <= 1) {
+              clearInterval(interval);
+              setResendOtp(false);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        setCountdown(0);
+        setResendOtp(false);
+        console.error('Failed to send OTP:', response.data);
+      }
+    } catch (error) {
+      setCountdown(0);
+      setResendOtp(false);
+      console.error('Error sending OTP:', error);
+    }
   };
 
   const RenderResendOtp = useCallback(() => {
@@ -139,9 +175,19 @@ const InputOTPScreen: React.FC<MyScreenProps['InputOTPScreenProps']> = ({ naviga
           <Text>Chưa nhận được mã OTP? </Text>
           <RenderResendOtp />
         </View>
-        <TouchableOpacity onPress={handleSubmit} style={styles.submitButton}>
-          <Text style={{ color: 'white', fontWeight: 'bold' }}>Tiếp tục</Text>
-        </TouchableOpacity>
+        {isLoading ? (
+          <TouchableOpacity
+            disabled
+            onPress={handleSubmit}
+            style={[styles.submitButton, { backgroundColor: '#95bdff' }]}
+          >
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>Đang xử lý</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity onPress={handleSubmit} style={styles.submitButton}>
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>Tiếp tục</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );

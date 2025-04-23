@@ -10,13 +10,16 @@ const ForgotPasswordScreen: React.FC<MyScreenProps['ForgotPasswordScreenProps']>
   route,
 }) => {
   const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async () => {
+    setIsLoading(true);
     try {
       const response = await axiosInstance.post(`${process.env.EXPO_PUBLIC_API_SEND_OTP}`, {
         email: email,
       });
       if (response.status === 200) {
+        setIsLoading(false);
         navigation.navigate('InputOTPScreen', { email: email });
       } else {
         console.error('Failed to send OTP:', response.data);
@@ -24,7 +27,7 @@ const ForgotPasswordScreen: React.FC<MyScreenProps['ForgotPasswordScreenProps']>
     } catch (error) {
       console.error('Error sending OTP:', error);
     }
-
+    setIsLoading(false);
     console.log('Email:', email);
   };
 
@@ -52,9 +55,19 @@ const ForgotPasswordScreen: React.FC<MyScreenProps['ForgotPasswordScreenProps']>
               />
             </View>
           </View>
-          <TouchableOpacity onPress={handleSubmit} style={styles.submitButton}>
-            <Text style={{ color: 'white', fontWeight: 'bold' }}>Tiếp tục</Text>
-          </TouchableOpacity>
+          {isLoading ? (
+            <TouchableOpacity
+              disabled
+              onPress={handleSubmit}
+              style={[styles.submitButton, { backgroundColor: '#95bdff' }]}
+            >
+              <Text style={{ color: 'white', fontWeight: 'bold' }}>Đang xử lý</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={handleSubmit} style={styles.submitButton}>
+              <Text style={{ color: 'white', fontWeight: 'bold' }}>Tiếp tục</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </GestureHandlerRootView>
