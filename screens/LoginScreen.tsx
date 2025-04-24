@@ -23,22 +23,7 @@ import NotificationToast from '@/components/NotificationToast';
 import { ToastType } from '@/components/NotificationToast';
 import tokenStorageManager from '@/storage/tokenStorage/tokenStorageManager';
 
-// async function saveUserInformation(user: any) {
-//   try {
-//     await SecureStore.deleteItemAsync('user');
-//     await SecureStore.setItemAsync('user', JSON.stringify(user));
-//   } catch (e) {
-//     console.log('Error saving user', e);
-//   }
-// }
-
-// async function saveRefreshToken(refresh_token: string) {
-//   try {
-//     await tokenStorageManager.setRefreshToken(refresh_token);
-//   } catch (e) {
-//     console.log('Error saving token', e);
-//   }
-// }
+import { GoogleSignin, isSuccessResponse } from '@react-native-google-signin/google-signin';
 
 const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => {
   //const homeRouter = useRouter();
@@ -65,7 +50,60 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
         showToast(route?.params?.message_from_register || '', ToastType.SUCCESS);
       }, 300);
     }
+    GoogleSignin.configure({
+      forceCodeForRefreshToken: true,
+    });
   }, [route?.params]);
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
+      const response = await GoogleSignin.signIn();
+      if (isSuccessResponse(response)) {
+        const { user } = response.data;
+        const { name, email } = user;
+
+        const res = await axiosInstance.post(`/user/googleSignIn`, {
+          email: email,
+          fullname: name,
+        });
+
+        if (res.status === 200) {
+          console.log('Login successful');
+          tokenStorageManager.setAccessToken(res.data.access_token);
+          if (isRemmebermeChecked) {
+            await tokenStorageManager.setRefreshToken(res.data.refresh_token, !isRemmebermeChecked);
+          }
+
+          const user = {
+            role: res.data.user.role,
+          };
+          console.log('User role', user.role);
+          if (user.role === 1) {
+            navigation.replace('UserTabLayout', {
+              message: 'Hello from Login',
+            });
+          }
+          if (user.role === 0) {
+            navigation.replace('AdminTabLayout', {
+              message: 'Hello from Login',
+            });
+          }
+        }
+        //console.log('name', name);
+        //console.log('email', email);
+        GoogleSignin.revokeAccess();
+        //GoogleSignin.signOut();
+      } else {
+        console.error('Google Sign-In failed:', response);
+        showToast('Đăng nhập bằng Google thất bại', ToastType.ERROR);
+        return;
+      }
+      //console.log('Google Sign-In successful:', response);
+    } catch (error) {
+      console.error('Google Sign-In error:', error);
+    }
+  };
 
   const handleLogin = async () => {
     try {
@@ -195,13 +233,30 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
               </TouchableOpacity>
             </View>
           </View>
-
-          <View style={styles.checkboxContainer}>
-            <Checkbox
-              checked={isRemmebermeChecked}
-              onCheck={setIsRemmebermeChecked}
-              label={Strings.login.rememberMe}
-            />
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+            }}
+          >
+            <View style={styles.checkboxContainer}>
+              <Checkbox
+                checked={isRemmebermeChecked}
+                onCheck={setIsRemmebermeChecked}
+                label={Strings.login.rememberMe}
+              />
+            </View>
+            <TouchableOpacity
+              onPress={() => {
+                navigation.navigate('ForgotPasswordScreen', {
+                  message: 'Hello from Login',
+                });
+              }}
+            >
+              <Text style={{ color: '#3b82f6', fontWeight: '500' }}>
+                {Strings.login.forgotPassword}
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <TouchableOpacity
@@ -226,8 +281,7 @@ const Login: FC<MyScreenProps['LoginScreenProps']> = ({ navigation, route }) => 
           <TouchableOpacity
             style={styles.googleButton}
             onPress={() => {
-              console.log('Google sign in pressed');
-              // Add your Google sign-in logic here
+              handleGoogleSignIn();
             }}
           >
             <Image source={require('../assets/images/google.png')} style={styles.googleIcon} />

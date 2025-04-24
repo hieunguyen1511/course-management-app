@@ -5,6 +5,9 @@ export type MyScreenProps = {
   IndexScreenProps: NativeStackScreenProps<RootStackParamList, 'IndexScreen'>;
   LoginScreenProps: NativeStackScreenProps<RootStackParamList, 'LoginScreen'>;
   RegisterScreenProps: NativeStackScreenProps<RootStackParamList, 'RegisterScreen'>;
+  ForgotPasswordScreenProps: NativeStackScreenProps<RootStackParamList, 'ForgotPasswordScreen'>;
+  InputOTPScreenProps: NativeStackScreenProps<RootStackParamList, 'InputOTPScreen'>;
+  NewPasswordScreenProps: NativeStackScreenProps<RootStackParamList, 'NewPasswordScreen'>;
   // User Bottom Tab
   HomeScreenProps: NativeStackScreenProps<RootStackParamList, 'HomeScreen'>;
   UserCourseScreenProps: NativeStackScreenProps<RootStackParamList, 'UserCourseScreen'>;
