@@ -18,7 +18,7 @@ import axiosInstance from '@/api/axiosInstance';
 import { Strings } from '@/constants/Strings';
 import * as SecureStore from 'expo-secure-store';
 import DeleteModal from '@/components/deleteModal';
-import { formatDate } from '@/components/formatDate';
+import { formatDate } from '@/components/FormatDate';
 
 const AdminViewCourseScreen = ({ navigation, route }: MyScreenProps['ViewCourseScreenProps']) => {
   const courseId = route.params.courseId;

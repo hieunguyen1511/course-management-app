@@ -5,118 +5,67 @@ import {
   TouchableOpacity,
   ScrollView,
   Platform,
-  Alert,
+  RefreshControl,
+  TextInput,
 } from 'react-native';
 import React, { useState, useEffect } from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { MyScreenProps } from '@/types/MyScreenProps';
-
-interface Enrollment {
-  id: string;
-  courseId: string;
-  courseName: string;
-  category: string;
-  enrollmentDate: string;
-  status: 'active' | 'completed' | 'cancelled';
-  progress: number;
-  thumbnail: string;
-}
+import { Enrollment } from '@/types/apiModels';
+import axiosInstance from '@/api/axiosInstance';
+import { formatDate } from '@/components/FormatDate';
+import { formatPrice } from '@/components/FormatPrice';
 
 const UserViewAllEnrollmentScreen: React.FC<MyScreenProps['UserViewAllEnrollmentScreenProps']> = ({
   navigation,
   route,
 }) => {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [filteredEnrollments, setFilteredEnrollments] = useState<Enrollment[]>([]);
+  const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      let url = `${process.env.EXPO_PUBLIC_API_GET_ENROLLMENT_BY_USER_ID_WITH_CATEGORY_JWT}`;
+      const response = await axiosInstance.get(url);
+      if (response.status === 200) {
+        setEnrollments(response.data.enrollments);
+        setFilteredEnrollments(response.data.enrollments);
+      }
+    } catch (err) {
+      console.error('Error fetching enrollments:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    // Mock API call to fetch enrollments
-    setTimeout(() => {
-      setEnrollments([
-        {
-          id: '1',
-          courseId: '1',
-          courseName: 'React Native Cơ Bản',
-          category: 'Lập trình di động',
-          enrollmentDate: '2024-03-15',
-          status: 'active',
-          progress: 60,
-          thumbnail: 'https://via.placeholder.com/150',
-        },
-        {
-          id: '2',
-          courseId: '2',
-          courseName: 'JavaScript Nâng Cao',
-          category: 'Lập trình Web',
-          enrollmentDate: '2024-03-10',
-          status: 'completed',
-          progress: 100,
-          thumbnail: 'https://via.placeholder.com/150',
-        },
-      ]);
-      setLoading(false);
-    }, 1000);
+    fetchData();
   }, []);
 
-  const handleDelete = (enrollmentId: string) => {
-    Alert.alert('Xác nhận hủy đăng ký', 'Bạn có chắc chắn muốn hủy đăng ký khóa học này?', [
-      {
-        text: 'Hủy',
-        style: 'cancel',
-      },
-      {
-        text: 'Xác nhận',
-        style: 'destructive',
-        onPress: () => {
-          // TODO: Implement API call to delete enrollment
-          setEnrollments(prev => prev.filter(e => e.id !== enrollmentId));
-        },
-      },
-    ]);
+  // Handle refresh
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchData();
   };
 
-  const handleDeleteAll = () => {
-    Alert.alert('Xác nhận hủy tất cả', 'Bạn có chắc chắn muốn hủy đăng ký tất cả các khóa học?', [
-      {
-        text: 'Hủy',
-        style: 'cancel',
-      },
-      {
-        text: 'Xác nhận',
-        style: 'destructive',
-        onPress: () => {
-          // TODO: Implement API call to delete all enrollments
-          setEnrollments([]);
-        },
-      },
-    ]);
-  };
-
-  const getStatusColor = (status: Enrollment['status']) => {
-    switch (status) {
-      case 'active':
-        return '#4a6ee0';
-      case 'completed':
-        return '#2c9e69';
-      case 'cancelled':
-        return '#e04a4a';
-      default:
-        return '#666';
+  // Filter users based on search query
+  useEffect(() => {
+    if (searchText.trim() === '') {
+      setFilteredEnrollments(enrollments);
+    } else {
+      const filtered = enrollments.filter(
+        enrollment =>
+          enrollment.course.name.toLowerCase().includes(searchText) ||
+          enrollment.course.category.name.toLowerCase().includes(searchText.toLowerCase())
+      );
+      setFilteredEnrollments(filtered);
     }
-  };
-
-  const getStatusText = (status: Enrollment['status']) => {
-    switch (status) {
-      case 'active':
-        return 'Đang học';
-      case 'completed':
-        return 'Hoàn thành';
-      case 'cancelled':
-        return 'Đã hủy';
-      default:
-        return status;
-    }
-  };
+  }, [searchText, enrollments]);
 
   if (loading) {
     return (
@@ -136,49 +85,94 @@ const UserViewAllEnrollmentScreen: React.FC<MyScreenProps['UserViewAllEnrollment
         <Text style={styles.headerTitle}>Khóa học của tôi</Text>
       </View>
 
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Tìm kiếm khóa học của tôi..."
+          value={searchText}
+          onChangeText={setSearchText}
+        />
+        {searchText.length > 0 && (
+          <TouchableOpacity style={styles.clearButton} onPress={() => setSearchText('')}>
+            <Ionicons name="close-circle" size={20} color="#666" />
+          </TouchableOpacity>
+        )}
+      </View>
       {/* Enrollment List */}
-      <ScrollView style={styles.content}>
-        {enrollments.map(enrollment => (
+      <ScrollView
+        style={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+      >
+        {filteredEnrollments.map(enrollment => (
           <TouchableOpacity
             key={enrollment.id}
             style={styles.enrollmentCard}
             onPress={() =>
               navigation.navigate('UserDetailCourseScreen', {
-                courseId: parseInt(enrollment.courseId),
-                enrollmentId: parseInt(enrollment.id),
+                courseId: enrollment.course_id,
+                enrollmentId: enrollment.id,
               })
             }
           >
             <View style={styles.enrollmentContent}>
               <View style={styles.courseInfo}>
                 <Text style={styles.courseName} numberOfLines={2}>
-                  {enrollment.courseName}
+                  {enrollment.course.name}
                 </Text>
-                <Text style={styles.category}>{enrollment.category}</Text>
+                <Text style={styles.category}>{enrollment.course.category.name}</Text>
+                <Text style={styles.price}>
+                  Học phí:{' '}
+                  {enrollment.price === 0 ? 'Miễn phí ' : formatPrice(enrollment.price)}{' '}
+                </Text>
+                <View style={styles.rating}>
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <FontAwesome
+                      key={index}
+                      name={index < enrollment.rating ? 'star' : 'star-o'}
+                      size={16}
+                      color="#f1c40f"
+                    />
+                  ))}
+                </View>
                 <Text style={styles.enrollmentDate}>
-                  Ngày đăng ký: {new Date(enrollment.enrollmentDate).toLocaleDateString('vi-VN')}
+                  Ngày đăng ký: {formatDate(enrollment.createdAt)}
                 </Text>
+                <Text
+                  style={styles.courseStudents}
+                >{`${enrollment.enrollment_lessons.length} học viên`}</Text>
               </View>
 
-              <View style={styles.statusContainer}>
-                <Text style={[styles.statusText, { color: getStatusColor(enrollment.status) }]}>
-                  {getStatusText(enrollment.status)}
+              <View style={styles.progressContainer}>
+                <View style={styles.progressBarContainer}>
+                  <View
+                    style={[
+                      styles.progressBar,
+                      {
+                        width: `${Math.round(
+                          ((enrollment.enrollment_lessons
+                            ? enrollment.enrollment_lessons.length
+                            : 0) *
+                            100) /
+                            enrollment.total_lesson || 100
+                        )}%`,
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.progressText}>
+                  {((enrollment.enrollment_lessons ? enrollment.enrollment_lessons.length : 0) *
+                    100) /
+                    enrollment.total_lesson || 100}
+                  % hoàn thành
                 </Text>
-                {enrollment.status === 'active' && (
-                  <View style={styles.progressContainer}>
-                    <View style={[styles.progressBar, { width: `${enrollment.progress}%` }]} />
-                    <Text style={styles.progressText}>{enrollment.progress}%</Text>
-                  </View>
-                )}
+
+                <Text style={styles.lessonCount}>
+                  {enrollment.enrollment_lessons ? enrollment.enrollment_lessons.length : 0}/
+                  {enrollment.total_lesson} bài học
+                </Text>
               </View>
             </View>
-
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => handleDelete(enrollment.id)}
-            >
-              <Ionicons name="trash-outline" size={20} color="#e04a4a" />
-            </TouchableOpacity>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -258,39 +252,78 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 4,
   },
+  price: {
+    fontSize: 14,
+    color: '#FF6B00',
+    marginBottom: 4,
+  },
+  rating: {
+    flexDirection: 'row',
+    marginTop: 4,
+    gap: 4,
+  },
   enrollmentDate: {
+    marginTop: 5,
     fontSize: 12,
     color: '#999',
   },
-  statusContainer: {
-    marginTop: 8,
-  },
-  statusText: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 4,
-  },
   progressContainer: {
-    height: 4,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 2,
+    marginBottom: 8,
+  },
+  progressBarContainer: {
+    height: 6,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 3,
     overflow: 'hidden',
-    flexDirection: 'row',
-    alignItems: 'center',
+    marginBottom: 4,
   },
   progressBar: {
     height: '100%',
     backgroundColor: '#4a6ee0',
-    borderRadius: 2,
+    borderRadius: 3,
   },
   progressText: {
     fontSize: 12,
     color: '#666',
-    marginLeft: 8,
+  },
+  lessonCount: {
+    marginTop: 5,
+    fontSize: 12,
+    color: '#999',
+  },
+  courseStudents: {
+    fontSize: 12,
+    color: '#666',
   },
   deleteButton: {
     padding: 8,
     marginLeft: 12,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    margin: 16,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 16,
+  },
+  clearButton: {
+    padding: 4,
   },
 });
 

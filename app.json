@@ -43,7 +43,9 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      ["expo-secure-store", {
+      [
+        "expo-secure-store",
+        {
           "configureAndroidBackup": true,
           "faceIDPermission": "Allow CourseApp to access your Face ID biometric data."
         }
@@ -58,8 +60,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "baa8ab05-b753-4f5e-b53e-942133eef7c9"
+        "projectId": "c22ce4c8-5f7a-47c5-b138-9c9fef4d86b9"
       }
-    }
+    },
+    "owner": "nrtnhab"
   }
 }

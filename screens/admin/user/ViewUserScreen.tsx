@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import axiosInstance from '@/api/axiosInstance';
 import { MyScreenProps } from '@/types/MyScreenProps';
 import { Enrollment, User } from '@/types/apiModels';
-import { formatDate } from '@/components/formatDate';
+import { formatDate } from '@/components/FormatDate';
 
 const ViewDetailUserScreen: React.FC<MyScreenProps['ViewDetailUserScreenProps']> = ({
   navigation,

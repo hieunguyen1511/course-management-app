@@ -238,8 +238,8 @@ const CourseScreen: React.FC<CourseScreenProps> = ({ navigation, route }) => {
 
             {item.total_rating != null && item.total_rating !== 0 && (
               <View style={styles.ratingContainer}>
+                <Text style={styles.courseRating}>{item.total_rating} </Text>
                 <Ionicons name="star" size={16} color="#FFD700" style={styles.starIcon} />
-                <Text style={styles.courseRating}>{item.total_rating}</Text>
               </View>
             )}
           </View>
