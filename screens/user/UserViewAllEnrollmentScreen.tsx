@@ -13,8 +13,9 @@ import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { MyScreenProps } from '@/types/MyScreenProps';
 import { Enrollment } from '@/types/apiModels';
 import axiosInstance from '@/api/axiosInstance';
-import { formatDate } from '@/components/FormatDate';
+
 import { formatPrice } from '@/components/FormatPrice';
+import { formatDateTime } from '@/utils/datetime';
 
 const UserViewAllEnrollmentScreen: React.FC<MyScreenProps['UserViewAllEnrollmentScreenProps']> = ({
   navigation,
@@ -136,7 +137,7 @@ const UserViewAllEnrollmentScreen: React.FC<MyScreenProps['UserViewAllEnrollment
                   ))}
                 </View>
                 <Text style={styles.enrollmentDate}>
-                  Ngày đăng ký: {formatDate(enrollment.createdAt)}
+                  Ngày đăng ký: {formatDateTime(enrollment.createdAt)}
                 </Text>
                 <Text
                   style={styles.courseStudents}

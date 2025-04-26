@@ -4,7 +4,12 @@ export type RootStackParamList = {
   //Main: { screen: keyof RootStackParamList };
 
   IndexScreen: { message?: string };
-  LoginScreen: { message?: string; message_from_register?: string | '' };
+  LoginScreen: {
+    message?: string;
+    message_from_register?: string | '';
+    message_from_new_password?: string;
+  };
+
   RegisterScreen: { message?: string };
   ForgotPasswordScreen: { message?: string };
   InputOTPScreen: { message?: string; email?: string };

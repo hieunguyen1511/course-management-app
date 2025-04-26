@@ -56,7 +56,9 @@ const NewPasswordScreen: React.FC<MyScreenProps['NewPasswordScreenProps']> = ({
 
       if (response.status === 200) {
         setIsLoading(false);
-        navigation.popTo('LoginScreen', { message: 'Cập nhật mật khẩu thành công!' });
+        navigation.popTo('LoginScreen', {
+          message_from_new_password: 'Cập nhật mật khẩu thành công!',
+        });
       } else {
         console.error('Failed to update password:', response.data);
       }

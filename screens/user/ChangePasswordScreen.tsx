@@ -14,6 +14,7 @@ import { MyScreenProps } from '@/types/MyScreenProps';
 import axiosInstance from '@/api/axiosInstance';
 import { tokenStorageManager } from '@/storage/tokenStorage/tokenStorageManager';
 import * as SecureStore from 'expo-secure-store';
+
 async function changePassword(currentPassword: string, newPassword: string) {
   try {
     const response = await axiosInstance.put(

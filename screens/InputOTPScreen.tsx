@@ -4,7 +4,6 @@ import {
   StyleSheet,
   Platform,
   TextInput,
-  NativeEventEmitter,
   TouchableOpacity,
   SafeAreaView,
 } from 'react-native';
